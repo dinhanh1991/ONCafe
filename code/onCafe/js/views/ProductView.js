@@ -65,7 +65,7 @@ export class ProductView {
                 </form>
                 <div class="table-scroll">
                     <table class="product-table">
-                        <thead><tr><th>Tên sản phẩm</th><th>Danh mục</th><th>Giá bán</th><th>Tồn kho</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                        <thead><tr><th>Ảnh</th><th>Tên sản phẩm</th><th>Danh mục</th><th>Giá bán</th><th>Tồn kho</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
                         <tbody data-product-list></tbody>
                     </table>
                 </div>
@@ -85,12 +85,13 @@ export class ProductView {
 
         this.container.querySelector("[data-product-count]").textContent = `${products.length} sản phẩm`;
         if (products.length === 0) {
-            list.innerHTML = '<tr><td class="empty-state" colspan="6">Không tìm thấy sản phẩm.</td></tr>';
+            list.innerHTML = '<tr><td class="empty-state" colspan="7">Không tìm thấy sản phẩm.</td></tr>';
             return;
         }
 
         list.innerHTML = products.map((product) => `
             <tr>
+                <td><img class="product-thumb" src="${escapeHtml(product.imageUrl || "./assets/images/product-placeholder.jpg")}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.hidden=true"></td>
                 <td class="product-name">${escapeHtml(product.name)}</td>
                 <td>${escapeHtml(product.category)}</td>
                 <td>${formatCurrency(product.price)}</td>
