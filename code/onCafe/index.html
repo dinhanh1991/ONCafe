@@ -9,14 +9,15 @@
     </head>
     <body>
         <header class="site-header">
-            <a class="brand" href="./">ONCafe</a>
-            <span>Quản lý quán đồ uống</span>
+            <a class="brand" href="./pages/home.html">ONCafe</a>
+            <span id="accountLabel">Quản lý quán đồ uống</span>
+            <button id="logoutButton" class="header-button" type="button" hidden>Đăng xuất</button>
         </header>
 
         <main id="app" class="app-shell" aria-live="polite">
-            <p>Đang tải dữ liệu sản phẩm...</p>
+            <p>Đang kiểm tra quyền truy cập...</p>
         </main>
 
-    <script type="module" src="./js/app.js"></script>
+        <script type="module" src="./js/app.js"></script>
     </body>
 </html>
