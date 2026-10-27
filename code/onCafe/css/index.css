@@ -1,4 +1,7 @@
-.site-header span,
+.site-header span {
+    color: #ffffff;
+}
+
 .product-heading p:not(.eyebrow) {
     color: var(--muted);
 }
