@@ -1,0 +1,13 @@
+stages:
+  - deploy
+
+pages:
+  stage: deploy
+  script:
+    - mkdir -p public
+    - cp -r code/onCafe/. public/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
