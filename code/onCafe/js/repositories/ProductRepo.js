@@ -1,93 +1,112 @@
-export class ProductRepository {
-    constructor() {
-        this.products = [
-            {
-                id: 1,
-                name: "Bạc xỉu",
-                price: 35000,
-                category: "Cà phê",
-                quantity: 20,
-                imageUrl: "./assets/images/bac-xiu.jpg",
-                status: "active"
-            },
-            {
-                id: 2,
-                name: "Trà đào",
-                price: 40000,
-                category: "Trà",
-                quantity: 15,
-                imageUrl: "./assets/images/tra-dao.jpg",
-                status: "active"
-            },
-            {
-                id: 3,
-                name: "Trà sữa",
-                price: 45000,
-                category: "Trà sữa",
-                quantity: 10,
-                imageUrl: "./assets/images/tra-sua.jpg",
-                status: "active"
-            }
-        ];
-    }
+import { supabase } from "../config/supabase.js";
 
+const PRODUCT_SELECT = "id, name, price, quantity, image_url, is_available, category_id, categories(name)";
+
+function mapProduct(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        price: Number(row.price),
+        category: row.categories?.name ?? "",
+        quantity: Number(row.quantity ?? 0),
+        imageUrl: row.image_url ?? "",
+        status: row.is_available ? "active" : "inactive"
+    };
+}
+
+function throwIfError(error) {
+    if (error) throw error;
+}
+
+export class ProductRepository {
     async findAll() {
-        return [...this.products];
+        const { data, error } = await supabase
+            .from("products")
+            .select(PRODUCT_SELECT)
+            .order("id", { ascending: true });
+
+        throwIfError(error);
+        return (data ?? []).map(mapProduct);
     }
 
     async findById(id) {
         const normalizedId = Number(id);
-        if (!Number.isFinite(normalizedId)) return null;
+        if (!Number.isInteger(normalizedId) || normalizedId <= 0) return null;
 
-        return this.products.find(
-            product => product.id === normalizedId
-        ) || null;
+        const { data, error } = await supabase
+            .from("products")
+            .select(PRODUCT_SELECT)
+            .eq("id", normalizedId)
+            .maybeSingle();
+
+        throwIfError(error);
+        return data ? mapProduct(data) : null;
     }
 
     async save(product) {
-        const newId = this.products.length > 0
-            ? Math.max(...this.products.map(item => item.id)) + 1
-            : 1;
+        const categoryId = await this.getOrCreateCategory(product.category);
+        const { data, error } = await supabase
+            .from("products")
+            .insert({
+                name: product.name,
+                price: Number(product.price),
+                category_id: categoryId,
+                quantity: Number(product.quantity),
+                image_url: product.imageUrl || null,
+                is_available: product.status !== "inactive"
+            })
+            .select(PRODUCT_SELECT)
+            .single();
 
-        const newProduct = {
-            ...product,
-            id: newId
-        };
-
-        this.products.push(newProduct);
-        return newProduct;
+        throwIfError(error);
+        return mapProduct(data);
     }
 
     async update(id, updatedData) {
         const normalizedId = Number(id);
-        const index = this.products.findIndex(
-            product => product.id === normalizedId
-        );
+        const categoryId = await this.getOrCreateCategory(updatedData.category);
+        const { data, error } = await supabase
+            .from("products")
+            .update({
+                name: updatedData.name,
+                price: Number(updatedData.price),
+                category_id: categoryId,
+                quantity: Number(updatedData.quantity),
+                image_url: updatedData.imageUrl || null,
+                is_available: updatedData.status !== "inactive"
+            })
+            .eq("id", normalizedId)
+            .select(PRODUCT_SELECT)
+            .single();
 
-        if (index === -1) {
-            throw new Error("Không tìm thấy sản phẩm.");
-        }
-
-        this.products[index] = {
-            ...this.products[index],
-            ...updatedData,
-            id: normalizedId
-        };
-
-        return this.products[index];
+        throwIfError(error);
+        return mapProduct(data);
     }
 
     async delete(id) {
         const normalizedId = Number(id);
-        const index = this.products.findIndex(
-            product => product.id === normalizedId
-        );
+        const { error } = await supabase
+            .from("products")
+            .delete()
+            .eq("id", normalizedId);
 
-        if (index === -1) {
-            throw new Error("Không tìm thấy sản phẩm.");
+        throwIfError(error);
+        return true;
+    }
+
+    async getOrCreateCategory(name) {
+        const normalizedName = String(name ?? "").trim();
+        if (!normalizedName) {
+            throw new Error("Vui lòng nhập danh mục sản phẩm.");
         }
 
-        this.products.splice(index, 1);
-        return true;
+        const { data, error } = await supabase
+            .from("categories")
+            .upsert({ name: normalizedName }, { onConflict: "name" })
+            .select("id")
+            .single();
+
+        throwIfError(error);
+        return data.id;
     }
 }
