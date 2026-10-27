@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -12,7 +11,6 @@
 <body>
     <header class="site-header">
         <a class="brand" href="./home.html">ONCafe</a>
-
         <nav aria-label="Điều hướng chính">
             <a href="./home.html">Trang chủ</a>
             <a href="./register.html">Đăng ký</a>
@@ -27,38 +25,23 @@
             <form id="loginForm">
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        placeholder="Nhập email của bạn"
-                        required
-                    >
+                    <input type="email" id="email" name="email"
+                        placeholder="Nhập email của bạn" autocomplete="email" required>
                 </div>
-
                 <div class="form-group">
                     <label for="password">Mật khẩu</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Nhập mật khẩu"
-                        required
-                    >
+                    <input type="password" id="password" name="password"
+                        placeholder="Nhập mật khẩu" autocomplete="current-password" required>
                 </div>
-
-                <button class="auth-button" type="submit">
-                    Đăng nhập
-                </button>
-
-                <p id="loginMessage" role="status"></p>
+                <button class="auth-button" type="submit">Đăng nhập</button>
+                <p id="loginMessage" role="status" aria-live="polite"></p>
             </form>
 
             <p class="auth-switch">
-                Chưa có tài khoản?
-                <a href="./register.html">Đăng ký ngay</a>
+                Chưa có tài khoản? <a href="./register.html">Đăng ký ngay</a>
             </p>
         </section>
     </main>
+    <script type="module" src="../js/views/AuthView.js"></script>
 </body>
 </html>
