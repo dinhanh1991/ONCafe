@@ -295,3 +295,14 @@ input {
         grid-column: auto;
     }
 }
+
+
+.product-thumb {
+    display: block;
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #f7f9f7;
+}

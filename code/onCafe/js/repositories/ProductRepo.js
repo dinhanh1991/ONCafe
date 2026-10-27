@@ -1,4 +1,3 @@
-
 export class ProductRepository {
     constructor() {
         this.products = [
@@ -17,7 +16,7 @@ export class ProductRepository {
                 price: 40000,
                 category: "Trà",
                 quantity: 15,
-                imageUrl: "./assets/images/tra-dao.jpg", 
+                imageUrl: "./assets/images/tra-dao.jpg",
                 status: "active"
             },
             {
@@ -45,19 +44,19 @@ export class ProductRepository {
         ) || null;
     }
 
-   async save(product) {
-    const newId = this.products.length > 0
-        ? Math.max(...this.products.map(item => item.id)) + 1
-        : 1;
+    async save(product) {
+        const newId = this.products.length > 0
+            ? Math.max(...this.products.map(item => item.id)) + 1
+            : 1;
 
-    const newProduct = {
-        ...product,
-        id: newId
-    };
+        const newProduct = {
+            ...product,
+            id: newId
+        };
 
-    this.products.push(newProduct);
-    return newProduct;
-}
+        this.products.push(newProduct);
+        return newProduct;
+    }
 
     async update(id, updatedData) {
         const normalizedId = Number(id);
