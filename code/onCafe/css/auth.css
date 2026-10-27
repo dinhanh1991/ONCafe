@@ -1,0 +1,93 @@
+/* ===== THANH PHAN DUNG CHUNG CHO XAC THUC ===== */
+
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 75vh;
+    padding: 30px 16px;
+    background-color: #f8f3ed;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+    padding: 35px;
+    border-radius: 16px;
+    background-color: #ffffff;
+    box-shadow: 0 8px 30px rgba(56, 37, 29, 0.1);
+}
+
+.auth-card h1 {
+    margin-top: 0;
+    color: #38251d;
+    text-align: center;
+}
+
+.auth-card > p {
+    color: #76665d;
+    text-align: center;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 20px 0;
+}
+
+.form-group label {
+    color: #38251d;
+    font-weight: bold;
+}
+
+.form-group input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d8cec5;
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+.form-group input:focus {
+    outline: 2px solid #bd9367;
+    border-color: #bd9367;
+}
+
+.auth-button {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 8px;
+    background-color: #38251d;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.auth-button:hover {
+    background-color: #624333;
+}
+
+.auth-switch {
+    margin-top: 24px;
+    text-align: center;
+}
+
+.auth-switch a {
+    color: #87552f;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.auth-switch a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 24px 18px;
+    }
+}
