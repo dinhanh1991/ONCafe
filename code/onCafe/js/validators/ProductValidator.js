@@ -22,7 +22,7 @@ export class ProductValidator {
             !Number.isInteger(price) ||
             price < 0
         ) {
-            errors.price = "Giá phải là số nguyên không âm."
+            errors.price = "Giá phải là số nguyên không âm.";
         }
 
         const quantity = Number(product.quantity);
