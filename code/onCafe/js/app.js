@@ -12,10 +12,24 @@ const logoutButton = document.querySelector("#logoutButton");
 
 function showMessage(message, isError = false) {
     if (!app) return;
-    app.innerHTML = `<section class="app-access-message">
-        <p class="${isError ? "app-error" : ""}" role="status">${message}</p>
-        <p><a href="./pages/login.html">Đến trang đăng nhập</a></p>
-    </section>`;
+
+    app.replaceChildren();
+    const section = document.createElement("section");
+    section.className = "app-access-message";
+
+    const paragraph = document.createElement("p");
+    paragraph.className = isError ? "app-error" : "";
+    paragraph.setAttribute("role", "status");
+    paragraph.textContent = message;
+
+    const linkParagraph = document.createElement("p");
+    const link = document.createElement("a");
+    link.href = "./pages/login.html";
+    link.textContent = "Đến trang đăng nhập";
+    linkParagraph.append(link);
+
+    section.append(paragraph, linkParagraph);
+    app.append(section);
 }
 
 async function startApp() {
