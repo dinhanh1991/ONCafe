@@ -18,12 +18,16 @@ if (loginForm) {
 
         try {
             const formData = new FormData(loginForm);
-            await authService.login({
+            const result = await authService.login({
                 email: formData.get("email"),
                 password: formData.get("password")
             });
+            const profile = await authService.getMyProfile(result.user.id);
+
             showMessage(message, "Đăng nhập thành công. Đang chuyển trang...");
-            window.location.href = "./home.html";
+            window.location.href = profile.role === "admin"
+                ? "../index.html"
+                : "./home.html";
         } catch (error) {
             showMessage(
                 message,
