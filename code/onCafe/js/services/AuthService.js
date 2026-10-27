@@ -30,6 +30,17 @@ export class AuthService {
         return data;
     }
 
+    async getMyProfile(userId) {
+        const { data, error } = await supabase
+            .from("profiles")
+            .select("id, full_name, role")
+            .eq("id", userId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
     async logout() {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
