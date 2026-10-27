@@ -1,5 +1,4 @@
-
-import { ProductRepository } from "./repositoríe/ProductRepo.js";
+import { ProductRepository } from "./repositories/ProductRepo.js";
 import { ProductService } from "./services/ProductService.js";
 import { ProductView } from "./views/ProductView.js";
 
