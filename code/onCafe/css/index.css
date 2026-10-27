@@ -1,5 +1,32 @@
-.site-header span {
+ .site-header span {
     color: #ffffff;
+}
+
+.site-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.site-header #accountLabel {
+    margin-left: auto;
+}
+
+.header-button {
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 6px;
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.header-button:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.header-button[hidden] {
+    display: none;
 }
 
 .product-heading p:not(.eyebrow) {
@@ -13,6 +40,20 @@ main {
 .app-shell {
     max-width: 1240px;
     margin: 0 auto;
+}
+
+.app-access-message {
+    max-width: 680px;
+    margin: 48px auto;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+}
+
+.app-access-message a {
+    color: var(--green-dark);
+    font-weight: 650;
 }
 
 .product-heading {
