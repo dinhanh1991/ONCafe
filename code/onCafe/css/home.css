@@ -1,0 +1,77 @@
+.app-shell {
+    width: 86%;
+    max-width: 1200px;
+    margin: 40px auto;
+}
+
+.home-hero {
+    padding: 70px 45px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #f5e7d5, #e4c29b);
+    color: #38251d;
+}
+
+.home-hero .eyebrow {
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.home-hero h1 {
+    max-width: 650px;
+    margin: 20px 0;
+    font-size: 42px;
+    line-height: 1.2;
+}
+
+.home-hero p {
+    max-width: 600px;
+    font-size: 17px;
+    line-height: 1.8;
+}
+
+.button {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 13px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.button-primary {
+    background-color: #38251d;
+    color: #ffffff;
+}
+
+.button-primary:hover {
+    background-color: #624333;
+}
+
+.home-intro {
+    padding: 35px 0;
+    color: #38251d;
+}
+
+.home-intro h2 {
+    font-size: 26px;
+}
+
+.home-intro p {
+    line-height: 1.8;
+}
+
+@media (max-width: 600px) {
+    .app-shell {
+        width: 92%;
+        margin: 20px auto;
+    }
+
+    .home-hero {
+        padding: 35px 22px;
+    }
+
+    .home-hero h1 {
+        font-size: 30px;
+    }
+}

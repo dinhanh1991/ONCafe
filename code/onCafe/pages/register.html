@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký - ONCafe</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/register.css">
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="./home.html">ONCafe</a>
+
+        <nav aria-label="Điều hướng chính">
+            <a href="./home.html">Trang chủ</a>
+            <a href="./login.html">Đăng nhập</a>
+        </nav>
+    </header>
+
+    <main class="auth-container">
+        <section class="auth-card">
+            <h1>Tạo tài khoản</h1>
+            <p>Đăng ký để trải nghiệm ONCafe.</p>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="fullName">Họ và tên</label>
+                    <input
+                        type="text"
+                        id="fullName"
+                        name="fullName"
+                        placeholder="Nhập họ và tên"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="Nhập email"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Mật khẩu</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Ít nhất 6 ký tự"
+                        minlength="6"
+                        required
+                    >
+                </div>
+
+                <button class="auth-button" type="submit">
+                    Đăng ký
+                </button>
+
+                <p id="registerMessage" role="status"></p>
+            </form>
+
+            <p class="auth-switch">
+                Đã có tài khoản?
+                <a href="./login.html">Đăng nhập</a>
+            </p>
+        </section>
+    </main>
+</body>
+</html>
