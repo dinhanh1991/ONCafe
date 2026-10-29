@@ -520,3 +520,474 @@ main {
         flex-direction: column;
     }
 }
+
+/* Giao diện quản lý theo tông màu thương hiệu ONCafe */
+:root {
+    --ink: #38251d;
+    --muted: #766b64;
+    --line: #e6ddd4;
+    --paper: #fffdfa;
+    --canvas: #f5f2ed;
+    --green: #87552f;
+    --green-dark: #624333;
+    --red: #a33a32;
+}
+
+body {
+    background:
+        radial-gradient(ellipse at 4% 0%, rgba(233, 189, 133, 0.13), transparent 30%),
+        var(--canvas);
+}
+
+.site-header {
+    position: relative;
+    min-height: 76px;
+    padding: 14px max(5%, calc((100% - 1320px) / 2));
+    background: #2f211b;
+    box-shadow: 0 4px 18px rgba(47, 33, 27, 0.12);
+}
+
+.site-header .brand {
+    font-size: 26px;
+    letter-spacing: 0.02em;
+}
+
+.site-header #accountLabel {
+    margin-left: auto;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 14px;
+}
+
+.header-button {
+    min-height: 38px;
+    padding: 8px 14px;
+    border-color: rgba(233, 189, 133, 0.7);
+    border-radius: 8px;
+    color: #f0c58e;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 650;
+    transition: background-color 160ms ease;
+}
+
+.header-button:hover {
+    background: rgba(233, 189, 133, 0.12);
+}
+
+main#app {
+    width: min(1320px, 100%);
+    min-height: calc(100vh - 76px);
+    margin: 0 auto;
+    padding: clamp(24px, 4vw, 48px) clamp(18px, 4vw, 48px);
+}
+
+.staff-workspace {
+    width: 100%;
+}
+
+.app-tabs {
+    width: fit-content;
+    max-width: 100%;
+    gap: 5px;
+    margin: 0 0 20px;
+    padding: 5px;
+    overflow: auto hidden;
+    border: 1px solid #e8dfd7;
+    border-radius: 12px;
+    background: rgba(255, 253, 250, 0.78);
+}
+
+.app-tab {
+    min-height: 40px;
+    padding: 8px 15px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    white-space: nowrap;
+    transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.app-tab.is-active {
+    background: #38251d;
+    color: #fffdfa;
+    box-shadow: 0 3px 8px rgba(56, 37, 29, 0.16);
+}
+
+.app-tab[aria-current="false"] {
+    color: var(--muted);
+}
+
+.app-tab:not(.is-active):hover {
+    background: #f3ece4;
+    color: #38251d;
+}
+
+.app-panel {
+    min-width: 0;
+    padding: clamp(18px, 3vw, 32px);
+    border: 1px solid #e9e1d9;
+    border-radius: 16px;
+    background: rgba(255, 253, 250, 0.92);
+    box-shadow: 0 12px 35px rgba(56, 37, 29, 0.06);
+}
+
+.product-heading {
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.product-heading h2 {
+    margin: 5px 0 6px;
+    color: #38251d;
+    font-size: clamp(23px, 3vw, 29px);
+    letter-spacing: -0.025em;
+}
+
+.product-heading p:not(.eyebrow) {
+    color: #766b64;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.eyebrow {
+    margin: 0;
+    color: #a66c3f;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+}
+
+.button {
+    min-height: 40px;
+    padding: 9px 13px;
+    border-color: #e2d7cd;
+    border-radius: 8px;
+    background: #fffdfa;
+    color: #49362c;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.button:hover {
+    border-color: #a66c3f;
+}
+
+.button:focus-visible,
+.product-toolbar input:focus-visible,
+.product-form input:focus-visible,
+.product-form select:focus-visible,
+.order-toolbar select:focus-visible {
+    outline: 3px solid rgba(166, 108, 63, 0.2);
+    outline-offset: 1px;
+    border-color: #a66c3f;
+}
+
+.button-primary {
+    border-color: #38251d;
+    background: #38251d;
+    color: white;
+}
+
+.button-primary:hover {
+    border-color: #624333;
+    background: #624333;
+}
+
+.button-danger {
+    border-color: #f0d7d3;
+    background: #fff9f8;
+    color: #a33a32;
+}
+
+.button-danger:hover {
+    border-color: #d6a49e;
+    background: #fff1ef;
+}
+
+.button-small {
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+.product-toolbar {
+    margin-bottom: 16px;
+}
+
+.product-toolbar input,
+.product-form input,
+.product-form select,
+.order-toolbar select {
+    min-height: 42px;
+    padding: 9px 12px;
+    border: 1px solid #e2d9d0;
+    border-radius: 8px;
+    background: #fffdfa;
+    color: #38251d;
+    font: inherit;
+    font-size: 13px;
+}
+
+.product-toolbar input {
+    max-width: 460px;
+}
+
+.product-form {
+    margin: 0 0 20px;
+    padding: clamp(16px, 2.5vw, 24px);
+    border: 1px solid #eadfd4;
+    border-radius: 12px;
+    background: #faf6f0;
+}
+
+.product-form h3 {
+    margin: 0 0 17px;
+    color: #38251d;
+    font-size: 17px;
+}
+
+.product-form label {
+    color: #675a51;
+    font-weight: 600;
+}
+
+.product-form input[type="file"] {
+    min-height: 44px;
+    padding: 7px;
+    background: #fffdfa;
+}
+
+.image-help {
+    color: #83766d;
+}
+
+.table-scroll {
+    border: 1px solid #e8dfd7;
+    border-radius: 12px;
+    background: #fffdfa;
+    box-shadow: 0 3px 12px rgba(56, 37, 29, 0.025);
+}
+
+.product-table th,
+.product-table td {
+    padding: 14px 15px;
+    border-bottom-color: #eee7e0;
+}
+
+.product-table th {
+    background: #f7f2ec;
+    color: #766b64;
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.product-table tbody tr {
+    transition: background-color 120ms ease;
+}
+
+.product-table tbody tr:hover {
+    background: #fdfaf6;
+}
+
+.product-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.product-name {
+    color: #38251d;
+}
+
+.product-thumb {
+    border-color: #e8dfd7;
+    border-radius: 8px;
+}
+
+.status {
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.status-active {
+    background: #e9f2e8;
+    color: #386443;
+}
+
+.status-inactive {
+    background: #f5e9e5;
+    color: #8c4c41;
+}
+
+.status-pending {
+    background: #fff0d7;
+    color: #805000;
+}
+
+.empty-state {
+    padding: 38px 20px !important;
+    color: #83766d;
+}
+
+.order-toolbar {
+    gap: 12px;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.order-toolbar select {
+    min-width: 210px;
+}
+
+.order-feedback {
+    margin: 10px 0 12px;
+    color: #766b64;
+}
+
+.order-table {
+    min-width: 1020px;
+}
+
+.order-table td {
+    line-height: 1.55;
+}
+
+.order-table td small {
+    color: #83766d;
+}
+
+.order-table td strong {
+    color: #49362c;
+}
+
+.order-item-summary {
+    color: #594b42;
+}
+
+.order-item-summary small {
+    color: #83766d;
+}
+
+.order-actions {
+    gap: 7px;
+}
+
+.app-access-message {
+    margin: 48px auto;
+    padding: clamp(24px, 5vw, 40px);
+    border-color: #e9e1d9;
+    border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(56, 37, 29, 0.06);
+    line-height: 1.7;
+}
+
+.app-access-message a {
+    color: #87552f;
+}
+
+@media (max-width: 760px) {
+    .site-header {
+        min-height: 68px;
+        align-items: center;
+        padding: 12px 18px;
+    }
+
+    .site-header .brand {
+        font-size: 24px;
+    }
+
+    .site-header #accountLabel {
+        font-size: 12px;
+        text-align: right;
+    }
+
+    main#app {
+        padding: 22px 14px;
+    }
+
+    .app-panel {
+        padding: 18px 14px;
+    }
+
+    .app-tabs {
+        width: 100%;
+        margin-bottom: 14px;
+    }
+
+    .product-heading {
+        align-items: flex-start;
+    }
+
+    .product-heading > .button {
+        flex: 0 0 auto;
+    }
+
+    .table-scroll {
+        border-radius: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .site-header {
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        padding: 12px 14px;
+    }
+
+    .site-header #accountLabel {
+        flex: 1 1 100%;
+        order: 1;
+        margin: 0;
+        text-align: left;
+    }
+
+    .header-button {
+        margin-left: auto;
+    }
+
+    main#app {
+        padding: 16px 10px;
+    }
+
+    .app-panel {
+        padding: 16px 11px;
+        border-radius: 12px;
+    }
+
+    .product-heading {
+        gap: 12px;
+    }
+
+    .product-heading > .button {
+        max-width: 150px;
+        white-space: normal;
+    }
+
+    .product-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .product-description {
+        grid-column: auto;
+    }
+
+    .form-actions {
+        flex-wrap: wrap;
+    }
+
+    .order-toolbar select {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .header-button,
+    .app-tab,
+    .button,
+    .product-table tbody tr {
+        transition: none;
+    }
+}
