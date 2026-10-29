@@ -176,3 +176,23 @@ with check (exists (
     select 1 from public.profiles p
     where p.id = auth.uid() and p.role in ('admin', 'seller')
 ));
+
+
+-- Allow admins and sellers to upload/update/delete product images in the product-images bucket.
+drop policy if exists "ONCafe staff manage product images" on storage.objects;
+create policy "ONCafe staff manage product images"
+on storage.objects for all to authenticated
+using (
+    bucket_id = 'product-images'
+    and exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid() and p.role in ('admin', 'seller')
+    )
+)
+with check (
+    bucket_id = 'product-images'
+    and exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid() and p.role in ('admin', 'seller')
+    )
+);
