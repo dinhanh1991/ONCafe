@@ -22,4 +22,24 @@ export class OrderService {
 
         return await this.orderRepository.updateStatus(orderId, status);
     }
+
+    async createCounterOrder(order) {
+        if (!order || !Array.isArray(order.items) || order.items.length === 0) {
+            throw new Error("Vui lòng chọn ít nhất một đồ uống.");
+        }
+        if (!String(order.customerName || "").trim()) {
+            throw new Error("Vui lòng nhập tên khách hàng.");
+        }
+        if (!["cash", "qr"].includes(order.paymentMethod)) {
+            throw new Error("Phương thức thanh toán không hợp lệ.");
+        }
+        return await this.orderRepository.createCounterOrder(order);
+    }
+
+    async updatePayment(orderId, paymentStatus) {
+        if (!["paid", "unpaid"].includes(paymentStatus)) {
+            throw new Error("Trạng thái thanh toán không hợp lệ.");
+        }
+        return await this.orderRepository.updatePayment(orderId, paymentStatus);
+    }
 }
