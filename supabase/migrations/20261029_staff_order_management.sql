@@ -112,6 +112,16 @@ begin
     update public.orders
     set status = p_status
     where id = p_order_id;
+
+    -- If staff rejects an order, return the reserved quantities to stock.
+    -- This runs in the same transaction as the status change.
+    if p_status = 'rejected' then
+        update public.products p
+        set quantity = p.quantity + oi.quantity
+        from public.order_items oi
+        where oi.order_id = p_order_id
+          and oi.product_id = p.id;
+    end if;
 end;
 $$;
 
