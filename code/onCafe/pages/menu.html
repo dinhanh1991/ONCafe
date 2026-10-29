@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Khám phá thực đơn đồ uống mẫu của ONCafe.">
+    <meta name="description" content="Khám phá thực đơn đồ uống đang mở bán tại ONCafe.">
     <title>Thực đơn - ONCafe</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/menu.css">
@@ -15,45 +15,21 @@
             <a href="./home.html">Trang chủ</a>
             <a href="./menu.html" aria-current="page">Thực đơn</a>
             <a href="./login.html">Đăng nhập</a>
-    </nav>
+        </nav>
     </header>
 
     <main class="menu-shell">
         <section class="menu-heading">
             <p class="eyebrow">HƯƠNG VỊ ONCAFE</p>
             <h1>Thực đơn của chúng tôi</h1>
-            <p>Chọn thức uống yêu thích và tận hưởng khoảnh khắc thư giãn của bạn.</p>
+            <p>Khám phá các đồ uống đang mở bán tại ONCafe.</p>
         </section>
 
-        <section class="menu-grid" aria-label="Danh sách đồ uống">
-            <article class="menu-card">
-                <img src="../assets/images/bac-xiu.jpg" alt="Một ly bạc xỉu" loading="lazy">
-                <div class="menu-card-content">
-                    <h2>Bạc xỉu</h2>
-                    <p>Vị cà phê dịu nhẹ hòa cùng sữa thơm béo.</p>
-                </div>
-            </article>
-
-            <article class="menu-card">
-                <img src="../assets/images/tra-dao.jpg" alt="Một ly trà đào" loading="lazy">
-                <div class="menu-card-content">
-                    <h2>Trà đào</h2>
-                    <p>Trà thanh mát kết hợp hương đào thơm ngọt.</p>
-                </div>
-            </article>
-
-            <article class="menu-card">
-                <img src="../assets/images/tra-sua.jpg" alt="Một ly trà sữa" loading="lazy">
-                <div class="menu-card-content">
-                    <h2>Trà sữa</h2>
-                    <p>Thức uống béo thơm dành cho những phút nghỉ ngơi.</p>
-                </div>
-            </article>
-        </section>
-
-        <p class="menu-note">
-            Đây là thực đơn minh họa. Sản phẩm và giá bán sẽ được kết nối với Supabase ở bước tiếp theo.
-        </p>
+        <p id="menuStatus" class="menu-status" role="status" aria-live="polite">Đang tải thực đơn...</p>
+        <section id="menuGrid" class="menu-grid" aria-label="Danh sách đồ uống"></section>
+        <p class="menu-note">Thông tin sản phẩm được tải trực tiếp từ hệ thống quản lý ONCafe.</p>
     </main>
+
+    <script type="module" src="../js/menu.js"></script>
 </body>
 </html>
