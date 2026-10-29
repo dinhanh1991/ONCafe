@@ -25,9 +25,10 @@ if (loginForm) {
             const profile = await authService.getMyProfile(result.user.id);
 
             showMessage(message, "Đăng nhập thành công. Đang chuyển trang...");
+            const redirectToMenu = new URLSearchParams(window.location.search).get("redirect") === "menu";
             window.location.href = profile.role === "admin"
                 ? "../index.html"
-                : "./home.html";
+                : (redirectToMenu ? "./menu.html" : "./home.html");
         } catch (error) {
             showMessage(
                 message,
