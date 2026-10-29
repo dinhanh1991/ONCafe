@@ -71,6 +71,13 @@ export class EmployeeView {
                             <label>Email nhân viên
                                 <input name="email" type="email" maxlength="254" autocomplete="email" required>
                             </label>
+                            <label>Vai trò
+                                <select name="role" required>
+                                    <option value="cashier">Thu ngân (Cashier)</option>
+                                    <option value="seller">Người bán hàng (Seller)</option>
+                                    <option value="admin">Quản trị viên (Admin)</option>
+                                </select>
+                            </label>
                             <label data-employee-password-label>Mật khẩu ban đầu
                                 <input name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
                                 <small data-employee-password-help>Dùng ít nhất 8 ký tự; cung cấp cho nhân viên qua kênh riêng.</small>
@@ -121,7 +128,7 @@ export class EmployeeView {
             <tr>
                 <td class="product-name">${escapeHtml(employee.full_name)}</td>
                 <td>${escapeHtml(employee.email)}</td>
-                <td><span class="status status-active">Thu ngân</span></td>
+                <td><span class="status status-active">${escapeHtml(({ admin: "Quản trị viên", cashier: "Thu ngân", seller: "Người bán hàng" })[employee.role] || employee.role || "Chưa xác định")}</span></td>
                 <td class="row-actions">
                     <button class="button button-small" type="button" data-employee-action="edit" data-id="${escapeHtml(employee.id)}" ${this.busy ? "disabled" : ""}>Sửa</button>
                     <button class="button button-small button-danger" type="button" data-employee-action="delete" data-id="${escapeHtml(employee.id)}" ${this.busy ? "disabled" : ""}>Xóa</button>
@@ -161,6 +168,8 @@ export class EmployeeView {
             employee ? "Cập nhật thông tin tài khoản thu ngân." : "Tạo tài khoản thu ngân mới.";
         form.querySelector('[name="fullName"]').value = employee?.full_name ?? "";
         form.querySelector('[name="email"]').value = employee?.email ?? "";
+        form.querySelector('[name="email"]').readOnly = Boolean(employee);
+        form.querySelector('[name="role"]').value = employee?.role ?? "cashier";
 
         const passwordInput = form.querySelector('[name="password"]');
         const passwordLabel = form.querySelector("[data-employee-password-label]");
@@ -194,7 +203,8 @@ export class EmployeeView {
         const employee = {
             fullName: String(formData.get("fullName") || "").trim(),
             email: String(formData.get("email") || "").trim(),
-            password: String(formData.get("password") || "")
+            password: String(formData.get("password") || ""),
+            role: String(formData.get("role") || "cashier")
         };
         const wasEditing = this.editingId !== null;
         if (wasEditing) employee.id = this.editingId;
