@@ -28,13 +28,18 @@ export class ProductService {
     async addProduct(data) {
         this.validate(data);
 
+        let imageUrl = "";
+        if (data.imageFile) {
+            imageUrl = await this.productRepository.uploadImage(data.imageFile);
+        }
+
         const product = new Product(
             null,
             data.name.trim(),
             Number(data.price),
             data.category.trim(),
             Number(data.quantity),
-            data.imageUrl || "",
+            imageUrl,
             data.status || "active"
         );
 
@@ -45,12 +50,20 @@ export class ProductService {
         await this.getProductById(id);
         this.validate(data);
 
+        let imageUrl = this.productRepository.findById
+            ? (await this.productRepository.findById(Number(id)))?.imageUrl ?? ""
+            : "";
+
+        if (data.imageFile) {
+            imageUrl = await this.productRepository.uploadImage(data.imageFile);
+        }
+
         const updatedData = {
             name: data.name.trim(),
             price: Number(data.price),
             category: data.category.trim(),
             quantity: Number(data.quantity),
-            imageUrl: data.imageUrl || "",
+            imageUrl,
             status: data.status || "active"
         };
 
