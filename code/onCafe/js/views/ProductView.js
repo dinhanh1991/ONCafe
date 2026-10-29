@@ -147,18 +147,29 @@ export class ProductView {
     }
 
     handleClick(event) {
-        const button = event.target.closest("button[data-action], button[data-dialog-action]");
+        const button = event.target.closest("button[data-action], button[data-dialog-action], button[data-product-page]");
         if (!button || !this.container.contains(button)) return;
+
+        if (button.hasAttribute("data-product-page")) {
+            const requestedPage = Number.parseInt(button.dataset.productPage, 10);
+            const term = this.searchTerm.trim().toLocaleLowerCase("vi");
+            const products = this.products.filter((product) =>
+                `${product.name ?? ""} ${product.category ?? ""}`.toLocaleLowerCase("vi").includes(term)
+            );
+            const totalPages = Math.max(1, Math.ceil(products.length / this.pageSize));
+            if (Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= totalPages) {
+                this.currentPage = requestedPage;
+                this.renderList();
+            }
+            return;
+        }
 
         if (button.dataset.dialogAction) {
             this.handleDialogAction(button.dataset.dialogAction);
             return;
         }
 
-        if (button.hasAttribute("data-product-page")) {
-            this.currentPage = Number(button.dataset.productPage) || 1;
-            this.renderList();
-        } else if (button.dataset.action === "new") {
+        if (button.dataset.action === "new") {
             this.openForm();
         } else if (button.dataset.action === "cancel") {
             this.closeForm();

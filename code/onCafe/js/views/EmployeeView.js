@@ -170,13 +170,25 @@ export class EmployeeView {
             return;
         }
 
+        const pageButton = event.target.closest("button[data-employee-page]");
+        if (pageButton && this.container.contains(pageButton)) {
+            const requestedPage = Number.parseInt(pageButton.dataset.employeePage, 10);
+            const term = this.searchTerm.trim().toLocaleLowerCase("vi");
+            const employees = this.employees.filter((employee) =>
+                `${employee.full_name ?? ""} ${employee.email ?? ""}`.toLocaleLowerCase("vi").includes(term)
+            );
+            const totalPages = Math.max(1, Math.ceil(employees.length / this.pageSize));
+            if (Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= totalPages) {
+                this.currentPage = requestedPage;
+                this.renderList();
+            }
+            return;
+        }
+
         const button = event.target.closest("[data-employee-action]");
         if (!button || !this.container.contains(button) || this.busy) return;
 
-        if (button.hasAttribute("data-employee-page")) {
-            this.currentPage = Number(button.dataset.employeePage) || 1;
-            this.renderList();
-        } else if (button.dataset.employeeAction === "new") {
+        if (button.dataset.employeeAction === "new") {
             this.openForm();
         } else if (button.dataset.employeeAction === "back") {
             this.closeForm();
