@@ -118,6 +118,15 @@ async function startApp() {
         </section>`;
     dashboardPanel.querySelector("[data-dashboard-greeting]").textContent =
         `Chào mừng trở lại, ${profile.full_name || "Quản trị viên"}`;
+    dashboardPanel.querySelectorAll("[data-open-section]").forEach((button) => {
+        const targetSection = button.dataset.openSection;
+        const allowed = targetSection === "drinks"
+            ? canManageProducts
+            : targetSection === "employees"
+                ? canManageEmployees
+                : targetSection === "orders";
+        button.hidden = !allowed;
+    });
     const orderPanel = document.createElement("section");
     orderPanel.className = "app-panel";
     orderPanel.dataset.panel = "orders";
