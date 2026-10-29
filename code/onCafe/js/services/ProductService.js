@@ -47,12 +47,10 @@ export class ProductService {
     }
 
     async updateProduct(id, data) {
-        await this.getProductById(id);
+        const existingProduct = await this.getProductById(id);
         this.validate(data);
 
-        let imageUrl = this.productRepository.findById
-            ? (await this.productRepository.findById(Number(id)))?.imageUrl ?? ""
-            : "";
+        let imageUrl = existingProduct.imageUrl || "";
 
         if (data.imageFile) {
             imageUrl = await this.productRepository.uploadImage(data.imageFile);
