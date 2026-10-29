@@ -5,6 +5,7 @@ import { ProductService } from "./services/ProductService.js";
 import { ProductView } from "./views/ProductView.js";
 import { EmployeeService } from "./services/EmployeeService.js";
 import { EmployeeView } from "./views/EmployeeView.js";
+import { EmployeeProfileView } from "./views/EmployeeProfileView.js";
 import { OrderRepository } from "./repositories/OrderRepo.js";
 import { OrderService } from "./services/OrderService.js";
 import { OrderView } from "./views/OrderView.js";
@@ -118,6 +119,8 @@ async function startApp() {
     let productView = null;
     let employeePanel = null;
     let employeeView = null;
+    let profilePanel = null;
+    let employeeProfileView = null;
     let revenuePanel = null;
     let navigation = null;
     let pageTitle = null;
@@ -140,7 +143,8 @@ async function startApp() {
             ["◈", "Quản lý đồ uống", "drinks"],
             ["♙", "Quản lý nhân viên", "employees"],
             ["↗", "Chi tiết doanh thu", "revenue"],
-            ["☷", "Quản lý đơn hàng", "orders"]
+            ["☷", "Quản lý đơn hàng", "orders"],
+            ["♙", "Thông tin tài khoản", "my-profile"]
         ].forEach(([icon, label, section]) => navigation.append(createNavButton(icon, label, section)));
         sidebar.append(navigation);
 
@@ -179,6 +183,11 @@ async function startApp() {
             </section>`;
         panels.append(revenuePanel);
         panels.append(orderPanel);
+        profilePanel = document.createElement("section");
+        profilePanel.className = "app-panel";
+        profilePanel.dataset.panel = "my-profile";
+        profilePanel.hidden = true;
+        panels.append(profilePanel);
         adminMain.append(contentHeading, panels);
         workspace.append(sidebar, adminMain);
     } else {
@@ -201,6 +210,12 @@ async function startApp() {
             onDelete: (id) => employeeService.deleteEmployee(id)
         });
         employeeView.render();
+        employeeProfileView = new EmployeeProfileView(profilePanel, {
+            onLoad: () => employeeService.getMyProfile(),
+            onSave: (data) => employeeService.updateMyProfile(data),
+            onChangePassword: (password) => employeeService.changeMyPassword(password)
+        });
+        void employeeProfileView.render();
     }
 
     const orderView = new OrderView(orderPanel, {
@@ -246,7 +261,8 @@ async function startApp() {
         drinks: ["Quản lý đồ uống", "Danh sách, thông tin và số lượng đồ uống trong quán."],
         employees: ["Quản lý nhân viên", "Quản lý tài khoản và thông tin nhân viên."],
         revenue: ["Chi tiết doanh thu", "Báo cáo doanh thu và hiệu quả kinh doanh."],
-        orders: ["Quản lý đơn hàng", "Theo dõi và cập nhật trạng thái đơn hàng."]
+        orders: ["Quản lý đơn hàng", "Theo dõi và cập nhật trạng thái đơn hàng."],
+        "my-profile": ["Thông tin tài khoản", "Cập nhật thông tin cá nhân và mật khẩu đăng nhập."]
     };
 
     function activateSection(sectionName) {
