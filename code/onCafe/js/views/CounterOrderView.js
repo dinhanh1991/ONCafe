@@ -25,7 +25,7 @@ export class CounterOrderView {
                 <p data-counter-feedback role="status" aria-live="polite"></p>
                 <form data-counter-form class="product-form">
                     <div class="product-form-grid">
-                        <label>Tên khách hàng<input name="customerName" maxlength="100" placeholder="Khách lẻ" required></label>
+                        <label>Tên khách hàng<input name="customerName" maxlength="100" value="Khách lẻ" required></label>
                         <label>Số điện thoại<input name="customerPhone" type="tel" maxlength="25" placeholder="Không bắt buộc"></label>
                         <label>Địa chỉ / ghi chú<input name="customerAddress" maxlength="250" placeholder="Không bắt buộc"></label>
                         <label>Thanh toán<select name="paymentMethod"><option value="cash">Tiền mặt</option><option value="qr">Chuyển khoản QR</option></select></label>
