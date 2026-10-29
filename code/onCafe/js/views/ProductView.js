@@ -105,7 +105,7 @@ export class ProductView {
     }
 
     handleClick(event) {
-        const button = event.target.closest("button[data-action]");
+        const button = event.target.closest("button[data-action], button[data-dialog-action]");
         if (!button || !this.container.contains(button)) return;
 
         if (button.dataset.action === "new") {
