@@ -159,10 +159,10 @@ async function startApp() {
             ["▦", "Tổng quan", "overview", true],
             ["◈", "Quản lý đồ uống", "drinks", canManageProducts],
             ["♙", "Quản lý nhân viên", "employees", canManageEmployees],
-            ["★", "Đồ uống bán chạy", "popular", isAdmin || isSeller],
-            ["↗", "Báo cáo doanh thu", "revenue", isAdmin || isCashier],
-            ["₫", "Tổng hợp chi tiêu", "expenses", isAdmin || isCashier],
             ["☷", "Quản lý đơn hàng", "orders", true],
+            ["↗", "Báo cáo doanh thu", "revenue", isAdmin || isCashier],
+            ["★", "Đồ uống bán chạy", "popular", isAdmin || isSeller],
+            ["₫", "Tổng hợp chi tiêu", "expenses", isAdmin || isCashier],
             ["♙", "Thông tin tài khoản", "my-profile", true]
         ];
         navItems.filter((item) => item[3]).forEach(([icon, label, section]) =>
