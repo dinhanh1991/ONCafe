@@ -4,11 +4,13 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 export class CounterOrderView {
-    constructor(container, { onLoadProducts, onCreateOrder, onCreated }) {
+    constructor(container, { onLoadProducts, onCreateOrder, onCreated, onSimulateQrPayment }) {
         this.container = container;
         this.onLoadProducts = onLoadProducts;
         this.onCreateOrder = onCreateOrder;
         this.onCreated = onCreated;
+        this.onSimulateQrPayment = onSimulateQrPayment;
+        this.pendingQrOrder = null;
         this.products = [];
         this.cart = new Map();
         this.busy = false;
@@ -89,6 +91,11 @@ export class CounterOrderView {
     }
 
     async handleClick(event) {
+        const simulateButton = event.target.closest("[data-qr-simulate-payment]");
+        if (simulateButton) {
+            await this.simulateQrPayment(simulateButton);
+            return;
+        }
         if (!event.target.closest("[data-counter-refresh]")) return;
         await this.loadProducts();
     }
@@ -116,15 +123,81 @@ export class CounterOrderView {
                 items
             });
             this.cart.clear();
+            const paymentMethod = form.elements.paymentMethod.value;
             form.reset();
-            this.setFeedback(`Đã tạo đơn ${result.order_code} — ${formatCurrency(result.total_amount)}. Đơn đang chờ xác nhận và chưa được ghi nhận là đã thanh toán.`);
             await this.loadProducts();
             await this.onCreated();
+            if (paymentMethod === "qr") {
+                this.pendingQrOrder = result;
+                this.renderQrSimulation(result);
+                this.setFeedback("Đơn đã tạo. Đây là màn hình QR mô phỏng phục vụ bài tập; chưa có giao dịch thật.");
+            } else {
+                this.pendingQrOrder = null;
+                this.removeQrSimulation();
+                this.setFeedback(`Đã tạo đơn ${result.order_code} — ${formatCurrency(result.total_amount)}. Đơn đang chờ xác nhận; hãy xác nhận thu tiền tại mục Quản lý đơn hàng sau khi nhận tiền mặt.`);
+            }
         } catch (error) {
             this.setFeedback(error.message || "Không thể tạo đơn hàng.", true);
         } finally {
             this.busy = false;
             button.disabled = false;
+        }
+    }
+
+
+    renderQrSimulation(order) {
+        this.removeQrSimulation();
+        const panel = document.createElement("section");
+        panel.className = "qr-demo-panel";
+        panel.dataset.qrDemoPanel = "";
+        panel.innerHTML = `
+            <div class="qr-demo-copy">
+                <p class="eyebrow">THANH TOÁN QR · CHẾ ĐỘ THỬ NGHIỆM</p>
+                <h3>Đơn ${escapeHtml(order.order_code || "#" + order.id)}</h3>
+                <p>Tổng tiền cần thanh toán</p>
+                <strong class="qr-demo-amount">${formatCurrency(order.total_amount)}</strong>
+                <p class="qr-demo-warning">QR minh họa, không thể quét để chuyển tiền. Nút bên dưới chỉ giả lập kết quả thanh toán thành công cho bài tập.</p>
+                <button class="button button-primary" type="button" data-qr-simulate-payment>Giả lập khách đã chuyển khoản</button>
+                <p data-qr-demo-feedback role="status" aria-live="polite"></p>
+            </div>
+            <div class="qr-demo-code" role="img" aria-label="Hình QR minh họa, không dùng để thanh toán thật">
+                <span class="qr-corner qr-corner-top-left"></span><span class="qr-corner qr-corner-top-right"></span>
+                <span class="qr-corner qr-corner-bottom-left"></span><span class="qr-demo-pixels"></span>
+                <small>DEMO · NOT PAYABLE</small>
+            </div>`;
+        this.container.querySelector(".counter-order").append(panel);
+    }
+
+    removeQrSimulation() {
+        this.container.querySelector("[data-qr-demo-panel]")?.remove();
+    }
+
+    async simulateQrPayment(button) {
+        const order = this.pendingQrOrder;
+        if (!order || !order.id || this.busy) {
+            this.setFeedback("Không tìm thấy đơn hàng cần mô phỏng thanh toán.", true);
+            return;
+        }
+        this.busy = true;
+        button.disabled = true;
+        const feedback = this.container.querySelector("[data-qr-demo-feedback]");
+        if (feedback) feedback.textContent = "Đang cập nhật trạng thái thanh toán...";
+        try {
+            await this.onSimulateQrPayment(order.id);
+            if (feedback) {
+                feedback.textContent = "Mô phỏng thành công: đơn đã được ghi nhận ĐÃ THANH TOÁN. Không có tiền thật được chuyển.";
+                feedback.className = "qr-demo-success";
+            }
+            button.textContent = "Đã mô phỏng thanh toán";
+            await this.onCreated();
+        } catch (error) {
+            if (feedback) {
+                feedback.textContent = error.message || "Không thể cập nhật trạng thái thanh toán.";
+                feedback.className = "app-error";
+            }
+            button.disabled = false;
+        } finally {
+            this.busy = false;
         }
     }
 
