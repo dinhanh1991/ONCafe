@@ -24,7 +24,7 @@ export class OrderView {
         this.orders = [];
         this.filter = "all";
         this.currentPage = 1;
-        this.pageSize = 10;
+        this.pageSize = 5;
         this.busy = new Set();
         this.container.addEventListener("click", (event) => this.handleClick(event));
         this.container.addEventListener("change", (event) => this.handleChange(event));
@@ -75,7 +75,7 @@ export class OrderView {
             return;
         }
 
-        pagination.innerHTML = `<span>Trang ${this.currentPage} / ${totalPages} · ${orders.length} đơn hàng</span>
+        pagination.innerHTML = `<span>Trang ${this.currentPage} / ${totalPages} · ${orders.length} đơn hàng · 5 đơn/trang</span>
             <div class="pagination-actions">
                 <button class="button button-small" type="button" data-order-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
                 <button class="button button-small" type="button" data-order-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
@@ -118,10 +118,20 @@ export class OrderView {
     }
 
     async handleClick(event) {
-        const pageButton = event.target.closest("[data-order-page]");
+        const pageButton = event.target instanceof Element
+            ? event.target.closest("button[data-order-page]")
+            : null;
         if (pageButton && this.container.contains(pageButton)) {
-            this.currentPage = Number(pageButton.dataset.orderPage) || 1;
-            this.renderList();
+            event.preventDefault();
+            const requestedPage = Number.parseInt(pageButton.dataset.orderPage, 10);
+            const filteredOrders = this.filter === "all"
+                ? this.orders
+                : this.orders.filter((order) => order.status === this.filter);
+            const totalPages = Math.max(1, Math.ceil(filteredOrders.length / this.pageSize));
+            if (Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= totalPages) {
+                this.currentPage = requestedPage;
+                this.renderList();
+            }
             return;
         }
         if (event.target.closest("[data-order-refresh]")) {
