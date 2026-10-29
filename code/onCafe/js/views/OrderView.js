@@ -101,13 +101,15 @@ export class OrderView {
     }
 
     getActions(order) {
-        if (["completed", "cancelled", "rejected"].includes(order.status)) return [];
+        // Chỉ cho phép chuyển trạng thái theo đúng quy trình xử lý đơn hàng.
         if (order.status === "pending") return [
-            ["confirmed", "Xác nhận", "button-primary"], ["rejected", "Từ chối", "button-danger"], ["preparing", "Pha chế"]
+            ["confirmed", "Xác nhận", "button-primary"],
+            ["rejected", "Từ chối", "button-danger"]
         ];
-        if (order.status === "confirmed") return [["preparing", "Pha chế"], ["delivering", "Đang giao"], ["completed", "Hoàn tất"]];
-        if (order.status === "preparing") return [["delivering", "Bắt đầu giao"], ["completed", "Hoàn tất"]];
-        if (order.status === "delivering") return [["completed", "Hoàn tất", "button-primary"]];
+        if (order.status === "confirmed") return [["preparing", "Bắt đầu pha chế", "button-primary"]];
+        if (order.status === "preparing") return [["delivering", "Bắt đầu giao", "button-primary"]];
+        if (order.status === "delivering") return [["completed", "Hoàn tất đơn", "button-primary"]];
+        // Đơn hoàn tất, bị từ chối hoặc đã hủy không còn thao tác.
         return [];
     }
 
