@@ -289,7 +289,14 @@ async function startApp() {
 
     const orderView = new OrderView(orderPanel, {
         onUpdateStatus: (id, status) => orderService.updateStatus(id, status),
+        onUpdatePayment: (id, status) => orderService.updatePayment(id, status),
         onRefresh: () => orderService.getStaffOrders()
+    });
+
+    const counterOrderView = new CounterOrderView(counterPanel, {
+        onLoadProducts: () => productService.getAllProducts(),
+        onCreateOrder: (order) => orderService.createCounterOrder(order),
+        onCreated: () => orderView.refresh()
     });
 
     async function loadProducts() {
