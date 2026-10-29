@@ -1354,6 +1354,63 @@ main#app {
     gap: 12px;
 }
 
+.seller-dashboard-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.seller-sales-card {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+}
+
+.seller-sales-chart {
+    display: grid;
+    gap: 14px;
+}
+
+.seller-sales-row {
+    display: grid;
+    grid-template-columns: minmax(100px, 0.8fr) minmax(0, 2fr) 36px;
+    align-items: center;
+    gap: 12px;
+}
+
+.seller-sales-name {
+    overflow: hidden;
+    color: #49362c;
+    font-size: 12px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.seller-sales-track {
+    height: 12px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #f1ebe4;
+}
+
+.seller-sales-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #a66c3f, #d6b38d);
+}
+
+.seller-sales-row strong {
+    color: #38251d;
+    font-size: 12px;
+    text-align: right;
+}
+
+.seller-sales-empty {
+    margin: 0;
+    color: #766b64;
+    font-size: 12px;
+}
+
 .dashboard-shortcut {
     display: flex;
     min-height: 56px;

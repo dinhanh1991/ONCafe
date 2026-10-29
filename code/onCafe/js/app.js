@@ -85,7 +85,34 @@ async function startApp() {
     const dashboardPanel = document.createElement("section");
     dashboardPanel.className = "admin-panel";
     dashboardPanel.dataset.panel = "overview";
-    dashboardPanel.innerHTML = `
+    dashboardPanel.innerHTML = isSeller ? `
+        <section class="dashboard-welcome">
+            <p class="eyebrow">TỔNG QUAN BÁN HÀNG</p>
+            <h2 data-dashboard-greeting></h2>
+            <p>Theo dõi đơn hàng hoàn tất và các đồ uống được khách hàng lựa chọn nhiều nhất.</p>
+        </section>
+        <section class="dashboard-metrics seller-dashboard-metrics" aria-label="Thống kê bán hàng">
+            <article class="dashboard-metric"><span>Đơn hàng đã đặt</span><strong data-seller-order-count>—</strong><small>Tất cả trạng thái</small></article>
+            <article class="dashboard-metric"><span>Đơn hàng hoàn tất</span><strong data-seller-completed-count>—</strong><small>Đơn đã giao thành công</small></article>
+            <article class="dashboard-metric"><span>Đồ uống đã bán</span><strong data-seller-units-sold>—</strong><small>Tính từ đơn hàng hoàn tất</small></article>
+        </section>
+        <section class="dashboard-report-card seller-sales-card">
+            <div>
+                <p class="eyebrow">MẶT HÀNG ĐƯỢC ƯA CHUỘNG</p>
+                <h3>Số lượng đồ uống đã bán</h3>
+                <p>Thống kê theo số lượng từng món trong các đơn hàng hoàn tất.</p>
+            </div>
+            <div class="seller-sales-chart" data-seller-sales-chart aria-live="polite">
+                <p role="status">Đang tải thống kê bán hàng...</p>
+            </div>
+        </section>
+        <section class="dashboard-shortcuts">
+            <h3>Truy cập nhanh</h3>
+            <div>
+                <button class="dashboard-shortcut" type="button" data-open-section="drinks"><span aria-hidden="true">◈</span> Quản lý đồ uống <b aria-hidden="true">→</b></button>
+                <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Quản lý đơn hàng <b aria-hidden="true">→</b></button>
+            </div>
+        </section>` : `
         <section class="dashboard-welcome">
             <p class="eyebrow">TỔNG QUAN ONCAFE</p>
             <h2 data-dashboard-greeting></h2>
@@ -112,7 +139,6 @@ async function startApp() {
             <h3>Truy cập nhanh</h3>
             <div>
                 <button class="dashboard-shortcut" type="button" data-open-section="drinks"><span aria-hidden="true">◈</span> Quản lý đồ uống <b aria-hidden="true">→</b></button>
-                <button class="dashboard-shortcut" type="button" data-open-section="employees"><span aria-hidden="true">♙</span> Quản lý nhân viên <b aria-hidden="true">→</b></button>
                 <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Xem đơn hàng <b aria-hidden="true">→</b></button>
             </div>
         </section>`;
@@ -292,7 +318,7 @@ async function startApp() {
     }
 
     const sectionDetails = {
-        overview: ["Tổng quan", "Theo dõi nhanh tình hình hoạt động của ONCafe."],
+        overview: ["Tổng quan", isSeller ? "Theo dõi đơn hàng và mặt hàng được khách lựa chọn." : "Theo dõi nhanh tình hình hoạt động của ONCafe."],
         drinks: ["Quản lý đồ uống", "Danh sách, thông tin và số lượng đồ uống trong quán."],
         employees: ["Quản lý nhân viên", "Quản lý tài khoản và thông tin nhân viên."],
         revenue: ["Báo cáo doanh thu", "Báo cáo doanh thu và hiệu quả kinh doanh."],
@@ -320,6 +346,7 @@ async function startApp() {
         if (sectionName === "drinks" && canManageProducts) loadProducts();
         if (sectionName === "employees" && canManageEmployees) loadEmployees();
         if (sectionName === "orders") loadOrders();
+        if (sectionName === "overview" && isSeller) loadSellerOverview();
     }
 
     if (navigation) {
@@ -332,6 +359,74 @@ async function startApp() {
             if (button) activateSection(button.dataset.openSection);
         });
     }
+
+    async function loadSellerOverview() {
+        const chart = dashboardPanel.querySelector("[data-seller-sales-chart]");
+        if (!chart) return;
+        chart.replaceChildren();
+        const loading = document.createElement("p");
+        loading.setAttribute("role", "status");
+        loading.textContent = "Đang tải thống kê bán hàng...";
+        chart.append(loading);
+
+        try {
+            const orders = await orderService.getStaffOrders();
+            const completedOrders = orders.filter((order) => order.status === "completed");
+            const salesByProduct = new Map();
+            for (const order of completedOrders) {
+                for (const item of Array.isArray(order.items) ? order.items : []) {
+                    const name = String(item.product_name || "Đồ uống không tên");
+                    const quantity = Number(item.quantity);
+                    if (!Number.isFinite(quantity) || quantity <= 0) continue;
+                    salesByProduct.set(name, (salesByProduct.get(name) || 0) + quantity);
+                }
+            }
+
+            const totalUnitsSold = [...salesByProduct.values()].reduce((total, quantity) => total + quantity, 0);
+            dashboardPanel.querySelector("[data-seller-order-count]").textContent = String(orders.length);
+            dashboardPanel.querySelector("[data-seller-completed-count]").textContent = String(completedOrders.length);
+            dashboardPanel.querySelector("[data-seller-units-sold]").textContent = String(totalUnitsSold);
+
+            const topProducts = [...salesByProduct.entries()]
+                .sort((first, second) => second[1] - first[1] || first[0].localeCompare(second[0], "vi"))
+                .slice(0, 5);
+            chart.replaceChildren();
+            if (!topProducts.length) {
+                const empty = document.createElement("p");
+                empty.className = "seller-sales-empty";
+                empty.textContent = "Chưa có đồ uống nào được bán trong đơn hàng hoàn tất.";
+                chart.append(empty);
+                return;
+            }
+
+            const maxQuantity = topProducts[0][1];
+            for (const [name, quantity] of topProducts) {
+                const row = document.createElement("div");
+                row.className = "seller-sales-row";
+                const label = document.createElement("span");
+                label.className = "seller-sales-name";
+                label.textContent = name;
+                const track = document.createElement("div");
+                track.className = "seller-sales-track";
+                const bar = document.createElement("span");
+                bar.style.width = `${Math.max(4, (quantity / maxQuantity) * 100)}%`;
+                track.append(bar);
+                const value = document.createElement("strong");
+                value.textContent = String(quantity);
+                row.append(label, track, value);
+                chart.append(row);
+            }
+        } catch (error) {
+            console.error("Không thể tải thống kê bán hàng:", error);
+            chart.replaceChildren();
+            const message = document.createElement("p");
+            message.className = "app-error";
+            message.setAttribute("role", "alert");
+            message.textContent = error.message || "Không thể tải thống kê bán hàng.";
+            chart.append(message);
+        }
+    }
+
     activateSection("overview");
 }
 
