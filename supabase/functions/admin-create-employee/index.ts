@@ -23,7 +23,7 @@ Deno.serve(async (request: Request) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !anonKey || !serviceRoleKey) {
@@ -62,6 +62,7 @@ Deno.serve(async (request: Request) => {
         const body = await request.json();
         const fullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
         const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+        const password = typeof body.password === "string" ? body.password : "";
         const role = body.role;
 
         if (fullName.length < 2 || fullName.length > 100) {
@@ -70,35 +71,39 @@ Deno.serve(async (request: Request) => {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
             return jsonResponse({ error: "Email không hợp lệ." }, 400);
         }
+        if (password.length < 8 || password.length > 72) {
+            return jsonResponse({ error: "Mật khẩu phải từ 8 đến 72 ký tự." }, 400);
+        }
         if (role !== "cashier") {
             return jsonResponse({ error: "Hiện chỉ cho phép tạo nhân viên với vai trò thu ngân." }, 400);
         }
 
-        const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-            data: { full_name: fullName }
+        const { data: createdData, error: createError } = await adminClient.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true,
+            user_metadata: { full_name: fullName }
         });
-        if (inviteError || !inviteData.user) {
-            return jsonResponse({ error: inviteError?.message || "Không thể gửi lời mời tài khoản." }, 400);
+        if (createError || !createdData.user) {
+            return jsonResponse({ error: createError?.message || "Không thể tạo tài khoản nhân viên." }, 400);
         }
 
         const { error: profileError } = await adminClient
             .from("profiles")
             .upsert({
-                id: inviteData.user.id,
+                id: createdData.user.id,
                 full_name: fullName,
                 role: "cashier"
             }, { onConflict: "id" });
 
         if (profileError) {
-            return jsonResponse({
-                error: "Tài khoản đã được mời nhưng chưa cập nhật được vai trò. Hãy kiểm tra hồ sơ nhân viên trong Supabase.",
-                userId: inviteData.user.id
-            }, 500);
+            await adminClient.auth.admin.deleteUser(createdData.user.id);
+            return jsonResponse({ error: "Không thể tạo hồ sơ nhân viên. Tài khoản vừa tạo đã được hoàn tác." }, 500);
         }
 
         return jsonResponse({
-            message: "Đã gửi email mời nhân viên. Nhân viên cần mở email để hoàn tất tài khoản.",
-            employee: { id: inviteData.user.id, full_name: fullName, email, role: "cashier" }
+            message: "Đã tạo tài khoản thu ngân. Hãy cung cấp email đăng nhập và mật khẩu ban đầu cho nhân viên một cách an toàn.",
+            employee: { id: createdData.user.id, full_name: fullName, email, role: "cashier" }
         }, 201);
     } catch (error) {
         console.error("admin-create-employee:", error);
