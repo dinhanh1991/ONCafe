@@ -23,6 +23,8 @@ export class OrderView {
         this.onRefresh = onRefresh;
         this.orders = [];
         this.filter = "all";
+        this.currentPage = 1;
+        this.pageSize = 10;
         this.busy = new Set();
         this.container.addEventListener("click", (event) => this.handleClick(event));
         this.container.addEventListener("change", (event) => this.handleChange(event));
@@ -50,6 +52,7 @@ export class OrderView {
                     <thead><tr><th>Mã đơn / Thời gian</th><th>Khách hàng</th><th>Chi tiết món / Tổng tiền</th><th>Trạng thái đơn</th><th>Thanh toán</th><th>Thao tác</th></tr></thead>
                     <tbody data-order-list></tbody>
                 </table></div>
+                <nav class="product-pagination" data-order-pagination aria-label="Phân trang đơn hàng"></nav>
             </section>`;
         this.renderList();
         return this;
@@ -60,11 +63,25 @@ export class OrderView {
         if (!list) return;
         const orders = this.filter === "all" ? this.orders : this.orders.filter((o) => o.status === this.filter);
         this.container.querySelector("[data-order-count]").textContent = `${orders.length} đơn hàng`;
+        const pagination = this.container.querySelector("[data-order-pagination]");
+        const totalPages = Math.max(1, Math.ceil(orders.length / this.pageSize));
+        this.currentPage = Math.min(this.currentPage, totalPages);
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const pageOrders = orders.slice(startIndex, startIndex + this.pageSize);
+
         if (!orders.length) {
             list.innerHTML = '<tr><td class="empty-state" colspan="6">Không có đơn hàng ở trạng thái này.</td></tr>';
+            pagination.innerHTML = "";
             return;
         }
-        list.innerHTML = orders.map((order) => {
+
+        pagination.innerHTML = `<span>Trang ${this.currentPage} / ${totalPages} · ${orders.length} đơn hàng</span>
+            <div class="pagination-actions">
+                <button class="button button-small" type="button" data-order-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
+                <button class="button button-small" type="button" data-order-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
+            </div>`;
+
+        list.innerHTML = pageOrders.map((order) => {
             const items = (order.items || []).map((item) =>
                 `<div>${escapeHtml(item.product_name)} × ${escapeHtml(item.quantity)} <small>(${formatCurrency(Number(item.subtotal) || 0)})</small></div>`
             ).join("") || "Không có chi tiết món";
@@ -101,6 +118,12 @@ export class OrderView {
     }
 
     async handleClick(event) {
+        const pageButton = event.target.closest("[data-order-page]");
+        if (pageButton && this.container.contains(pageButton)) {
+            this.currentPage = Number(pageButton.dataset.orderPage) || 1;
+            this.renderList();
+            return;
+        }
         if (event.target.closest("[data-order-refresh]")) {
             await this.refresh();
             return;
@@ -144,6 +167,7 @@ export class OrderView {
     handleChange(event) {
         if (!event.target.matches("[data-order-filter]")) return;
         this.filter = event.target.value;
+        this.currentPage = 1;
         this.renderList();
     }
 
