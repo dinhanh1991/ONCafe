@@ -75,7 +75,7 @@ Deno.serve(async (request: Request) => {
             const { data: profiles, error: profilesError } = await adminClient
                 .from("profiles")
                 .select("id, full_name, role")
-                .eq("role", "cashier")
+                .in("role", ["admin", "cashier", "seller"])
                 .order("full_name", { ascending: true });
             if (profilesError) {
                 console.error("Không thể tải hồ sơ nhân viên:", profilesError);
@@ -110,6 +110,8 @@ Deno.serve(async (request: Request) => {
             const fullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
             const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
             const password = typeof body.password === "string" ? body.password : "";
+            const role = typeof body.role === "string" ? body.role : "";
+            if (!["admin", "cashier", "seller"].includes(role)) return jsonResponse({ error: "Vai trò không hợp lệ." }, 400);
             if (fullName.length < 2 || fullName.length > 100) {
                 return jsonResponse({ error: "Họ tên phải từ 2 đến 100 ký tự." }, 400);
             }
@@ -132,7 +134,7 @@ Deno.serve(async (request: Request) => {
 
             const { error: profileError } = await adminClient
                 .from("profiles")
-                .upsert({ id: createdData.user.id, full_name: fullName, role: "cashier" }, { onConflict: "id" });
+                .upsert({ id: createdData.user.id, full_name: fullName, role }, { onConflict: "id" });
             if (profileError) {
                 console.error("Không thể tạo hồ sơ nhân viên:", profileError);
                 const { error: rollbackError } = await adminClient.auth.admin.deleteUser(createdData.user.id);
@@ -146,7 +148,7 @@ Deno.serve(async (request: Request) => {
             }
 
             return jsonResponse({
-                employee: { id: createdData.user.id, full_name: fullName, email, role: "cashier" }
+                employee: { id: createdData.user.id, full_name: fullName, email, role }
             }, 201);
         }
 
@@ -170,7 +172,7 @@ Deno.serve(async (request: Request) => {
                 .from("profiles")
                 .select("id, full_name, role")
                 .eq("id", id)
-                .eq("role", "cashier")
+                .in("role", ["admin", "cashier", "seller"])
                 .maybeSingle();
             if (profileError || !profile) {
                 return jsonResponse({ error: "Không tìm thấy nhân viên cần cập nhật." }, 404);
@@ -183,7 +185,7 @@ Deno.serve(async (request: Request) => {
 
             const { error: profileUpdateError } = await adminClient
                 .from("profiles")
-                .update({ full_name: fullName })
+                .update({ full_name: fullName, role })
                 .eq("id", id)
                 .eq("role", "cashier");
             if (profileUpdateError) {
@@ -209,7 +211,7 @@ Deno.serve(async (request: Request) => {
                 console.error("Không thể cập nhật tài khoản nhân viên:", authUpdateError);
                 const { error: rollbackError } = await adminClient
                     .from("profiles")
-                    .update({ full_name: profile.full_name })
+                    .update({ full_name: profile.full_name, role: profile.role })
                     .eq("id", id);
                 if (rollbackError) {
                     console.error("Không thể hoàn tác hồ sơ nhân viên:", rollbackError);
@@ -233,11 +235,13 @@ Deno.serve(async (request: Request) => {
                 .from("profiles")
                 .select("id")
                 .eq("id", id)
-                .eq("role", "cashier")
+                .in("role", ["admin", "cashier", "seller"])
                 .maybeSingle();
             if (profileError || !profile) {
                 return jsonResponse({ error: "Không tìm thấy nhân viên cần xóa." }, 404);
             }
+
+            if (id === userData.user.id) return jsonResponse({ error: "Không thể tự xóa tài khoản đang đăng nhập." }, 400);
 
             const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(id);
             if (deleteUserError) {
