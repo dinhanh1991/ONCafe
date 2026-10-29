@@ -115,10 +115,15 @@ main {
 }
 
 .product-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
     margin-bottom: 14px;
 }
 
 .product-toolbar input,
+.product-toolbar select,
 .product-form input {
     width: 100%;
     min-height: 40px;
@@ -129,7 +134,13 @@ main {
 }
 
 .product-toolbar input {
-    max-width: 420px;
+    max-width: min(420px, 100%);
+}
+
+.product-toolbar select {
+    width: auto;
+    min-width: 150px;
+    max-width: 100%;
 }
 
 .product-form {
@@ -449,6 +460,7 @@ main {
 }
 .order-toolbar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 10px;
     margin: 0 0 14px;
@@ -458,6 +470,16 @@ main {
 .order-toolbar select {
     min-height: 38px;
     min-width: 190px;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: white;
+    color: var(--ink);
+}
+.order-toolbar input {
+    min-height: 38px;
+    min-width: 220px;
+    flex: 1 1 240px;
     padding: 7px 10px;
     border: 1px solid var(--line);
     border-radius: 4px;
@@ -744,10 +766,15 @@ main#app {
 }
 
 .product-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
     margin-bottom: 16px;
 }
 
 .product-toolbar input,
+.product-toolbar select,
 .product-form input,
 .product-form select,
 .order-toolbar select {
@@ -762,7 +789,13 @@ main#app {
 }
 
 .product-toolbar input {
-    max-width: 460px;
+    max-width: min(460px, 100%);
+}
+
+.product-toolbar select {
+    width: auto;
+    min-width: 160px;
+    max-width: 100%;
 }
 
 .product-form {
@@ -864,6 +897,7 @@ main#app {
 }
 
 .order-toolbar {
+    flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 16px;
     font-weight: 600;
@@ -871,6 +905,13 @@ main#app {
 
 .order-toolbar select {
     min-width: 210px;
+}
+
+.order-toolbar input {
+    min-width: min(260px, 100%);
+    flex: 1 1 260px;
+    font: inherit;
+    font-size: 13px;
 }
 
 .order-feedback {
@@ -1014,7 +1055,8 @@ main#app {
         flex-wrap: wrap;
     }
 
-    .order-toolbar select {
+    .order-toolbar select,
+    .order-toolbar input {
         width: 100%;
     }
 }

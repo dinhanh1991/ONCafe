@@ -17,6 +17,8 @@ export class EmployeeView {
         this.onDelete = onDelete;
         this.employees = [];
         this.searchTerm = "";
+        this.roleFilter = "all";
+        this.sortBy = "name-asc";
         this.currentPage = 1;
         this.pageSize = 5;
         this.busy = false;
@@ -28,6 +30,17 @@ export class EmployeeView {
                 this.currentPage = 1;
                 this.renderList();
             }
+        });
+        this.container.addEventListener("change", (event) => {
+            if (event.target.matches("[data-employee-role-filter]")) {
+                this.roleFilter = event.target.value;
+            } else if (event.target.matches("[data-employee-sort]")) {
+                this.sortBy = event.target.value;
+            } else {
+                return;
+            }
+            this.currentPage = 1;
+            this.renderList();
         });
         this.container.addEventListener("click", (event) => this.handleClick(event));
         this.container.addEventListener("submit", (event) => this.handleSubmit(event));
@@ -48,6 +61,22 @@ export class EmployeeView {
                     <div class="product-toolbar">
                         <label class="visually-hidden" for="employee-search">Tìm nhân viên</label>
                         <input id="employee-search" data-employee-search type="search" placeholder="Tìm theo họ tên hoặc email">
+                        <label class="visually-hidden" for="employee-role-filter">Lọc theo vai trò</label>
+                        <select id="employee-role-filter" data-employee-role-filter aria-label="Lọc theo vai trò">
+                            <option value="all">Tất cả vai trò</option>
+                            <option value="admin">Quản trị viên</option>
+                            <option value="cashier">Thu ngân</option>
+                            <option value="seller">Người bán hàng</option>
+                        </select>
+                        <label class="visually-hidden" for="employee-sort">Sắp xếp nhân viên</label>
+                        <select id="employee-sort" data-employee-sort aria-label="Sắp xếp nhân viên">
+                            <option value="name-asc">Tên A–Z</option>
+                            <option value="name-desc">Tên Z–A</option>
+                            <option value="email-asc">Email A–Z</option>
+                            <option value="email-desc">Email Z–A</option>
+                            <option value="role-asc">Vai trò A–Z</option>
+                            <option value="role-desc">Vai trò Z–A</option>
+                        </select>
                     </div>
                     <p class="employee-feedback" data-employee-feedback role="status" aria-live="polite"></p>
                     <div class="table-scroll">
@@ -107,8 +136,27 @@ export class EmployeeView {
                 </div>
             </section>`;
 
+        this.container.querySelector("[data-employee-search]").value = this.searchTerm;
+        this.container.querySelector("[data-employee-role-filter]").value = this.roleFilter;
+        this.container.querySelector("[data-employee-sort]").value = this.sortBy;
         this.renderList();
         return this;
+    }
+
+    getFilteredEmployees() {
+        const term = this.searchTerm.trim().toLocaleLowerCase("vi");
+        const employees = this.employees.filter((employee) =>
+            `${employee.full_name ?? ""} ${employee.email ?? ""}`.toLocaleLowerCase("vi").includes(term) &&
+            (this.roleFilter === "all" || employee.role === this.roleFilter)
+        );
+        const [field, direction] = this.sortBy.split("-");
+        employees.sort((first, second) => {
+            const firstValue = field === "name" ? first.full_name : first[field];
+            const secondValue = field === "name" ? second.full_name : second[field];
+            const comparison = String(firstValue || "").localeCompare(String(secondValue || ""), "vi");
+            return direction === "desc" ? -comparison : comparison;
+        });
+        return employees;
     }
 
     async load() {
@@ -127,10 +175,7 @@ export class EmployeeView {
         const list = this.container.querySelector("[data-employee-list]");
         if (!list) return;
 
-        const term = this.searchTerm.trim().toLocaleLowerCase("vi");
-        const employees = this.employees.filter((employee) =>
-            `${employee.full_name ?? ""} ${employee.email ?? ""}`.toLocaleLowerCase("vi").includes(term)
-        );
+        const employees = this.getFilteredEmployees();
         this.container.querySelector("[data-employee-count]").textContent =
             `${employees.length} nhân viên`;
         const pagination = this.container.querySelector("[data-employee-pagination]");
@@ -173,10 +218,7 @@ export class EmployeeView {
         const pageButton = event.target.closest("button[data-employee-page]");
         if (pageButton && this.container.contains(pageButton)) {
             const requestedPage = Number.parseInt(pageButton.dataset.employeePage, 10);
-            const term = this.searchTerm.trim().toLocaleLowerCase("vi");
-            const employees = this.employees.filter((employee) =>
-                `${employee.full_name ?? ""} ${employee.email ?? ""}`.toLocaleLowerCase("vi").includes(term)
-            );
+            const employees = this.getFilteredEmployees();
             const totalPages = Math.max(1, Math.ceil(employees.length / this.pageSize));
             if (Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= totalPages) {
                 this.currentPage = requestedPage;

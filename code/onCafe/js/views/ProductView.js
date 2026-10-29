@@ -17,6 +17,9 @@ export class ProductView {
         this.onDelete = onDelete;
         this.products = [];
         this.searchTerm = "";
+        this.categoryFilter = "all";
+        this.statusFilter = "all";
+        this.sortBy = "name-asc";
         this.currentPage = 1;
         this.pageSize = 5;
         this.editingId = null;
@@ -28,6 +31,19 @@ export class ProductView {
                 this.currentPage = 1;
                 this.renderList();
             }
+        });
+        this.container.addEventListener("change", (event) => {
+            if (event.target.matches("[data-product-category-filter]")) {
+                this.categoryFilter = event.target.value;
+            } else if (event.target.matches("[data-product-status-filter]")) {
+                this.statusFilter = event.target.value;
+            } else if (event.target.matches("[data-product-sort]")) {
+                this.sortBy = event.target.value;
+            } else {
+                return;
+            }
+            this.currentPage = 1;
+            this.renderList();
         });
         this.container.addEventListener("click", (event) => this.handleClick(event));
         this.container.addEventListener("submit", (event) => this.handleSubmit(event));
@@ -49,6 +65,25 @@ export class ProductView {
                     <div class="product-toolbar">
                         <label class="visually-hidden" for="product-search">Tìm sản phẩm</label>
                         <input id="product-search" data-product-search type="search" placeholder="Tìm theo tên hoặc danh mục" value="${escapeHtml(this.searchTerm)}">
+                        <label class="visually-hidden" for="product-category-filter">Lọc theo danh mục</label>
+                        <select id="product-category-filter" data-product-category-filter aria-label="Lọc theo danh mục">
+                            <option value="all">Tất cả danh mục</option>
+                        </select>
+                        <label class="visually-hidden" for="product-status-filter">Lọc theo trạng thái</label>
+                        <select id="product-status-filter" data-product-status-filter aria-label="Lọc theo trạng thái">
+                            <option value="all">Tất cả trạng thái</option>
+                            <option value="active">Đang bán</option>
+                            <option value="inactive">Ngừng bán</option>
+                        </select>
+                        <label class="visually-hidden" for="product-sort">Sắp xếp đồ uống</label>
+                        <select id="product-sort" data-product-sort aria-label="Sắp xếp đồ uống">
+                            <option value="name-asc">Tên A–Z</option>
+                            <option value="name-desc">Tên Z–A</option>
+                            <option value="price-asc">Giá thấp đến cao</option>
+                            <option value="price-desc">Giá cao đến thấp</option>
+                            <option value="quantity-asc">Tồn kho thấp đến cao</option>
+                            <option value="quantity-desc">Tồn kho cao đến thấp</option>
+                        </select>
                     </div>
                     <div class="table-scroll">
                         <table class="product-table">
@@ -98,18 +133,42 @@ export class ProductView {
                     </section>
                 </div>
             </section>`;
+        const categoryFilter = this.container.querySelector("[data-product-category-filter]");
+        const categories = [...new Set(this.products.map((product) => String(product.category || "").trim()).filter(Boolean))]
+            .sort((first, second) => first.localeCompare(second, "vi"));
+        categoryFilter.insertAdjacentHTML("beforeend", categories.map((category) =>
+            `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`
+        ).join(""));
+        categoryFilter.value = categories.includes(this.categoryFilter) ? this.categoryFilter : "all";
+        this.categoryFilter = categoryFilter.value;
+        this.container.querySelector("[data-product-status-filter]").value = this.statusFilter;
+        this.container.querySelector("[data-product-sort]").value = this.sortBy;
         this.renderList();
         return this;
+    }
+
+    getFilteredProducts() {
+        const term = this.searchTerm.trim().toLocaleLowerCase("vi");
+        const products = this.products.filter((product) =>
+            `${product.name ?? ""} ${product.category ?? ""}`.toLocaleLowerCase("vi").includes(term) &&
+            (this.categoryFilter === "all" || String(product.category || "").trim() === this.categoryFilter) &&
+            (this.statusFilter === "all" || (product.status || "active") === this.statusFilter)
+        );
+        const [field, direction] = this.sortBy.split("-");
+        products.sort((first, second) => {
+            const comparison = field === "name"
+                ? String(first.name || "").localeCompare(String(second.name || ""), "vi")
+                : Number(first[field]) - Number(second[field]);
+            return direction === "desc" ? -comparison : comparison;
+        });
+        return products;
     }
 
     renderList() {
         const list = this.container.querySelector("[data-product-list]");
         if (!list) return;
 
-        const term = this.searchTerm.trim().toLocaleLowerCase("vi");
-        const products = this.products.filter((product) =>
-            `${product.name ?? ""} ${product.category ?? ""}`.toLocaleLowerCase("vi").includes(term)
-        );
+        const products = this.getFilteredProducts();
 
         this.container.querySelector("[data-product-count]").textContent = `${products.length} sản phẩm`;
         const pagination = this.container.querySelector("[data-product-pagination]");
@@ -152,10 +211,7 @@ export class ProductView {
 
         if (button.hasAttribute("data-product-page")) {
             const requestedPage = Number.parseInt(button.dataset.productPage, 10);
-            const term = this.searchTerm.trim().toLocaleLowerCase("vi");
-            const products = this.products.filter((product) =>
-                `${product.name ?? ""} ${product.category ?? ""}`.toLocaleLowerCase("vi").includes(term)
-            );
+            const products = this.getFilteredProducts();
             const totalPages = Math.max(1, Math.ceil(products.length / this.pageSize));
             if (Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= totalPages) {
                 this.currentPage = requestedPage;

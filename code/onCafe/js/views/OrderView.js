@@ -23,10 +23,18 @@ export class OrderView {
         this.onRefresh = onRefresh;
         this.orders = [];
         this.filter = "all";
+        this.searchTerm = "";
+        this.sortBy = "newest";
         this.currentPage = 1;
         this.pageSize = 5;
         this.busy = new Set();
         this.container.addEventListener("click", (event) => this.handleClick(event));
+        this.container.addEventListener("input", (event) => {
+            if (!event.target.matches("[data-order-search]")) return;
+            this.searchTerm = event.target.value;
+            this.currentPage = 1;
+            this.renderList();
+        });
         this.container.addEventListener("change", (event) => this.handleChange(event));
     }
 
@@ -39,12 +47,21 @@ export class OrderView {
                     <button class="button button-primary" type="button" data-order-refresh>↻ Tải lại</button>
                 </header>
                 <div class="order-toolbar">
-                    <label for="order-filter">Lọc trạng thái</label>
-                    <select id="order-filter" data-order-filter>
+                    <label class="visually-hidden" for="order-search">Tìm đơn hàng</label>
+                    <input id="order-search" data-order-search type="search" placeholder="Tìm mã đơn, khách hàng hoặc món" value="${escapeHtml(this.searchTerm)}">
+                    <label class="visually-hidden" for="order-filter">Lọc trạng thái</label>
+                    <select id="order-filter" data-order-filter aria-label="Lọc theo trạng thái">
                         <option value="all">Tất cả đơn</option><option value="pending">Chờ xác nhận</option>
                         <option value="confirmed">Đã xác nhận</option><option value="preparing">Đang pha chế</option>
                         <option value="delivering">Đang giao</option><option value="completed">Hoàn tất</option>
                         <option value="rejected">Đã từ chối</option><option value="cancelled">Đã hủy</option>
+                    </select>
+                    <label class="visually-hidden" for="order-sort">Sắp xếp đơn hàng</label>
+                    <select id="order-sort" data-order-sort aria-label="Sắp xếp đơn hàng">
+                        <option value="newest">Mới nhất</option>
+                        <option value="oldest">Cũ nhất</option>
+                        <option value="total-desc">Tổng tiền cao đến thấp</option>
+                        <option value="total-asc">Tổng tiền thấp đến cao</option>
                     </select>
                 </div>
                 <p class="order-feedback" data-order-feedback role="status" aria-live="polite"></p>
@@ -54,14 +71,40 @@ export class OrderView {
                 </table></div>
                 <nav class="product-pagination" data-order-pagination aria-label="Phân trang đơn hàng"></nav>
             </section>`;
+        this.container.querySelector("[data-order-filter]").value = this.filter;
+        this.container.querySelector("[data-order-sort]").value = this.sortBy;
         this.renderList();
         return this;
+    }
+
+    getFilteredOrders() {
+        const term = this.searchTerm.trim().toLocaleLowerCase("vi");
+        const orders = this.orders.filter((order) => {
+            const searchable = [
+                order.order_code,
+                order.id,
+                order.customer_name,
+                order.customer_phone,
+                ...(Array.isArray(order.items) ? order.items.map((item) => item.product_name) : [])
+            ].join(" ").toLocaleLowerCase("vi");
+            return (this.filter === "all" || order.status === this.filter) && searchable.includes(term);
+        });
+        orders.sort((first, second) => {
+            if (this.sortBy.startsWith("total-")) {
+                const difference = (Number(first.total_amount) || 0) - (Number(second.total_amount) || 0);
+                return this.sortBy === "total-desc" ? -difference : difference;
+            }
+            const firstDate = new Date(first.created_at).getTime() || 0;
+            const secondDate = new Date(second.created_at).getTime() || 0;
+            return this.sortBy === "oldest" ? firstDate - secondDate : secondDate - firstDate;
+        });
+        return orders;
     }
 
     renderList() {
         const list = this.container.querySelector("[data-order-list]");
         if (!list) return;
-        const orders = this.filter === "all" ? this.orders : this.orders.filter((o) => o.status === this.filter);
+        const orders = this.getFilteredOrders();
         this.container.querySelector("[data-order-count]").textContent = `${orders.length} đơn hàng`;
         const pagination = this.container.querySelector("[data-order-pagination]");
         const totalPages = Math.max(1, Math.ceil(orders.length / this.pageSize));
@@ -126,9 +169,7 @@ export class OrderView {
         if (pageButton && this.container.contains(pageButton)) {
             event.preventDefault();
             const requestedPage = Number.parseInt(pageButton.dataset.orderPage, 10);
-            const filteredOrders = this.filter === "all"
-                ? this.orders
-                : this.orders.filter((order) => order.status === this.filter);
+            const filteredOrders = this.getFilteredOrders();
             const totalPages = Math.max(1, Math.ceil(filteredOrders.length / this.pageSize));
             if (Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= totalPages) {
                 this.currentPage = requestedPage;
@@ -217,8 +258,13 @@ export class OrderView {
     }
 
     handleChange(event) {
-        if (!event.target.matches("[data-order-filter]")) return;
-        this.filter = event.target.value;
+        if (event.target.matches("[data-order-filter]")) {
+            this.filter = event.target.value;
+        } else if (event.target.matches("[data-order-sort]")) {
+            this.sortBy = event.target.value;
+        } else {
+            return;
+        }
         this.currentPage = 1;
         this.renderList();
     }
