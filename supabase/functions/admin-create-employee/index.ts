@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -97,9 +97,16 @@ Deno.serve(async (request: Request) => {
             }, { onConflict: "id" });
 
         if (profileError) {
-            await adminClient.auth.admin.deleteUser(createdData.user.id);
-            return jsonResponse({ error: "Không thể tạo hồ sơ nhân viên. Tài khoản vừa tạo đã được hoàn tác." }, 500);
-        }
+    console.error("Lỗi tạo hồ sơ nhân viên:", profileError);
+
+    await adminClient.auth.admin.deleteUser(createdData.user.id);
+
+    return jsonResponse({
+        error: "Không thể tạo hồ sơ nhân viên.",
+        details: profileError.message,
+        code: profileError.code
+    }, 500);
+}
 
         return jsonResponse({
             message: "Đã tạo tài khoản thu ngân. Hãy cung cấp email đăng nhập và mật khẩu ban đầu cho nhân viên một cách an toàn.",
