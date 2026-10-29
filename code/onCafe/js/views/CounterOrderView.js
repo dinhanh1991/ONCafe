@@ -160,9 +160,9 @@ export class CounterOrderView {
                 <button class="button button-primary" type="button" data-qr-simulate-payment>Giả lập khách đã chuyển khoản</button>
                 <p data-qr-demo-feedback role="status" aria-live="polite"></p>
             </div>
-            <div class="qr-demo-code" role="img" aria-label="Hình QR minh họa, không dùng để thanh toán thật">
-                <span class="qr-corner qr-corner-top-left"></span><span class="qr-corner qr-corner-top-right"></span>
-                <span class="qr-corner qr-corner-bottom-left"></span><span class="qr-demo-pixels"></span>
+            <div class="qr-demo-code">
+                <img class="qr-demo-image" alt="Mã QR mô phỏng chứa thông tin đơn hàng, không dùng để thanh toán thật"
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent("ONCAFE DEMO ONLY | Order: " + (order.order_code || order.id) + " | Amount: " + order.total_amount + " | NOT A PAYMENT")}" />
                 <small>DEMO · NOT PAYABLE</small>
             </div>`;
         this.container.querySelector(".counter-order").append(panel);
