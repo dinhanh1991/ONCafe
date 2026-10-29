@@ -11,10 +11,10 @@
 <body>
     <header class="site-header">
         <a class="brand" href="./home.html">ONCafe</a>
-        <nav aria-label="Điều hướng chính">
+        <nav id="customerNav" aria-label="Điều hướng chính">
             <a href="./home.html">Trang chủ</a>
             <a href="./menu.html" aria-current="page">Thực đơn</a>
-            <a href="./login.html">Đăng nhập</a>
+            <a href="./login.html" data-auth-link>Đăng nhập</a>
         </nav>
     </header>
 
@@ -69,6 +69,7 @@
         <p class="menu-note">Thông tin sản phẩm được tải trực tiếp từ hệ thống quản lý ONCafe.</p>
     </main>
 
+    <script type="module" src="../js/views/CustomerNavView.js"></script>
     <script type="module" src="../js/menu.js"></script>
 </body>
 </html>
