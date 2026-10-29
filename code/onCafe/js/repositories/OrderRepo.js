@@ -17,4 +17,29 @@ export class OrderRepository {
         });
         if (error) throw error;
     }
+
+    async createCounterOrder(order) {
+        const { data, error } = await supabase.rpc("oncafe_staff_create_order", {
+            p_customer_name: order.customerName,
+            p_customer_phone: order.customerPhone || "",
+            p_customer_address: order.customerAddress || "",
+            p_payment_method: order.paymentMethod,
+            p_items: order.items
+        });
+        if (error) throw error;
+        const result = Array.isArray(data) ? data[0] : data;
+        if (!result) throw new Error("Đơn hàng đã gửi nhưng không nhận được thông tin xác nhận.");
+        return result;
+    }
+
+    async updatePayment(orderId, paymentStatus) {
+        const id = Number(orderId);
+        if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
+        if (!["paid", "unpaid"].includes(paymentStatus)) throw new Error("Trạng thái thanh toán không hợp lệ.");
+        const { error } = await supabase.rpc("oncafe_staff_update_payment", {
+            p_order_id: id,
+            p_payment_status: paymentStatus
+        });
+        if (error) throw error;
+    }
 }
