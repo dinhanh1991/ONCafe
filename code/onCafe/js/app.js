@@ -61,7 +61,12 @@ async function startApp() {
         .single();
     if (profileError) throw profileError;
 
-    if (!["admin", "cashier"].includes(profile.role)) {
+    const role = profile.role;
+    const isAdmin = role === "admin";
+    const isSeller = role === "seller";
+    const isCashier = role === "cashier";
+    const isStaff = isAdmin || isSeller || isCashier;
+    if (!isStaff) {
         showMessage("Tài khoản này không có quyền truy cập khu vực nhân viên.", true);
         return;
     }
@@ -72,10 +77,11 @@ async function startApp() {
 
     app.replaceChildren();
     const workspace = document.createElement("div");
-    const canManageProducts = profile.role === "admin";
-    workspace.className = canManageProducts ? "admin-layout" : "staff-workspace";
+    const canManageProducts = isAdmin || isSeller;
+    const canManageEmployees = isAdmin;
+    workspace.className = isAdmin ? "admin-layout" : "staff-workspace";
     const panels = document.createElement("div");
-    panels.className = canManageProducts ? "admin-panels" : "app-panels";
+    panels.className = isAdmin ? "admin-panels" : "app-panels";
     const dashboardPanel = document.createElement("section");
     dashboardPanel.className = "admin-panel";
     dashboardPanel.dataset.panel = "overview";
@@ -122,11 +128,13 @@ async function startApp() {
     let profilePanel = null;
     let employeeProfileView = null;
     let revenuePanel = null;
+    let expensePanel = null;
+    let popularPanel = null;
     let navigation = null;
     let pageTitle = null;
     let pageDescription = null;
 
-    if (canManageProducts) {
+    {
         const sidebar = document.createElement("aside");
         sidebar.className = "admin-sidebar";
         sidebar.innerHTML = `
@@ -138,14 +146,19 @@ async function startApp() {
         navigation = document.createElement("nav");
         navigation.className = "admin-navigation";
         navigation.setAttribute("aria-label", "Điều hướng quản trị");
-        [
-            ["▦", "Tổng quan", "overview"],
-            ["◈", "Quản lý đồ uống", "drinks"],
-            ["♙", "Quản lý nhân viên", "employees"],
-            ["↗", "Chi tiết doanh thu", "revenue"],
-            ["☷", "Quản lý đơn hàng", "orders"],
-            ["♙", "Thông tin tài khoản", "my-profile"]
-        ].forEach(([icon, label, section]) => navigation.append(createNavButton(icon, label, section)));
+        const navItems = [
+            ["▦", "Tổng quan", "overview", true],
+            ["◈", "Quản lý đồ uống", "drinks", canManageProducts],
+            ["♙", "Quản lý nhân viên", "employees", canManageEmployees],
+            ["★", "Đồ uống bán chạy", "popular", isAdmin || isSeller],
+            ["↗", "Báo cáo doanh thu", "revenue", isAdmin || isCashier],
+            ["₫", "Tổng hợp chi tiêu", "expenses", isAdmin || isCashier],
+            ["☷", "Quản lý đơn hàng", "orders", true],
+            ["♙", "Thông tin tài khoản", "my-profile", true]
+        ];
+        navItems.filter((item) => item[3]).forEach(([icon, label, section]) =>
+            navigation.append(createNavButton(icon, label, section))
+        );
         sidebar.append(navigation);
 
         const adminMain = document.createElement("div");
@@ -154,7 +167,7 @@ async function startApp() {
         contentHeading.className = "admin-content-heading";
         contentHeading.innerHTML = `
             <div><p class="eyebrow">ONCAFE / QUẢN TRỊ</p><h1 data-admin-page-title></h1><p data-admin-page-description></p></div>
-            <span class="admin-role-badge">Quản trị viên</span>`;
+            <span class="admin-role-badge">${isAdmin ? "Quản trị viên" : isSeller ? "Người bán hàng" : "Thu ngân"}</span>`;
         pageTitle = contentHeading.querySelector("[data-admin-page-title]");
         pageDescription = contentHeading.querySelector("[data-admin-page-description]");
 
@@ -164,11 +177,13 @@ async function startApp() {
         productPanel.dataset.panel = "drinks";
         productPanel.hidden = true;
         panels.append(productPanel);
-        employeePanel = document.createElement("section");
-        employeePanel.className = "app-panel";
-        employeePanel.dataset.panel = "employees";
-        employeePanel.hidden = true;
-        panels.append(employeePanel);
+        if (canManageEmployees) {
+            employeePanel = document.createElement("section");
+            employeePanel.className = "app-panel";
+            employeePanel.dataset.panel = "employees";
+            employeePanel.hidden = true;
+            panels.append(employeePanel);
+        }
         revenuePanel = document.createElement("section");
         revenuePanel.className = "admin-panel";
         revenuePanel.dataset.panel = "revenue";
@@ -182,6 +197,18 @@ async function startApp() {
                 <div class="revenue-placeholder-grid" aria-hidden="true"><span></span><span></span><span></span></div>
             </section>`;
         panels.append(revenuePanel);
+        popularPanel = document.createElement("section");
+        popularPanel.className = "admin-panel";
+        popularPanel.dataset.panel = "popular";
+        popularPanel.hidden = true;
+        popularPanel.innerHTML = `<section class="revenue-placeholder"><p class="eyebrow">BÁO CÁO SẢN PHẨM</p><h2>Đồ uống bán chạy</h2><p>Khu vực báo cáo sẽ được kết nối với dữ liệu đơn hàng hoàn tất ở bước tiếp theo.</p></section>`;
+        panels.append(popularPanel);
+        expensePanel = document.createElement("section");
+        expensePanel.className = "admin-panel";
+        expensePanel.dataset.panel = "expenses";
+        expensePanel.hidden = true;
+        expensePanel.innerHTML = `<section class="revenue-placeholder"><p class="eyebrow">QUẢN LÝ CHI PHÍ</p><h2>Tổng hợp chi tiêu</h2><p>Khu vực tổng hợp chi tiêu sẽ được xây dựng ở bước báo cáo tiếp theo.</p></section>`;
+        panels.append(expensePanel);
         panels.append(orderPanel);
         profilePanel = document.createElement("section");
         profilePanel.className = "app-panel";
@@ -190,9 +217,6 @@ async function startApp() {
         panels.append(profilePanel);
         adminMain.append(contentHeading, panels);
         workspace.append(sidebar, adminMain);
-    } else {
-        panels.append(orderPanel);
-        workspace.append(panels);
     }
     app.append(workspace);
 
@@ -203,6 +227,8 @@ async function startApp() {
                 : productService.updateProduct(product.id, product),
             onDelete: (id) => productService.deleteProduct(id)
         });
+    }
+    if (canManageEmployees) {
         employeeView = new EmployeeView(employeePanel, {
             onLoad: () => employeeService.listEmployees(),
             onCreate: (employee) => employeeService.createEmployee(employee),
@@ -210,13 +236,13 @@ async function startApp() {
             onDelete: (id) => employeeService.deleteEmployee(id)
         });
         employeeView.render();
-        employeeProfileView = new EmployeeProfileView(profilePanel, {
+    }
+    employeeProfileView = new EmployeeProfileView(profilePanel, {
             onLoad: () => employeeService.getMyProfile(),
             onSave: (data) => employeeService.updateMyProfile(data),
             onChangePassword: (password) => employeeService.changeMyPassword(password)
         });
-        void employeeProfileView.render();
-    }
+    void employeeProfileView.render();
 
     const orderView = new OrderView(orderPanel, {
         onUpdateStatus: (id, status) => orderService.updateStatus(id, status),
@@ -260,7 +286,9 @@ async function startApp() {
         overview: ["Tổng quan", "Theo dõi nhanh tình hình hoạt động của ONCafe."],
         drinks: ["Quản lý đồ uống", "Danh sách, thông tin và số lượng đồ uống trong quán."],
         employees: ["Quản lý nhân viên", "Quản lý tài khoản và thông tin nhân viên."],
-        revenue: ["Chi tiết doanh thu", "Báo cáo doanh thu và hiệu quả kinh doanh."],
+        revenue: ["Báo cáo doanh thu", "Báo cáo doanh thu và hiệu quả kinh doanh."],
+        popular: ["Đồ uống bán chạy", "Theo dõi các sản phẩm được khách hàng lựa chọn nhiều nhất."],
+        expenses: ["Tổng hợp chi tiêu", "Theo dõi các khoản chi phí hoạt động của quán."],
         orders: ["Quản lý đơn hàng", "Theo dõi và cập nhật trạng thái đơn hàng."],
         "my-profile": ["Thông tin tài khoản", "Cập nhật thông tin cá nhân và mật khẩu đăng nhập."]
     };
@@ -280,8 +308,8 @@ async function startApp() {
         if (pageTitle && pageDescription) {
             [pageTitle.textContent, pageDescription.textContent] = sectionDetails[sectionName];
         }
-        if (sectionName === "drinks") loadProducts();
-        if (sectionName === "employees") loadEmployees();
+        if (sectionName === "drinks" && canManageProducts) loadProducts();
+        if (sectionName === "employees" && canManageEmployees) loadEmployees();
         if (sectionName === "orders") loadOrders();
     }
 
@@ -295,7 +323,7 @@ async function startApp() {
             if (button) activateSection(button.dataset.openSection);
         });
     }
-    activateSection(canManageProducts ? "overview" : "orders");
+    activateSection("overview");
 }
 
 if (logoutButton) {
