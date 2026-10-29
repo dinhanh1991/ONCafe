@@ -17,12 +17,15 @@ export class ProductView {
         this.onDelete = onDelete;
         this.products = [];
         this.searchTerm = "";
+        this.currentPage = 1;
+        this.pageSize = 5;
         this.editingId = null;
         this.detailId = null;
 
         this.container.addEventListener("input", (event) => {
             if (event.target.matches("[data-product-search]")) {
                 this.searchTerm = event.target.value;
+                this.currentPage = 1;
                 this.renderList();
             }
         });
@@ -53,6 +56,7 @@ export class ProductView {
                             <tbody data-product-list></tbody>
                         </table>
                     </div>
+                    <nav class="product-pagination" data-product-pagination aria-label="Phân trang đồ uống"></nav>
                 </div>
                 <section class="product-detail-view" data-product-detail-view hidden aria-labelledby="product-detail-heading"></section>
                 <section class="product-form-view" data-product-form-view hidden aria-labelledby="product-form-heading">
@@ -108,12 +112,25 @@ export class ProductView {
         );
 
         this.container.querySelector("[data-product-count]").textContent = `${products.length} sản phẩm`;
+        const pagination = this.container.querySelector("[data-product-pagination]");
+        const totalPages = Math.max(1, Math.ceil(products.length / this.pageSize));
+        this.currentPage = Math.min(this.currentPage, totalPages);
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const pageProducts = products.slice(startIndex, startIndex + this.pageSize);
+
         if (products.length === 0) {
             list.innerHTML = '<tr><td class="empty-state" colspan="7">Không tìm thấy sản phẩm.</td></tr>';
+            pagination.innerHTML = "";
             return;
         }
 
-        list.innerHTML = products.map((product) => `
+        pagination.innerHTML = `<span>Trang ${this.currentPage} / ${totalPages} · ${products.length} sản phẩm</span>
+            <div class="pagination-actions">
+                <button class="button button-small" type="button" data-product-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
+                <button class="button button-small" type="button" data-product-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
+            </div>`;
+
+        list.innerHTML = pageProducts.map((product) => `
             <tr>
                 <td><img class="product-thumb" src="${escapeHtml(product.imageUrl || "./assets/images/bac-xiu.jpg")}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.hidden=true"></td>
                 <td class="product-name">${escapeHtml(product.name)}</td>
@@ -138,7 +155,10 @@ export class ProductView {
             return;
         }
 
-        if (button.dataset.action === "new") {
+        if (button.hasAttribute("data-product-page")) {
+            this.currentPage = Number(button.dataset.productPage) || 1;
+            this.renderList();
+        } else if (button.dataset.action === "new") {
             this.openForm();
         } else if (button.dataset.action === "cancel") {
             this.closeForm();
