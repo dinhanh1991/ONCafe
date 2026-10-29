@@ -53,17 +53,49 @@
     padding: 18px;
 }
 
+.menu-card-category {
+    min-height: 0 !important;
+    margin: 0 0 8px !important;
+    color: #87552f !important;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
 .menu-card h2 {
     margin: 0 0 8px;
     color: #38251d;
     font-size: 20px;
 }
 
-.menu-card p {
-    min-height: 48px;
-    margin: 0 0 14px;
+.menu-card-price {
+    min-height: 0 !important;
+    margin: 12px 0 0 !important;
+    color: #176b52 !important;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.menu-status {
+    margin: 18px 0 24px;
+    padding: 14px 16px;
+    border: 1px solid #e5ddd5;
+    border-radius: 10px;
+    background: #ffffff;
     color: #76665d;
+    text-align: center;
     line-height: 1.6;
+}
+
+.menu-status[hidden] {
+    display: none;
+}
+
+.menu-status-error {
+    border-color: #e7b9b4;
+    background: #fff5f4;
+    color: #a33a32;
 }
 
 .menu-note {
