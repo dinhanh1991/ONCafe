@@ -1,6 +1,22 @@
 -- ONCafe staff order management: server-side role checks and controlled status transitions.
 -- Run after 20261029_customer_checkout.sql and 20261029_checkout_stock_safety.sql.
 
+-- Keep existing statuses and add the two statuses used by staff order management.
+ALTER TABLE public.orders
+    DROP CONSTRAINT IF EXISTS orders_status_check;
+
+ALTER TABLE public.orders
+    ADD CONSTRAINT orders_status_check
+    CHECK (status = ANY (ARRAY[
+        'pending'::text,
+        'confirmed'::text,
+        'preparing'::text,
+        'delivering'::text,
+        'completed'::text,
+        'cancelled'::text,
+        'rejected'::text
+    ]));
+
 create or replace function public.oncafe_staff_list_orders()
 returns jsonb
 language plpgsql
