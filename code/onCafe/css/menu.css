@@ -296,3 +296,65 @@
         width: 100%;
     }
 }
+
+
+.checkout-form {
+    margin-top: 24px;
+    padding-top: 22px;
+    border-top: 1px solid #e7e0d7;
+    display: grid;
+    gap: 14px;
+}
+
+.checkout-form[hidden] {
+    display: none;
+}
+
+.checkout-form h3 {
+    margin: 0;
+    color: #30251e;
+}
+
+.checkout-field {
+    display: grid;
+    gap: 6px;
+}
+
+.checkout-field label {
+    font-weight: 600;
+    color: #46382e;
+}
+
+.checkout-field input,
+.checkout-field textarea,
+.checkout-field select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 12px;
+    border: 1px solid #d8cec3;
+    border-radius: 8px;
+    background: #fff;
+    color: #30251e;
+    font: inherit;
+}
+
+.checkout-field input:focus,
+.checkout-field textarea:focus,
+.checkout-field select:focus {
+    outline: 2px solid #9b7653;
+    outline-offset: 1px;
+}
+
+.checkout-message {
+    margin: 0;
+    color: #356b42;
+}
+
+.checkout-message-error {
+    color: #b42318;
+}
+
+.cart-checkout-button:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
