@@ -146,7 +146,13 @@ export class OrderView {
         const order = this.orders.find((item) => String(item.id) === String(orderId));
         if (!order || this.busy.has(String(orderId))) return;
         const label = STATUS[orderAction] || orderAction;
-        if (!window.confirm(`Bạn chắc chắn muốn chuyển đơn ${order.order_code || order.id} sang trạng thái "${label}"?`)) return;
+        const confirmed = await this.showConfirmDialog({
+            title: `Xác nhận ${label.toLowerCase()}`,
+            message: `Bạn có chắc muốn chuyển đơn ${order.order_code || "#" + order.id} sang trạng thái "${label}" không?`,
+            confirmText: label,
+            danger: orderAction === "rejected"
+        });
+        if (!confirmed) return;
 
         this.busy.add(String(orderId));
         this.renderList();
@@ -162,6 +168,40 @@ export class OrderView {
             this.busy.delete(String(orderId));
             this.renderList();
         }
+    }
+
+
+    showConfirmDialog({ title, message, confirmText, danger = false }) {
+        return new Promise((resolve) => {
+            const overlay = document.createElement("div");
+            overlay.className = "oncafe-dialog-backdrop";
+            overlay.innerHTML = `
+                <section class="oncafe-dialog" role="dialog" aria-modal="true" aria-labelledby="oncafe-dialog-title" aria-describedby="oncafe-dialog-message">
+                    <div class="oncafe-dialog-icon" aria-hidden="true">${danger ? "!" : "?"}</div>
+                    <h3 id="oncafe-dialog-title">${escapeHtml(title)}</h3>
+                    <p id="oncafe-dialog-message">${escapeHtml(message)}</p>
+                    <div class="oncafe-dialog-actions">
+                        <button type="button" class="button button-small" data-dialog-cancel>Hủy</button>
+                        <button type="button" class="button button-small ${danger ? "button-danger" : "button-primary"}" data-dialog-confirm>${escapeHtml(confirmText)}</button>
+                    </div>
+                </section>`;
+            document.body.append(overlay);
+
+            const finish = (value) => {
+                overlay.remove();
+                document.removeEventListener("keydown", handleKeydown);
+                resolve(value);
+            };
+            const handleKeydown = (event) => {
+                if (event.key === "Escape") finish(false);
+            };
+            overlay.addEventListener("click", (event) => {
+                if (event.target === overlay || event.target.closest("[data-dialog-cancel]")) finish(false);
+                if (event.target.closest("[data-dialog-confirm]")) finish(true);
+            });
+            document.addEventListener("keydown", handleKeydown);
+            overlay.querySelector("[data-dialog-confirm]").focus();
+        });
     }
 
     async refresh() {
