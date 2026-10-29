@@ -3,12 +3,15 @@ import { AuthService } from "./services/AuthService.js";
 import { ProductRepository } from "./repositories/ProductRepo.js";
 import { ProductService } from "./services/ProductService.js";
 import { ProductView } from "./views/ProductView.js";
+import { EmployeeService } from "./services/EmployeeService.js";
+import { EmployeeView } from "./views/EmployeeView.js";
 import { OrderRepository } from "./repositories/OrderRepo.js";
 import { OrderService } from "./services/OrderService.js";
 import { OrderView } from "./views/OrderView.js";
 
 const authService = new AuthService();
 const productService = new ProductService(new ProductRepository());
+const employeeService = new EmployeeService();
 const orderService = new OrderService(new OrderRepository());
 const app = document.querySelector("#app");
 const logoutButton = document.querySelector("#logoutButton");
@@ -31,12 +34,12 @@ function showMessage(message, isError = false) {
     app.append(section);
 }
 
-function createButton(label, value) {
+function createNavButton(icon, label, value) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "button app-tab";
-    button.textContent = label;
-    button.dataset.tab = value;
+    button.className = "admin-nav-item";
+    button.dataset.section = value;
+    button.innerHTML = `<span class="admin-nav-icon" aria-hidden="true">${icon}</span><span>${label}</span>`;
     return button;
 }
 
@@ -68,55 +71,120 @@ async function startApp() {
 
     app.replaceChildren();
     const workspace = document.createElement("div");
-    workspace.className = "staff-workspace";
-    const tabs = document.createElement("nav");
-    tabs.className = "app-tabs";
-    tabs.setAttribute("aria-label", "Khu vực quản lý");
+    const canManageProducts = profile.role === "admin";
+    workspace.className = canManageProducts ? "admin-layout" : "staff-workspace";
     const panels = document.createElement("div");
-    panels.className = "app-panels";
+    panels.className = canManageProducts ? "admin-panels" : "app-panels";
+    const dashboardPanel = document.createElement("section");
+    dashboardPanel.className = "admin-panel";
+    dashboardPanel.dataset.panel = "overview";
+    dashboardPanel.innerHTML = `
+        <section class="dashboard-welcome">
+            <p class="eyebrow">TỔNG QUAN ONCAFE</p>
+            <h2 data-dashboard-greeting></h2>
+            <p>Chọn một khu vực ở thanh điều hướng để quản lý hoạt động quán.</p>
+        </section>
+        <section class="dashboard-metrics" aria-label="Các chỉ số kinh doanh">
+            <article class="dashboard-metric"><span>Doanh thu hôm nay</span><strong>—</strong><small>Đang chờ kết nối báo cáo</small></article>
+            <article class="dashboard-metric"><span>Đơn hàng hôm nay</span><strong>—</strong><small>Đang chờ kết nối báo cáo</small></article>
+            <article class="dashboard-metric"><span>Đồ uống đang bán</span><strong>—</strong><small>Xem tại mục Quản lý đồ uống</small></article>
+            <article class="dashboard-metric"><span>Nhân viên</span><strong>—</strong><small>Xem tại mục Quản lý nhân viên</small></article>
+        </section>
+        <section class="dashboard-report-card">
+            <div>
+                <p class="eyebrow">BÁO CÁO KINH DOANH</p>
+                <h3>Doanh thu theo thời gian</h3>
+                <p>Khu vực biểu đồ sẽ hiển thị doanh thu và xu hướng bán hàng khi hoàn thiện phần báo cáo.</p>
+            </div>
+            <div class="dashboard-chart-placeholder" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                <div class="dashboard-chart-baseline"></div>
+            </div>
+        </section>
+        <section class="dashboard-shortcuts">
+            <h3>Truy cập nhanh</h3>
+            <div>
+                <button class="dashboard-shortcut" type="button" data-open-section="drinks"><span aria-hidden="true">◈</span> Quản lý đồ uống <b aria-hidden="true">→</b></button>
+                <button class="dashboard-shortcut" type="button" data-open-section="employees"><span aria-hidden="true">♙</span> Quản lý nhân viên <b aria-hidden="true">→</b></button>
+                <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Xem đơn hàng <b aria-hidden="true">→</b></button>
+            </div>
+        </section>`;
+    dashboardPanel.querySelector("[data-dashboard-greeting]").textContent =
+        `Chào mừng trở lại, ${profile.full_name || "Quản trị viên"}`;
     const orderPanel = document.createElement("section");
     orderPanel.className = "app-panel";
     orderPanel.dataset.panel = "orders";
-    const canManageProducts = profile.role === "admin";
     let productPanel = null;
     let productView = null;
     let employeePanel = null;
+    let employeeView = null;
+    let revenuePanel = null;
+    let navigation = null;
+    let pageTitle = null;
+    let pageDescription = null;
 
     if (canManageProducts) {
+        const sidebar = document.createElement("aside");
+        sidebar.className = "admin-sidebar";
+        sidebar.innerHTML = `
+            <div class="admin-sidebar-heading">
+                <span class="admin-sidebar-mark" aria-hidden="true">O</span>
+                <span><strong>ONCafe</strong><small>QUẢN TRỊ</small></span>
+            </div>
+            <p class="admin-sidebar-label">MENU CHÍNH</p>`;
+        navigation = document.createElement("nav");
+        navigation.className = "admin-navigation";
+        navigation.setAttribute("aria-label", "Điều hướng quản trị");
+        [
+            ["▦", "Tổng quan", "overview"],
+            ["◈", "Quản lý đồ uống", "drinks"],
+            ["♙", "Quản lý nhân viên", "employees"],
+            ["↗", "Chi tiết doanh thu", "revenue"],
+            ["☷", "Quản lý đơn hàng", "orders"]
+        ].forEach(([icon, label, section]) => navigation.append(createNavButton(icon, label, section)));
+        sidebar.append(navigation);
+
+        const adminMain = document.createElement("div");
+        adminMain.className = "admin-main";
+        const contentHeading = document.createElement("header");
+        contentHeading.className = "admin-content-heading";
+        contentHeading.innerHTML = `
+            <div><p class="eyebrow">ONCAFE / QUẢN TRỊ</p><h1 data-admin-page-title></h1><p data-admin-page-description></p></div>
+            <span class="admin-role-badge">Quản trị viên</span>`;
+        pageTitle = contentHeading.querySelector("[data-admin-page-title]");
+        pageDescription = contentHeading.querySelector("[data-admin-page-description]");
+
+        panels.append(dashboardPanel);
         productPanel = document.createElement("section");
         productPanel.className = "app-panel";
-        productPanel.dataset.panel = "products";
+        productPanel.dataset.panel = "drinks";
         productPanel.hidden = true;
         panels.append(productPanel);
-        tabs.append(createButton("Sản phẩm & kho", "products"));
         employeePanel = document.createElement("section");
         employeePanel.className = "app-panel";
         employeePanel.dataset.panel = "employees";
         employeePanel.hidden = true;
-        employeePanel.innerHTML = `
-            <section class="employee-manager" aria-labelledby="employee-heading">
-                <header class="product-heading">
-                    <div><p class="eyebrow">QUẢN TRỊ HỆ THỐNG</p><h2 id="employee-heading">Quản lý nhân viên</h2><p>Tạo tài khoản đăng nhập và gán vai trò thu ngân.</p></div>
-                </header>
-                <form class="product-form" data-employee-form>
-                    <h3>Tạo nhân viên mới</h3>
-                    <div class="product-form-grid">
-                        <label>Họ và tên<input name="fullName" type="text" minlength="2" maxlength="100" autocomplete="name" required></label>
-                        <label>Email nhân viên<input name="email" type="email" maxlength="254" autocomplete="email" required></label>
-                        <label>Mật khẩu ban đầu<input name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required><small>Dùng ít nhất 8 ký tự; gửi cho nhân viên qua kênh riêng.</small></label>
-                        <label>Vai trò<select name="role" required><option value="cashier">Thu ngân</option></select></label>
-                    </div>
-                    <p class="image-help">Không gửi email mời. Hãy cung cấp thông tin đăng nhập cho nhân viên qua kênh riêng, không công khai mật khẩu.</p>
-                    <div class="form-actions"><button class="button button-primary" type="submit">Tạo tài khoản</button></div>
-                    <p data-employee-feedback role="status" aria-live="polite"></p>
-                </form>
-            </section>`;
         panels.append(employeePanel);
-        tabs.append(createButton("Quản lý nhân viên", "employees"));
+        revenuePanel = document.createElement("section");
+        revenuePanel.className = "admin-panel";
+        revenuePanel.dataset.panel = "revenue";
+        revenuePanel.hidden = true;
+        revenuePanel.innerHTML = `
+            <section class="revenue-placeholder">
+                <div class="revenue-placeholder-icon" aria-hidden="true">↗</div>
+                <p class="eyebrow">BÁO CÁO KINH DOANH</p>
+                <h2>Chi tiết doanh thu</h2>
+                <p>Khu vực này sẽ hiển thị doanh thu theo ngày, món bán chạy và các báo cáo kinh doanh sau khi kết nối dữ liệu.</p>
+                <div class="revenue-placeholder-grid" aria-hidden="true"><span></span><span></span><span></span></div>
+            </section>`;
+        panels.append(revenuePanel);
+        panels.append(orderPanel);
+        adminMain.append(contentHeading, panels);
+        workspace.append(sidebar, adminMain);
+    } else {
+        panels.append(orderPanel);
+        workspace.append(panels);
     }
-    panels.append(orderPanel);
-    tabs.append(createButton("Đơn hàng", "orders"));
-    workspace.append(tabs, panels);
     app.append(workspace);
 
     if (canManageProducts) {
@@ -126,6 +194,13 @@ async function startApp() {
                 : productService.updateProduct(product.id, product),
             onDelete: (id) => productService.deleteProduct(id)
         });
+        employeeView = new EmployeeView(employeePanel, {
+            onLoad: () => employeeService.listEmployees(),
+            onCreate: (employee) => employeeService.createEmployee(employee),
+            onUpdate: (employee) => employeeService.updateEmployee(employee),
+            onDelete: (id) => employeeService.deleteEmployee(id)
+        });
+        employeeView.render();
     }
 
     const orderView = new OrderView(orderPanel, {
@@ -142,6 +217,11 @@ async function startApp() {
             console.error("Không thể tải sản phẩm:", error);
             productPanel.textContent = error.message || "Không thể tải danh sách sản phẩm.";
         }
+    }
+
+    async function loadEmployees() {
+        if (!employeeView) return;
+        await employeeView.load();
     }
 
     async function loadOrders() {
@@ -161,56 +241,45 @@ async function startApp() {
         }
     }
 
-    if (canManageProducts && employeePanel) {
-        const employeeForm = employeePanel.querySelector("[data-employee-form]");
-        const employeeFeedback = employeePanel.querySelector("[data-employee-feedback]");
-        employeeForm.addEventListener("submit", async (event) => {
-            event.preventDefault();
-            const submitButton = employeeForm.querySelector("button[type=submit]");
-            const formData = new FormData(employeeForm);
-            const fullName = String(formData.get("fullName") || "").trim();
-            const email = String(formData.get("email") || "").trim();
-            const role = String(formData.get("role") || "");
-            const password = String(formData.get("password") || "");
-            submitButton.disabled = true;
-            employeeFeedback.className = "";
-            employeeFeedback.textContent = "Đang tạo tài khoản...";
-            try {
-                const { data, error } = await supabase.functions.invoke("admin-create-employee", {
-                    body: { fullName, email, password, role }
-                });
-                if (error) throw error;
-                if (data?.error) throw new Error(data.error);
-                employeeFeedback.textContent = data?.message || "Đã tạo tài khoản nhân viên.";
-                employeeForm.reset();
-            } catch (error) {
-                console.error("Không thể tạo nhân viên:", error);
-                employeeFeedback.className = "app-error";
-                employeeFeedback.textContent = error.message || "Không thể tạo tài khoản. Kiểm tra Edge Function đã được triển khai chưa.";
-            } finally {
-                submitButton.disabled = false;
-            }
-        });
-    }
+    const sectionDetails = {
+        overview: ["Tổng quan", "Theo dõi nhanh tình hình hoạt động của ONCafe."],
+        drinks: ["Quản lý đồ uống", "Danh sách, thông tin và số lượng đồ uống trong quán."],
+        employees: ["Quản lý nhân viên", "Quản lý tài khoản và thông tin nhân viên."],
+        revenue: ["Chi tiết doanh thu", "Báo cáo doanh thu và hiệu quả kinh doanh."],
+        orders: ["Quản lý đơn hàng", "Theo dõi và cập nhật trạng thái đơn hàng."]
+    };
 
-    function activateTab(tabName) {
-        for (const button of tabs.querySelectorAll("[data-tab]")) {
-            const active = button.dataset.tab === tabName;
-            button.classList.toggle("is-active", active);
-            button.setAttribute("aria-current", active ? "page" : "false");
+    function activateSection(sectionName) {
+        if (!sectionDetails[sectionName]) return;
+        if (navigation) {
+            for (const button of navigation.querySelectorAll("[data-section]")) {
+                const active = button.dataset.section === sectionName;
+                button.classList.toggle("is-active", active);
+                button.setAttribute("aria-current", active ? "page" : "false");
+            }
         }
         for (const panel of panels.querySelectorAll("[data-panel]")) {
-            panel.hidden = panel.dataset.panel !== tabName;
+            panel.hidden = panel.dataset.panel !== sectionName;
         }
-        if (tabName === "products") loadProducts();
-        if (tabName === "orders") loadOrders();
+        if (pageTitle && pageDescription) {
+            [pageTitle.textContent, pageDescription.textContent] = sectionDetails[sectionName];
+        }
+        if (sectionName === "drinks") loadProducts();
+        if (sectionName === "employees") loadEmployees();
+        if (sectionName === "orders") loadOrders();
     }
 
-    tabs.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-tab]");
-        if (button) activateTab(button.dataset.tab);
-    });
-    activateTab("orders");
+    if (navigation) {
+        navigation.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-section]");
+            if (button) activateSection(button.dataset.section);
+        });
+        panels.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-open-section]");
+            if (button) activateSection(button.dataset.openSection);
+        });
+    }
+    activateSection(canManageProducts ? "overview" : "orders");
 }
 
 if (logoutButton) {

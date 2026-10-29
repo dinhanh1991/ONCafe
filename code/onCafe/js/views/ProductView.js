@@ -18,6 +18,7 @@ export class ProductView {
         this.products = [];
         this.searchTerm = "";
         this.editingId = null;
+        this.detailId = null;
 
         this.container.addEventListener("input", (event) => {
             if (event.target.matches("[data-product-search]")) {
@@ -33,42 +34,54 @@ export class ProductView {
         this.products = Array.isArray(products) ? products : [];
         this.container.innerHTML = `
             <section class="product-manager" aria-labelledby="product-heading">
-                <header class="product-heading">
-                    <div>
-                        <p class="eyebrow">QUẢN LÝ KHO</p>
-                        <h2 id="product-heading">Sản phẩm</h2>
-                        <p data-product-count></p>
+                <div data-product-list-view>
+                    <header class="product-heading">
+                        <div>
+                            <p class="eyebrow">DANH MỤC</p>
+                            <h2 id="product-heading">Quản lý đồ uống</h2>
+                            <p data-product-count></p>
+                        </div>
+                        <button class="button button-primary" type="button" data-action="new">+ Thêm đồ uống</button>
+                    </header>
+                    <div class="product-toolbar">
+                        <label class="visually-hidden" for="product-search">Tìm sản phẩm</label>
+                        <input id="product-search" data-product-search type="search" placeholder="Tìm theo tên hoặc danh mục" value="${escapeHtml(this.searchTerm)}">
                     </div>
-                    <button class="button button-primary" type="button" data-action="new">+ Thêm sản phẩm</button>
-                </header>
-                <div class="product-toolbar">
-                    <label class="visually-hidden" for="product-search">Tìm sản phẩm</label>
-                    <input id="product-search" data-product-search type="search" placeholder="Tìm theo tên hoặc danh mục" value="${escapeHtml(this.searchTerm)}">
+                    <div class="table-scroll">
+                        <table class="product-table">
+                            <thead><tr><th>Ảnh</th><th>Tên sản phẩm</th><th>Danh mục</th><th>Giá bán</th><th>Tồn kho</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                            <tbody data-product-list></tbody>
+                        </table>
+                    </div>
                 </div>
-                <form class="product-form" data-product-form hidden>
-                    <h3 data-form-heading>Thêm sản phẩm</h3>
-                    <div class="product-form-grid">
-                        <label>Tên sản phẩm<input name="name" required maxlength="120"></label>
-                        <label>Danh mục<input name="category" required maxlength="80"></label>
-                        <label>Giá bán (VNĐ)<input name="price" type="number" min="0" step="1" required></label>
-                        <label>Số lượng<input name="quantity" type="number" min="0" step="1" required></label>
-                        <label class="product-description">Ảnh sản phẩm
-                            <input name="imageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
-                            <small class="image-help">Chọn ảnh JPG, PNG, WEBP hoặc GIF, tối đa 5 MB. Ảnh sẽ được lưu trên Supabase Storage.</small>
-                        </label>
-                    </div>
-                    <p class="form-error" data-form-error role="alert"></p>
-                    <div class="form-actions">
-                        <button class="button button-primary" type="submit">Lưu sản phẩm</button>
-                        <button class="button button-secondary" type="button" data-action="cancel">Hủy</button>
-                    </div>
-                </form>
-                <div class="table-scroll">
-                    <table class="product-table">
-                        <thead><tr><th>Ảnh</th><th>Tên sản phẩm</th><th>Danh mục</th><th>Giá bán</th><th>Tồn kho</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-                        <tbody data-product-list></tbody>
-                    </table>
-                </div>
+                <section class="product-detail-view" data-product-detail-view hidden aria-labelledby="product-detail-heading"></section>
+                <section class="product-form-view" data-product-form-view hidden aria-labelledby="product-form-heading">
+                    <header class="product-heading">
+                        <div>
+                            <p class="eyebrow">DANH MỤC ĐỒ UỐNG</p>
+                            <h2 id="product-form-heading" data-form-heading>Thêm đồ uống</h2>
+                            <p data-form-description>Nhập thông tin đồ uống mới.</p>
+                        </div>
+                        <button class="button" type="button" data-action="cancel">← Danh sách đồ uống</button>
+                    </header>
+                    <form class="product-form" data-product-form>
+                        <div class="product-form-grid">
+                            <label>Tên đồ uống<input name="name" required maxlength="120"></label>
+                            <label>Danh mục<input name="category" required maxlength="80"></label>
+                            <label>Giá bán (VNĐ)<input name="price" type="number" min="0" step="1" required></label>
+                            <label>Số lượng<input name="quantity" type="number" min="0" step="1" required></label>
+                            <label class="product-description">Ảnh đồ uống
+                                <input name="imageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+                                <small class="image-help">Chọn ảnh JPG, PNG, WEBP hoặc GIF, tối đa 5 MB. Ảnh sẽ được lưu trên Supabase Storage.</small>
+                            </label>
+                        </div>
+                        <p class="form-error" data-form-error role="alert"></p>
+                        <div class="form-actions">
+                            <button class="button button-primary" type="submit">Lưu đồ uống</button>
+                            <button class="button button-secondary" type="button" data-action="cancel">Hủy</button>
+                        </div>
+                    </form>
+                </section>
                 <div class="app-dialog-backdrop" data-dialog hidden>
                     <section class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby="dialog-message">
                         <div class="dialog-icon" data-dialog-icon aria-hidden="true">!</div>
@@ -102,13 +115,14 @@ export class ProductView {
 
         list.innerHTML = products.map((product) => `
             <tr>
-                <td><img class="product-thumb" src="${escapeHtml(product.imageUrl || "./assets/images/product-placeholder.jpg")}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.hidden=true"></td>
+                <td><img class="product-thumb" src="${escapeHtml(product.imageUrl || "./assets/images/bac-xiu.jpg")}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.hidden=true"></td>
                 <td class="product-name">${escapeHtml(product.name)}</td>
                 <td>${escapeHtml(product.category)}</td>
                 <td>${formatCurrency(product.price)}</td>
                 <td>${escapeHtml(product.quantity)}</td>
                 <td><span class="status ${product.status === "active" ? "status-active" : "status-inactive"}">${product.status === "active" ? "Đang bán" : "Ngừng bán"}</span></td>
                 <td class="row-actions">
+                    <button class="button button-small" type="button" data-action="detail" data-id="${escapeHtml(product.id)}">Chi tiết</button>
                     <button class="button button-small" type="button" data-action="edit" data-id="${escapeHtml(product.id)}">Sửa</button>
                     <button class="button button-small button-danger" type="button" data-action="delete" data-id="${escapeHtml(product.id)}">Xóa</button>
                 </td>
@@ -128,6 +142,10 @@ export class ProductView {
             this.openForm();
         } else if (button.dataset.action === "cancel") {
             this.closeForm();
+        } else if (button.dataset.action === "back-to-list") {
+            this.showList();
+        } else if (button.dataset.action === "detail") {
+            this.openDetail(button.dataset.id);
         } else if (button.dataset.action === "edit") {
             this.openForm(button.dataset.id);
         } else if (button.dataset.action === "delete") {
@@ -140,10 +158,16 @@ export class ProductView {
         const product = id === null ? null : this.products.find((item) => String(item.id) === String(id));
         if (id !== null && !product) return;
 
+        this.detailId = null;
         this.editingId = product?.id ?? null;
         form.reset();
-        form.hidden = false;
-        form.querySelector("[data-form-heading]").textContent = product ? "Cập nhật sản phẩm" : "Thêm sản phẩm";
+        this.container.querySelector("[data-product-list-view]").hidden = true;
+        this.container.querySelector("[data-product-form-view]").hidden = false;
+        this.container.querySelector("[data-form-heading]").textContent = product ? "Cập nhật đồ uống" : "Thêm đồ uống";
+        this.container.querySelector("[data-form-description]").textContent = product
+            ? "Cập nhật thông tin và số lượng tồn kho."
+            : "Nhập thông tin đồ uống mới để thêm vào danh sách.";
+        form.querySelector('button[type="submit"]').textContent = product ? "Lưu thay đổi" : "Thêm đồ uống";
         form.querySelector('[name="name"]').value = product?.name ?? "";
         form.querySelector('[name="category"]').value = product?.category ?? "";
         form.querySelector('[name="price"]').value = product?.price ?? "";
@@ -155,9 +179,54 @@ export class ProductView {
 
     closeForm() {
         const form = this.container.querySelector("[data-product-form]");
-        form.hidden = true;
         form.reset();
         this.editingId = null;
+        this.showList();
+    }
+
+    showList() {
+        this.detailId = null;
+        this.container.querySelector("[data-product-form-view]").hidden = true;
+        this.container.querySelector("[data-product-detail-view]").hidden = true;
+        this.container.querySelector("[data-product-list-view]").hidden = false;
+    }
+
+    openDetail(id) {
+        const product = this.products.find((item) => String(item.id) === String(id));
+        if (!product) return;
+
+        this.detailId = product.id;
+        const detailView = this.container.querySelector("[data-product-detail-view]");
+        const status = product.status === "active" ? "Đang bán" : "Ngừng bán";
+        const statusClass = product.status === "active" ? "status-active" : "status-inactive";
+        detailView.innerHTML = `
+            <header class="product-heading">
+                <div>
+                    <p class="eyebrow">CHI TIẾT ĐỒ UỐNG</p>
+                    <h2 id="product-detail-heading">${escapeHtml(product.name)}</h2>
+                    <p>Thông tin sản phẩm trong danh mục ONCafe.</p>
+                </div>
+                <button class="button" type="button" data-action="back-to-list">← Danh sách đồ uống</button>
+            </header>
+            <div class="product-detail-card">
+                <img class="product-detail-image" src="${escapeHtml(product.imageUrl || "./assets/images/bac-xiu.jpg")}" alt="${escapeHtml(product.name)}" onerror="this.hidden=true">
+                <dl class="product-detail-fields">
+                    <div><dt>Tên đồ uống</dt><dd>${escapeHtml(product.name)}</dd></div>
+                    <div><dt>Danh mục</dt><dd>${escapeHtml(product.category || "Chưa phân loại")}</dd></div>
+                    <div><dt>Giá bán</dt><dd>${formatCurrency(product.price)}</dd></div>
+                    <div><dt>Số lượng tồn kho</dt><dd>${escapeHtml(product.quantity)}</dd></div>
+                    <div><dt>Trạng thái</dt><dd><span class="status ${statusClass}">${status}</span></dd></div>
+                </dl>
+            </div>
+            <div class="product-detail-actions">
+                <button class="button button-primary" type="button" data-action="edit" data-id="${escapeHtml(product.id)}">Sửa đồ uống</button>
+                <button class="button button-danger" type="button" data-action="delete" data-id="${escapeHtml(product.id)}">Xóa đồ uống</button>
+            </div>`;
+        this.container.querySelector("[data-product-list-view]").hidden = true;
+        this.container.querySelector("[data-product-form-view]").hidden = true;
+        detailView.hidden = false;
+        this.container.querySelector("[data-product-form-view]").hidden = true;
+        this.container.querySelector("[data-product-list-view]").hidden = false;
     }
 
     async handleSubmit(event) {
@@ -189,6 +258,7 @@ export class ProductView {
                     else this.products = this.products.map((item, itemIndex) => itemIndex === index ? savedProduct : item);
                     this.closeForm();
                     this.renderList();
+                    if (wasEditing) this.openDetail(savedProduct.id);
                     this.showDialog({
                         type: "success",
                         title: wasEditing ? "Cập nhật thành công" : "Thêm sản phẩm thành công",
@@ -218,6 +288,7 @@ export class ProductView {
                 try {
                     await this.onDelete(id);
                     this.products = this.products.filter((item) => String(item.id) !== String(id));
+                    this.showList();
                     this.renderList();
                     this.showDialog({
                         type: "success",
