@@ -178,6 +178,9 @@ export class CounterOrderView {
             this.setFeedback("Không tìm thấy đơn hàng cần mô phỏng thanh toán.", true);
             return;
         }
+        const confirmed = await this.confirmQrPayment(order);
+        if (!confirmed) return;
+
         this.busy = true;
         button.disabled = true;
         const feedback = this.container.querySelector("[data-qr-demo-feedback]");
@@ -199,6 +202,44 @@ export class CounterOrderView {
         } finally {
             this.busy = false;
         }
+    }
+
+    confirmQrPayment(order) {
+        return new Promise((resolve) => {
+            const overlay = document.createElement("div");
+            overlay.className = "oncafe-dialog-backdrop";
+            overlay.innerHTML = `
+                <section class="oncafe-dialog" role="dialog" aria-modal="true"
+                    aria-labelledby="qr-confirm-title" aria-describedby="qr-confirm-message">
+                    <div class="oncafe-dialog-icon" aria-hidden="true">✓</div>
+                    <h3 id="qr-confirm-title">Xác nhận thanh toán QR</h3>
+                    <p id="qr-confirm-message">
+                        Bạn xác nhận đơn ${escapeHtml(order.order_code || "#" + order.id)}
+                        đã thanh toán ${formatCurrency(order.total_amount)}?
+                        <br><br><strong>Đây là thao tác mô phỏng cho bài tập, không xác minh giao dịch ngân hàng và không có tiền thật được chuyển.</strong>
+                    </p>
+                    <div class="oncafe-dialog-actions">
+                        <button type="button" class="button button-small" data-qr-confirm-cancel>Hủy</button>
+                        <button type="button" class="button button-small button-primary" data-qr-confirm-accept>Đúng, xác nhận</button>
+                    </div>
+                </section>`;
+            document.body.append(overlay);
+
+            const finish = (value) => {
+                overlay.remove();
+                document.removeEventListener("keydown", handleKeydown);
+                resolve(value);
+            };
+            const handleKeydown = (event) => {
+                if (event.key === "Escape") finish(false);
+            };
+            overlay.addEventListener("click", (event) => {
+                if (event.target === overlay || event.target.closest("[data-qr-confirm-cancel]")) finish(false);
+                if (event.target.closest("[data-qr-confirm-accept]")) finish(true);
+            });
+            document.addEventListener("keydown", handleKeydown);
+            overlay.querySelector("[data-qr-confirm-accept]").focus();
+        });
     }
 
     setFeedback(message, isError = false) {
