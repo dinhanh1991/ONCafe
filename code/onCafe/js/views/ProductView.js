@@ -69,6 +69,17 @@ export class ProductView {
                         <tbody data-product-list></tbody>
                     </table>
                 </div>
+                <div class="app-dialog-backdrop" data-dialog hidden>
+                    <section class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby="dialog-message">
+                        <div class="dialog-icon" data-dialog-icon aria-hidden="true">!</div>
+                        <h3 id="dialog-title" data-dialog-title>Xác nhận thao tác</h3>
+                        <p id="dialog-message" data-dialog-message></p>
+                        <div class="dialog-actions" data-dialog-actions>
+                            <button class="button button-secondary" type="button" data-dialog-action="cancel">Hủy</button>
+                            <button class="button button-danger" type="button" data-dialog-action="confirm">Xác nhận</button>
+                        </div>
+                    </section>
+                </div>
             </section>`;
         this.renderList();
         return this;
@@ -108,6 +119,11 @@ export class ProductView {
         const button = event.target.closest("button[data-action], button[data-dialog-action]");
         if (!button || !this.container.contains(button)) return;
 
+        if (button.dataset.dialogAction) {
+            this.handleDialogAction(button.dataset.dialogAction);
+            return;
+        }
+
         if (button.dataset.action === "new") {
             this.openForm();
         } else if (button.dataset.action === "cancel") {
@@ -115,7 +131,7 @@ export class ProductView {
         } else if (button.dataset.action === "edit") {
             this.openForm(button.dataset.id);
         } else if (button.dataset.action === "delete") {
-            this.deleteProduct(button.dataset.id);
+            this.confirmDeleteProduct(button.dataset.id);
         }
     }
 
@@ -148,36 +164,107 @@ export class ProductView {
         if (!event.target.matches("[data-product-form]")) return;
         event.preventDefault();
 
-        const formData = new FormData(event.target);
+        const form = event.target;
+        const formData = new FormData(form);
         const product = Object.fromEntries(formData.entries());
         product.price = Number(product.price);
         product.quantity = Number(product.quantity);
-        product.imageFile = event.target.querySelector('[name="imageFile"]').files[0] ?? null;
+        product.imageFile = form.querySelector('[name="imageFile"]').files[0] ?? null;
         product.status = this.products.find((item) => String(item.id) === String(this.editingId))?.status ?? "active";
-        if (this.editingId !== null) product.id = this.editingId;
+        const wasEditing = this.editingId !== null;
+        if (wasEditing) product.id = this.editingId;
 
-        try {
-            const savedProduct = await this.onSave(product);
-            const index = this.products.findIndex((item) => String(item.id) === String(savedProduct.id));
-            if (index === -1) this.products = [...this.products, savedProduct];
-            else this.products = this.products.map((item, itemIndex) => itemIndex === index ? savedProduct : item);
-            this.closeForm();
-            this.renderList();
-        } catch (error) {
-            event.target.querySelector("[data-form-error]").textContent = error.message || "Không thể lưu sản phẩm.";
-        }
+        this.showDialog({
+            type: "info",
+            title: wasEditing ? "Xác nhận cập nhật" : "Xác nhận thêm sản phẩm",
+            message: wasEditing
+                ? `Bạn có chắc chắn muốn lưu thay đổi cho sản phẩm “${product.name}” không?`
+                : `Bạn có chắc chắn muốn thêm sản phẩm “${product.name}” không?`,
+            confirmText: wasEditing ? "Xác nhận sửa" : "Xác nhận thêm",
+            onConfirm: async () => {
+                try {
+                    const savedProduct = await this.onSave(product);
+                    const index = this.products.findIndex((item) => String(item.id) === String(savedProduct.id));
+                    if (index === -1) this.products = [...this.products, savedProduct];
+                    else this.products = this.products.map((item, itemIndex) => itemIndex === index ? savedProduct : item);
+                    this.closeForm();
+                    this.renderList();
+                    this.showDialog({
+                        type: "success",
+                        title: wasEditing ? "Cập nhật thành công" : "Thêm sản phẩm thành công",
+                        message: wasEditing
+                            ? `Sản phẩm “${savedProduct.name}” đã được cập nhật.`
+                            : `Sản phẩm “${savedProduct.name}” đã được thêm vào danh sách.`,
+                        confirmText: "Đóng",
+                        hideCancel: true
+                    });
+                } catch (error) {
+                    form.querySelector("[data-form-error]").textContent = error.message || "Không thể lưu sản phẩm.";
+                }
+            }
+        });
     }
 
-    async deleteProduct(id) {
+    confirmDeleteProduct(id) {
         const product = this.products.find((item) => String(item.id) === String(id));
-        if (!product || !globalThis.confirm(`Bạn có chắc muốn xóa “${product.name}”?`)) return;
+        if (!product) return;
 
-        try {
-            await this.onDelete(id);
-            this.products = this.products.filter((item) => String(item.id) !== String(id));
-            this.renderList();
-        } catch (error) {
-            globalThis.alert(error.message || "Không thể xóa sản phẩm.");
+        this.showDialog({
+            type: "danger",
+            title: "Xác nhận xóa sản phẩm",
+            message: `Bạn có chắc chắn muốn xóa “${product.name}” không? Thao tác này không thể hoàn tác.`,
+            confirmText: "Xác nhận xóa",
+            onConfirm: async () => {
+                try {
+                    await this.onDelete(id);
+                    this.products = this.products.filter((item) => String(item.id) !== String(id));
+                    this.renderList();
+                    this.showDialog({
+                        type: "success",
+                        title: "Xóa thành công",
+                        message: `Sản phẩm “${product.name}” đã được xóa.`,
+                        confirmText: "Đóng",
+                        hideCancel: true
+                    });
+                } catch (error) {
+                    this.showDialog({
+                        type: "error",
+                        title: "Không thể xóa sản phẩm",
+                        message: error.message || "Đã xảy ra lỗi khi xóa sản phẩm.",
+                        confirmText: "Đóng",
+                        hideCancel: true
+                    });
+                }
+            }
+        });
+    }
+
+    showDialog({ type = "info", title, message, confirmText = "Đóng", hideCancel = false, onConfirm = null }) {
+        const dialog = this.container.querySelector("[data-dialog]");
+        const actions = dialog.querySelector("[data-dialog-actions]");
+        dialog.dataset.type = type;
+        dialog.querySelector("[data-dialog-title]").textContent = title;
+        dialog.querySelector("[data-dialog-message]").textContent = message;
+        dialog.querySelector("[data-dialog-icon]").textContent =
+            type === "success" ? "✓" : type === "danger" ? "!" : type === "error" ? "×" : "?";
+        actions.querySelector('[data-dialog-action="confirm"]').textContent = confirmText;
+        actions.querySelector('[data-dialog-action="cancel"]').hidden = hideCancel;
+        this.pendingDialogAction = onConfirm;
+        dialog.hidden = false;
+        actions.querySelector('[data-dialog-action="confirm"]').focus();
+    }
+
+    async handleDialogAction(action) {
+        const dialog = this.container.querySelector("[data-dialog]");
+        if (action === "cancel") {
+            this.pendingDialogAction = null;
+            dialog.hidden = true;
+            return;
         }
+
+        const callback = this.pendingDialogAction;
+        this.pendingDialogAction = null;
+        dialog.hidden = true;
+        if (callback) await callback();
     }
 }
