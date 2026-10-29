@@ -97,7 +97,7 @@ async function startApp() {
             <article class="dashboard-metric"><span>Đồ uống đang bán</span><strong>—</strong><small>Xem tại mục Quản lý đồ uống</small></article>
             ${isAdmin ? '<article class="dashboard-metric"><span>Nhân viên</span><strong>—</strong><small>Xem tại mục Quản lý nhân viên</small></article>' : ""}
         </section>
-        ${!isSeller ? '<section class="dashboard-report-card">
+        ${!isSeller ? `<section class="dashboard-report-card">
             <div>
                 <p class="eyebrow">BÁO CÁO KINH DOANH</p>
                 <h3>Doanh thu theo thời gian</h3>
@@ -107,7 +107,7 @@ async function startApp() {
                 <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
                 <div class="dashboard-chart-baseline"></div>
             </div>
-        </section>' : ""}
+        </section>` : ""}
         <section class="dashboard-shortcuts">
             <h3>Truy cập nhanh</h3>
             <div>
