@@ -52,9 +52,9 @@ export class ProductView {
                         <label>Danh mục<input name="category" required maxlength="80"></label>
                         <label>Giá bán (VNĐ)<input name="price" type="number" min="0" step="1" required></label>
                         <label>Số lượng<input name="quantity" type="number" min="0" step="1" required></label>
-                        <label class="product-description">Đường dẫn hình ảnh
-                            <input name="imageUrl" type="text" inputmode="url"
-                                placeholder="./assets/images/bac-xiu.jpg hoặc https://...">
+                        <label class="product-description">Ảnh sản phẩm
+                            <input name="imageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+                            <small class="image-help">Chọn ảnh JPG, PNG, WEBP hoặc GIF, tối đa 5 MB. Ảnh sẽ được lưu trên Supabase Storage.</small>
                         </label>
                     </div>
                     <p class="form-error" data-form-error role="alert"></p>
@@ -132,7 +132,7 @@ export class ProductView {
         form.querySelector('[name="category"]').value = product?.category ?? "";
         form.querySelector('[name="price"]').value = product?.price ?? "";
         form.querySelector('[name="quantity"]').value = product?.quantity ?? "0";
-        form.querySelector('[name="imageUrl"]').value = product?.imageUrl ?? "";
+        form.querySelector('[name="imageFile"]').value = "";
         form.querySelector("[data-form-error]").textContent = "";
         form.querySelector('[name="name"]').focus();
     }
@@ -152,6 +152,7 @@ export class ProductView {
         const product = Object.fromEntries(formData.entries());
         product.price = Number(product.price);
         product.quantity = Number(product.quantity);
+        product.imageFile = event.target.querySelector('[name="imageFile"]').files[0] ?? null;
         product.status = this.products.find((item) => String(item.id) === String(this.editingId))?.status ?? "active";
         if (this.editingId !== null) product.id = this.editingId;
 
