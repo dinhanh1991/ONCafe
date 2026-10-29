@@ -79,7 +79,7 @@ async function startApp() {
     const workspace = document.createElement("div");
     const canManageProducts = isAdmin || isSeller;
     const canManageEmployees = isAdmin;
-    workspace.className = isAdmin ? "admin-layout" : "staff-workspace";
+    workspace.className = isAdmin ? "admin-layout" : "admin-layout staff-workspace";
     const panels = document.createElement("div");
     panels.className = isAdmin ? "admin-panels" : "app-panels";
     const dashboardPanel = document.createElement("section");
@@ -95,9 +95,9 @@ async function startApp() {
             <article class="dashboard-metric"><span>Doanh thu hôm nay</span><strong>—</strong><small>Đang chờ kết nối báo cáo</small></article>
             <article class="dashboard-metric"><span>Đơn hàng hôm nay</span><strong>—</strong><small>Đang chờ kết nối báo cáo</small></article>
             <article class="dashboard-metric"><span>Đồ uống đang bán</span><strong>—</strong><small>Xem tại mục Quản lý đồ uống</small></article>
-            <article class="dashboard-metric"><span>Nhân viên</span><strong>—</strong><small>Xem tại mục Quản lý nhân viên</small></article>
+            ${isAdmin ? '<article class="dashboard-metric"><span>Nhân viên</span><strong>—</strong><small>Xem tại mục Quản lý nhân viên</small></article>' : ""}
         </section>
-        <section class="dashboard-report-card">
+        ${!isSeller ? '<section class="dashboard-report-card">
             <div>
                 <p class="eyebrow">BÁO CÁO KINH DOANH</p>
                 <h3>Doanh thu theo thời gian</h3>
@@ -107,7 +107,7 @@ async function startApp() {
                 <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
                 <div class="dashboard-chart-baseline"></div>
             </div>
-        </section>
+        </section>' : ""}
         <section class="dashboard-shortcuts">
             <h3>Truy cập nhanh</h3>
             <div>
@@ -117,7 +117,7 @@ async function startApp() {
             </div>
         </section>`;
     dashboardPanel.querySelector("[data-dashboard-greeting]").textContent =
-        `Chào mừng trở lại, ${profile.full_name || "Quản trị viên"}`;
+        `Chào mừng trở lại, ${profile.full_name || (isAdmin ? "Quản trị viên" : isSeller ? "nhân viên bán hàng" : "thu ngân")}`;
     dashboardPanel.querySelectorAll("[data-open-section]").forEach((button) => {
         const targetSection = button.dataset.openSection;
         const allowed = targetSection === "drinks"
@@ -149,12 +149,12 @@ async function startApp() {
         sidebar.innerHTML = `
             <div class="admin-sidebar-heading">
                 <span class="admin-sidebar-mark" aria-hidden="true">O</span>
-                <span><strong>ONCafe</strong><small>QUẢN TRỊ</small></span>
+                <span><strong>ONCafe</strong><small>${isAdmin ? "QUẢN TRỊ" : isSeller ? "BÁN HÀNG" : "THU NGÂN"}</small></span>
             </div>
             <p class="admin-sidebar-label">MENU CHÍNH</p>`;
         navigation = document.createElement("nav");
         navigation.className = "admin-navigation";
-        navigation.setAttribute("aria-label", "Điều hướng quản trị");
+        navigation.setAttribute("aria-label", "Điều hướng nhân viên");
         const navItems = [
             ["▦", "Tổng quan", "overview", true],
             ["◈", "Quản lý đồ uống", "drinks", canManageProducts],
@@ -175,7 +175,7 @@ async function startApp() {
         const contentHeading = document.createElement("header");
         contentHeading.className = "admin-content-heading";
         contentHeading.innerHTML = `
-            <div><p class="eyebrow">ONCAFE / QUẢN TRỊ</p><h1 data-admin-page-title></h1><p data-admin-page-description></p></div>
+            <div><p class="eyebrow">ONCAFE / ${isAdmin ? "QUẢN TRỊ" : isSeller ? "BÁN HÀNG" : "THU NGÂN"}</p><h1 data-admin-page-title></h1><p data-admin-page-description></p></div>
             <span class="admin-role-badge">${isAdmin ? "Quản trị viên" : isSeller ? "Người bán hàng" : "Thu ngân"}</span>`;
         pageTitle = contentHeading.querySelector("[data-admin-page-title]");
         pageDescription = contentHeading.querySelector("[data-admin-page-description]");
