@@ -134,10 +134,12 @@ export class OrderView {
                 `<button class="button button-small ${style || ""}" type="button" data-order-action="${status}" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>${label}</button>`
             ).join("");
             const paymentAction = order.payment_status === "paid"
-                ? `<span class="status status-active">Đã thu tiền</span>`
+                ? `<span class="status status-active">${order.payment_method === "qr" ? "Đã thanh toán QR (mô phỏng)" : "Đã thu tiền"}</span>`
                 : order.payment_status === "refunded"
                     ? `<span class="status status-inactive">Đã hoàn tiền</span>`
-                    : `<button class="button button-small button-primary" type="button" data-payment-action="paid" data-order-id="${escapeHtml(order.id)}">Xác nhận đã thu</button>`;
+                    : order.payment_method === "qr"
+                        ? `<span class="status status-pending">Chờ thanh toán QR</span>`
+                        : `<button class="button button-small button-primary" type="button" data-payment-action="paid" data-order-id="${escapeHtml(order.id)}">Xác nhận đã thu</button>`;
             const extraActions = `${paymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}">In hóa đơn</button>`;
             return `<tr>
                 <td><strong>${escapeHtml(order.order_code || "#" + order.id)}</strong><br><small>${escapeHtml(formatDate(order.created_at))}</small></td>
