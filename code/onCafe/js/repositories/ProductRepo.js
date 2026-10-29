@@ -94,6 +94,47 @@ export class ProductRepository {
         return true;
     }
 
+    async uploadImage(file) {
+        if (!(file instanceof File)) {
+            throw new Error("Vui lòng chọn ảnh sản phẩm từ máy tính.");
+        }
+
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+        if (!allowedTypes.includes(file.type)) {
+            throw new Error("Ảnh phải có định dạng JPG, PNG, WEBP hoặc GIF.");
+        }
+
+        const maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+            throw new Error("Ảnh vượt quá 5 MB. Vui lòng chọn ảnh nhỏ hơn.");
+        }
+
+        const extensionByType = {
+            "image/jpeg": "jpg",
+            "image/png": "png",
+            "image/webp": "webp",
+            "image/gif": "gif"
+        };
+        const extension = extensionByType[file.type];
+        const filePath = `products/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from("product-images")
+            .upload(filePath, file, {
+                cacheControl: "3600",
+                upsert: false,
+                contentType: file.type
+            });
+
+        throwIfError(uploadError);
+
+        const { data } = supabase.storage
+            .from("product-images")
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
+    }
+
     async getOrCreateCategory(name) {
         const normalizedName = String(name ?? "").trim();
         if (!normalizedName) {
