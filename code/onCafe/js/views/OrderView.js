@@ -16,10 +16,11 @@ function formatDate(value) {
 }
 
 export class OrderView {
-    constructor(container, { onUpdateStatus, onRefresh }) {
+    constructor(container, { onUpdateStatus, onUpdatePayment, onRefresh }) {
         if (!container) throw new Error("Không tìm thấy vùng hiển thị đơn hàng.");
         this.container = container;
         this.onUpdateStatus = onUpdateStatus;
+        this.onUpdatePayment = onUpdatePayment;
         this.onRefresh = onRefresh;
         this.orders = [];
         this.filter = "all";
@@ -132,13 +133,17 @@ export class OrderView {
             const actions = this.getActions(order).map(([status, label, style]) =>
                 `<button class="button button-small ${style || ""}" type="button" data-order-action="${status}" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>${label}</button>`
             ).join("");
+            const paymentAction = order.payment_status === "paid"
+                ? `<button class="button button-small" type="button" data-payment-action="unpaid" data-order-id="${escapeHtml(order.id)}">Đánh dấu chưa thu</button>`
+                : `<button class="button button-small button-primary" type="button" data-payment-action="paid" data-order-id="${escapeHtml(order.id)}">Xác nhận đã thu</button>`;
+            const extraActions = `${paymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}">In hóa đơn</button>`;
             return `<tr>
                 <td><strong>${escapeHtml(order.order_code || "#" + order.id)}</strong><br><small>${escapeHtml(formatDate(order.created_at))}</small></td>
                 <td><strong>${escapeHtml(order.customer_name || "Khách hàng")}</strong><br><small>${escapeHtml(order.customer_phone || "Chưa có SĐT")}</small>${note}</td>
                 <td><div class="order-item-summary">${items}</div><strong>${formatCurrency(Number(order.total_amount) || 0)}</strong></td>
                 <td><span class="status ${this.statusClass(order.status)}">${escapeHtml(STATUS[order.status] || order.status || "Không rõ")}</span></td>
                 <td>${escapeHtml(PAYMENT[order.payment_method] || order.payment_method || "—")}<br><small>${escapeHtml(PAYMENT_STATUS[order.payment_status] || order.payment_status || "—")}</small></td>
-                <td class="row-actions order-actions">${actions || "<span>Không có thao tác</span>"}</td>
+                <td class="row-actions order-actions">${actions || "<span>Không có thao tác trạng thái</span>"}${extraActions}</td>
             </tr>`;
         }).join("");
     }
@@ -177,6 +182,40 @@ export class OrderView {
             }
             return;
         }
+        const printButton = event.target.closest("[data-print-order]");
+        if (printButton && this.container.contains(printButton)) {
+            const order = this.orders.find((item) => String(item.id) === String(printButton.dataset.printOrder));
+            if (order) this.printOrder(order);
+            return;
+        }
+        const paymentButton = event.target.closest("[data-payment-action]");
+        if (paymentButton && this.container.contains(paymentButton)) {
+            const order = this.orders.find((item) => String(item.id) === String(paymentButton.dataset.orderId));
+            if (!order || this.busy.has(String(order.id))) return;
+            const nextStatus = paymentButton.dataset.paymentAction;
+            const confirmed = await this.showConfirmDialog({
+                title: nextStatus === "paid" ? "Xác nhận đã nhận tiền" : "Điều chỉnh trạng thái thanh toán",
+                message: nextStatus === "paid"
+                    ? `Xác nhận đã thực nhận thanh toán cho đơn ${order.order_code || "#" + order.id}? Với QR, chỉ xác nhận sau khi kiểm tra giao dịch.`
+                    : `Chuyển đơn ${order.order_code || "#" + order.id} về trạng thái chưa thanh toán?`,
+                confirmText: nextStatus === "paid" ? "Đã nhận tiền" : "Chưa thanh toán",
+                danger: nextStatus === "unpaid"
+            });
+            if (!confirmed) return;
+            this.busy.add(String(order.id));
+            this.renderList();
+            try {
+                await this.onUpdatePayment(order.id, nextStatus);
+                this.setFeedback("Đã cập nhật trạng thái thanh toán.");
+                await this.refresh();
+            } catch (error) {
+                this.setFeedback(error.message || "Không thể cập nhật thanh toán.", true);
+            } finally {
+                this.busy.delete(String(order.id));
+                this.renderList();
+            }
+            return;
+        }
         if (event.target.closest("[data-order-refresh]")) {
             await this.refresh();
             return;
@@ -211,6 +250,26 @@ export class OrderView {
         }
     }
 
+
+
+    printOrder(order) {
+        const printWindow = window.open("", "_blank", "width=420,height=720");
+        if (!printWindow) {
+            this.setFeedback("Trình duyệt đã chặn cửa sổ in. Hãy cho phép cửa sổ bật lên rồi thử lại.", true);
+            return;
+        }
+        const items = (order.items || []).map((item) => `
+            <tr><td>${escapeHtml(item.product_name)} × ${escapeHtml(item.quantity)}</td><td>${formatCurrency(Number(item.subtotal) || 0)}</td></tr>`
+        ).join("");
+        printWindow.document.write(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Hóa đơn ${escapeHtml(order.order_code)}</title>
+            <style>body{font:14px Arial,sans-serif;max-width:360px;margin:24px auto;color:#222}h1,p{text-align:center}table{width:100%;border-collapse:collapse;margin:18px 0}td{padding:7px 0;border-bottom:1px dashed #ccc}td:last-child{text-align:right}.total{font-size:18px;font-weight:bold;text-align:right}.muted{color:#555;font-size:12px}</style>
+            </head><body><h1>ONCafe</h1><p>HÓA ĐƠN BÁN HÀNG</p><p class="muted">${escapeHtml(order.order_code || "#" + order.id)}<br>${escapeHtml(formatDate(order.created_at))}</p>
+            <p>Khách hàng: ${escapeHtml(order.customer_name || "Khách lẻ")}<br>Điện thoại: ${escapeHtml(order.customer_phone || "—")}</p>
+            <table><tbody>${items}</tbody></table><p class="total">Tổng: ${formatCurrency(Number(order.total_amount) || 0)}</p>
+            <p>Thanh toán: ${escapeHtml(PAYMENT[order.payment_method] || order.payment_method || "—")}<br>Trạng thái: ${escapeHtml(PAYMENT_STATUS[order.payment_status] || order.payment_status || "—")}</p>
+            <p>Cảm ơn quý khách!</p><script>window.onload=()=>window.print();<\/script></body></html>`);
+        printWindow.document.close();
+    }
 
     showConfirmDialog({ title, message, confirmText, danger = false }) {
         return new Promise((resolve) => {
