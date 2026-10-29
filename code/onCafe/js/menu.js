@@ -207,14 +207,94 @@ async function loadMenu() {
 }
 
 const checkoutButton = document.querySelector("#checkoutButton");
-if (checkoutButton) {
-    checkoutButton.addEventListener("click", () => {
+const checkoutForm = document.querySelector("#checkoutForm");
+const checkoutMessage = document.querySelector("#checkoutMessage");
+const submitOrderButton = document.querySelector("#submitOrderButton");
+
+function showCheckoutMessage(message, isError = false) {
+    if (!checkoutMessage) return;
+    checkoutMessage.textContent = message;
+    checkoutMessage.classList.toggle("checkout-message-error", isError);
+}
+
+if (checkoutButton && checkoutForm) {
+    checkoutButton.addEventListener("click", async () => {
         if (cart.length === 0) {
             showStatus("Giỏ hàng đang trống. Hãy thêm ít nhất một đồ uống trước.", true);
             return;
         }
 
-        showStatus("Giỏ hàng đã sẵn sàng. Bước tiếp theo sẽ kết nối nút đặt hàng với tài khoản khách hàng và lưu đơn vào Supabase.");
+        const { data, error } = await supabase.auth.getUser();
+        if (error || !data.user) {
+            showStatus("Bạn cần đăng nhập trước khi đặt hàng. Hãy đăng nhập rồi quay lại thực đơn.", true);
+            window.location.href = "./login.html?redirect=menu";
+            return;
+        }
+
+        const user = data.user;
+        const fullNameInput = checkoutForm.querySelector('[name="fullName"]');
+        if (!fullNameInput.value.trim()) {
+            fullNameInput.value = user.user_metadata?.full_name || "";
+        }
+
+        checkoutForm.hidden = false;
+        checkoutForm.scrollIntoView({ behavior: "smooth", block: "start" });
+        showCheckoutMessage("Vui lòng kiểm tra thông tin và xác nhận đơn hàng.");
+    });
+}
+
+if (checkoutForm) {
+    checkoutForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (cart.length === 0) {
+            showCheckoutMessage("Giỏ hàng đang trống. Hãy chọn lại sản phẩm.", true);
+            return;
+        }
+
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError || !authData.user) {
+            showCheckoutMessage("Phiên đăng nhập không còn hiệu lực. Vui lòng đăng nhập lại.", true);
+            return;
+        }
+
+        const formData = new FormData(checkoutForm);
+        const items = cart.map((item) => ({
+            id: item.id,
+            quantity: item.quantity
+        }));
+
+        submitOrderButton.disabled = true;
+        showCheckoutMessage("Đang gửi đơn hàng lên hệ thống...");
+
+        try {
+            const { data, error } = await supabase.rpc("oncafe_create_order", {
+                p_full_name: String(formData.get("fullName") || "").trim(),
+                p_phone: String(formData.get("phone") || "").trim(),
+                p_address: String(formData.get("address") || "").trim(),
+                p_payment_method: String(formData.get("paymentMethod") || "cash"),
+                p_items: items
+            });
+
+            if (error) throw error;
+
+            const order = Array.isArray(data) ? data[0] : data;
+            if (!order?.order_code) {
+                throw new Error("Hệ thống chưa trả về mã đơn hàng. Vui lòng kiểm tra mục đơn hàng trước khi đặt lại.");
+            }
+
+            cart = [];
+            saveCart();
+            checkoutForm.reset();
+            checkoutForm.hidden = true;
+            showCheckoutMessage("");
+            showStatus(`Đặt hàng thành công! Mã đơn: ${order.order_code}. Tổng tiền: ${currencyFormatter.format(Number(order.total_amount) || 0)}. Đơn đang chờ xác nhận.`);
+        } catch (error) {
+            console.error("Lỗi đặt hàng ONCafe:", error);
+            showCheckoutMessage(error.message || "Không thể tạo đơn hàng. Vui lòng thử lại.", true);
+        } finally {
+            submitOrderButton.disabled = false;
+        }
     });
 }
 
