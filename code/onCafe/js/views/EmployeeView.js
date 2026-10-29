@@ -94,6 +94,17 @@ export class EmployeeView {
                         </div>
                     </form>
                 </section>
+                <div class="app-dialog-backdrop" data-employee-dialog hidden>
+                    <section class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="employee-dialog-title" aria-describedby="employee-dialog-message">
+                        <div class="dialog-icon" data-employee-dialog-icon aria-hidden="true">?</div>
+                        <h3 id="employee-dialog-title" data-employee-dialog-title>Xác nhận thao tác</h3>
+                        <p id="employee-dialog-message" data-employee-dialog-message></p>
+                        <div class="dialog-actions" data-employee-dialog-actions>
+                            <button class="button button-secondary" type="button" data-employee-dialog-action="cancel">Hủy</button>
+                            <button class="button button-primary" type="button" data-employee-dialog-action="confirm">Xác nhận</button>
+                        </div>
+                    </section>
+                </div>
             </section>`;
 
         this.renderList();
@@ -153,6 +164,12 @@ export class EmployeeView {
     }
 
     handleClick(event) {
+        const dialogButton = event.target.closest("[data-employee-dialog-action]");
+        if (dialogButton && this.container.contains(dialogButton)) {
+            void this.handleDialogAction(dialogButton.dataset.employeeDialogAction);
+            return;
+        }
+
         const button = event.target.closest("[data-employee-action]");
         if (!button || !this.container.contains(button) || this.busy) return;
 
@@ -218,6 +235,8 @@ export class EmployeeView {
         if (this.busy) return;
 
         const form = event.target;
+        if (!form.reportValidity()) return;
+
         const formData = new FormData(form);
         const employee = {
             fullName: String(formData.get("fullName") || "").trim(),
@@ -228,8 +247,22 @@ export class EmployeeView {
         const wasEditing = this.editingId !== null;
         if (wasEditing) employee.id = this.editingId;
 
+        this.showDialog({
+            type: "info",
+            title: wasEditing ? "Xác nhận cập nhật nhân viên" : "Xác nhận tạo nhân viên",
+            message: wasEditing
+                ? `Bạn có chắc muốn lưu thay đổi cho tài khoản “${employee.fullName}” không?`
+                : `Bạn có chắc muốn tạo tài khoản cho “${employee.fullName}” với vai trò đã chọn không?`,
+            confirmText: wasEditing ? "Lưu thay đổi" : "Tạo tài khoản",
+            onConfirm: () => this.saveEmployee(employee, wasEditing, form)
+        });
+    }
+
+    async saveEmployee(employee, wasEditing, form) {
+        if (this.busy) return;
         this.setBusy(true);
         form.querySelector("[data-employee-form-error]").textContent = "";
+
         try {
             const saved = wasEditing
                 ? await this.onUpdate(employee)
@@ -240,12 +273,27 @@ export class EmployeeView {
                 : this.employees.map((item, itemIndex) => itemIndex === index ? saved : item);
             if (index === -1) this.currentPage = Math.max(1, Math.ceil(this.employees.length / this.pageSize));
             this.closeForm();
-            this.setFeedback(wasEditing ? "Đã cập nhật thông tin nhân viên." : "Đã tạo tài khoản nhân viên.");
             this.renderList();
+            this.showDialog({
+                type: "success",
+                title: wasEditing ? "Cập nhật thành công" : "Tạo nhân viên thành công",
+                message: wasEditing
+                    ? `Thông tin tài khoản “${saved.full_name || employee.fullName}” đã được cập nhật.`
+                    : `Tài khoản “${saved.full_name || employee.fullName}” đã được tạo thành công.`,
+                confirmText: "Đóng",
+                hideCancel: true
+            });
         } catch (error) {
             console.error("Không thể lưu thông tin nhân viên:", error);
             form.querySelector("[data-employee-form-error]").textContent =
                 error.message || "Không thể lưu thông tin nhân viên.";
+            this.showDialog({
+                type: "error",
+                title: wasEditing ? "Không thể cập nhật nhân viên" : "Không thể tạo nhân viên",
+                message: error.message || "Đã xảy ra lỗi khi lưu thông tin nhân viên.",
+                confirmText: "Đóng",
+                hideCancel: true
+            });
         } finally {
             this.setBusy(false);
         }
@@ -254,21 +302,69 @@ export class EmployeeView {
     async deleteEmployee(id) {
         const employee = this.employees.find((item) => String(item.id) === String(id));
         if (!employee) return;
-        if (!window.confirm(`Xóa tài khoản nhân viên ${employee.full_name} (${employee.email})? Tài khoản đăng nhập sẽ bị xóa và không thể khôi phục.`)) return;
 
-        this.setBusy(true);
-        this.setFeedback("Đang xóa tài khoản nhân viên...");
-        try {
-            await this.onDelete(id);
-            this.employees = this.employees.filter((item) => String(item.id) !== String(id));
-            this.setFeedback("Đã xóa tài khoản nhân viên.");
-            this.renderList();
-        } catch (error) {
-            console.error("Không thể xóa nhân viên:", error);
-            this.setFeedback(error.message || "Không thể xóa nhân viên.", true);
-        } finally {
-            this.setBusy(false);
+        this.showDialog({
+            type: "danger",
+            title: "Xác nhận xóa nhân viên",
+            message: `Bạn có chắc muốn xóa tài khoản “${employee.full_name}” (${employee.email})? Tài khoản đăng nhập sẽ bị xóa và không thể khôi phục.`,
+            confirmText: "Xóa tài khoản",
+            onConfirm: async () => {
+                if (this.busy) return;
+                this.setBusy(true);
+                try {
+                    await this.onDelete(id);
+                    this.employees = this.employees.filter((item) => String(item.id) !== String(id));
+                    this.renderList();
+                    this.showDialog({
+                        type: "success",
+                        title: "Xóa nhân viên thành công",
+                        message: `Tài khoản “${employee.full_name}” đã được xóa.`,
+                        confirmText: "Đóng",
+                        hideCancel: true
+                    });
+                } catch (error) {
+                    console.error("Không thể xóa nhân viên:", error);
+                    this.showDialog({
+                        type: "error",
+                        title: "Không thể xóa nhân viên",
+                        message: error.message || "Đã xảy ra lỗi khi xóa tài khoản nhân viên.",
+                        confirmText: "Đóng",
+                        hideCancel: true
+                    });
+                } finally {
+                    this.setBusy(false);
+                }
+            }
+        });
+    }
+
+    showDialog({ type = "info", title, message, confirmText = "Đóng", hideCancel = false, onConfirm = null }) {
+        const dialog = this.container.querySelector("[data-employee-dialog]");
+        const actions = dialog.querySelector("[data-employee-dialog-actions]");
+        dialog.dataset.type = type;
+        dialog.querySelector("[data-employee-dialog-title]").textContent = title;
+        dialog.querySelector("[data-employee-dialog-message]").textContent = message;
+        dialog.querySelector("[data-employee-dialog-icon]").textContent =
+            type === "success" ? "✓" : type === "danger" ? "!" : type === "error" ? "×" : "?";
+        actions.querySelector('[data-employee-dialog-action="confirm"]').textContent = confirmText;
+        actions.querySelector('[data-employee-dialog-action="cancel"]').hidden = hideCancel;
+        this.pendingDialogAction = onConfirm;
+        dialog.hidden = false;
+        actions.querySelector('[data-employee-dialog-action="confirm"]').focus();
+    }
+
+    async handleDialogAction(action) {
+        const dialog = this.container.querySelector("[data-employee-dialog]");
+        if (action === "cancel") {
+            this.pendingDialogAction = null;
+            dialog.hidden = true;
+            return;
         }
+
+        const callback = this.pendingDialogAction;
+        this.pendingDialogAction = null;
+        dialog.hidden = true;
+        if (callback) await callback();
     }
 
     setBusy(busy) {
