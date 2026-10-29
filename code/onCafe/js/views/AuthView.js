@@ -26,9 +26,14 @@ if (loginForm) {
 
             showMessage(message, "Đăng nhập thành công. Đang chuyển trang...");
             const redirectToMenu = new URLSearchParams(window.location.search).get("redirect") === "menu";
-            window.location.href = profile.role === "admin"
-                ? "../index.html"
-                : (redirectToMenu ? "./menu.html" : "./home.html");
+
+            // Admin và thu ngân đều dùng màn hình quản lý nhân viên.
+            // Chỉ tài khoản khách hàng mới được chuyển sang khu vực mua hàng.
+            if (profile.role === "admin" || profile.role === "cashier") {
+                window.location.href = "../index.html";
+            } else {
+                window.location.href = redirectToMenu ? "./menu.html" : "./home.html";
+            }
         } catch (error) {
             showMessage(
                 message,
