@@ -361,7 +361,8 @@ async function startApp() {
         }
         if (sectionName === "drinks" && canManageProducts) loadProducts();
         if (sectionName === "employees" && canManageEmployees) loadEmployees();
-        if (sectionName === "orders") loadOrders();\n        if (sectionName === "counter-order") void counterOrderView.render();
+        if (sectionName === "orders") loadOrders();
+        if (sectionName === "counter-order") void counterOrderView.render();
         if (sectionName === "overview" && isSeller) loadSellerOverview();
     }
 
