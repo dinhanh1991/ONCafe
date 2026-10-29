@@ -17,12 +17,15 @@ export class EmployeeView {
         this.onDelete = onDelete;
         this.employees = [];
         this.searchTerm = "";
+        this.currentPage = 1;
+        this.pageSize = 5;
         this.busy = false;
         this.editingId = null;
 
         this.container.addEventListener("input", (event) => {
             if (event.target.matches("[data-employee-search]")) {
                 this.searchTerm = event.target.value;
+                this.currentPage = 1;
                 this.renderList();
             }
         });
@@ -53,6 +56,7 @@ export class EmployeeView {
                             <tbody data-employee-list></tbody>
                         </table>
                     </div>
+                    <nav class="employee-pagination product-pagination" data-employee-pagination aria-label="Phân trang nhân viên"></nav>
                 </div>
                 <section class="employee-form-view" data-employee-form-view hidden aria-labelledby="employee-form-heading">
                     <header class="product-heading">
@@ -118,13 +122,25 @@ export class EmployeeView {
         );
         this.container.querySelector("[data-employee-count]").textContent =
             `${employees.length} nhân viên`;
+        const pagination = this.container.querySelector("[data-employee-pagination]");
+        const totalPages = Math.max(1, Math.ceil(employees.length / this.pageSize));
+        this.currentPage = Math.min(this.currentPage, totalPages);
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const pageEmployees = employees.slice(startIndex, startIndex + this.pageSize);
 
         if (!employees.length) {
             list.innerHTML = '<tr><td class="empty-state" colspan="4">Chưa có nhân viên phù hợp.</td></tr>';
+            pagination.innerHTML = "";
             return;
         }
 
-        list.innerHTML = employees.map((employee) => `
+        pagination.innerHTML = `<span>Trang ${this.currentPage} / ${totalPages} · ${employees.length} nhân viên</span>
+            <div class="pagination-actions">
+                <button class="button button-small" type="button" data-employee-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
+                <button class="button button-small" type="button" data-employee-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
+            </div>`;
+
+        list.innerHTML = pageEmployees.map((employee) => `
             <tr>
                 <td class="product-name">${escapeHtml(employee.full_name)}</td>
                 <td>${escapeHtml(employee.email)}</td>
@@ -140,7 +156,10 @@ export class EmployeeView {
         const button = event.target.closest("[data-employee-action]");
         if (!button || !this.container.contains(button) || this.busy) return;
 
-        if (button.dataset.employeeAction === "new") {
+        if (button.hasAttribute("data-employee-page")) {
+            this.currentPage = Number(button.dataset.employeePage) || 1;
+            this.renderList();
+        } else if (button.dataset.employeeAction === "new") {
             this.openForm();
         } else if (button.dataset.employeeAction === "back") {
             this.closeForm();
@@ -219,6 +238,7 @@ export class EmployeeView {
             this.employees = index === -1
                 ? [...this.employees, saved]
                 : this.employees.map((item, itemIndex) => itemIndex === index ? saved : item);
+            if (index === -1) this.currentPage = Math.max(1, Math.ceil(this.employees.length / this.pageSize));
             this.closeForm();
             this.setFeedback(wasEditing ? "Đã cập nhật thông tin nhân viên." : "Đã tạo tài khoản nhân viên.");
             this.renderList();
