@@ -296,7 +296,8 @@ async function startApp() {
     const counterOrderView = new CounterOrderView(counterPanel, {
         onLoadProducts: () => productService.getAllProducts(),
         onCreateOrder: (order) => orderService.createCounterOrder(order),
-        onCreated: () => orderView.refresh()
+        onCreated: () => orderView.refresh(),
+        onSimulateQrPayment: (id) => orderService.updatePayment(id, "paid")
     });
 
     async function loadProducts() {
