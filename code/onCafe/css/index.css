@@ -1663,3 +1663,30 @@ main#app {
         grid-column: auto;
     }
 }
+
+
+/* Phân trang danh sách quản trị */
+.product-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    color: #766b64;
+    font-size: 12px;
+}
+.pagination-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.pagination-actions button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+@media (max-width: 420px) {
+    .product-pagination {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
