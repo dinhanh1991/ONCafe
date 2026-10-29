@@ -26,6 +26,21 @@
         </section>
 
         <p id="menuStatus" class="menu-status" role="status" aria-live="polite">Đang tải thực đơn...</p>
+
+        <section class="cart-panel" aria-labelledby="cartTitle">
+            <div class="cart-heading">
+                <div>
+                    <p class="eyebrow">ĐẶT MÓN</p>
+                    <h2 id="cartTitle">Giỏ hàng <span class="cart-count" id="cartCount">0</span></h2>
+                </div>
+                <p class="cart-total">Tổng cộng: <strong id="cartTotal">0 ₫</strong></p>
+            </div>
+            <div id="cartItems" class="cart-items"></div>
+            <button id="checkoutButton" class="menu-add-button cart-checkout-button" type="button">Tiếp tục đặt hàng</button>
+            <p class="cart-note">Giỏ hàng được lưu trên trình duyệt này. Chức năng gửi đơn hàng lên hệ thống sẽ được nối ở bước tiếp theo.</p>
+        </section>
+
+        <h2 class="menu-section-title">Chọn đồ uống</h2>
         <section id="menuGrid" class="menu-grid" aria-label="Danh sách đồ uống"></section>
         <p class="menu-note">Thông tin sản phẩm được tải trực tiếp từ hệ thống quản lý ONCafe.</p>
     </main>
