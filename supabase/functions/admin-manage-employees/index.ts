@@ -157,7 +157,10 @@ Deno.serve(async (request: Request) => {
             const fullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
             const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
             const password = typeof body.password === "string" ? body.password : "";
+            const role = typeof body.role === "string" ? body.role : "";
             if (!id) return jsonResponse({ error: "Thiếu mã nhân viên." }, 400);
+            if (!["admin", "cashier", "seller"].includes(role)) return jsonResponse({ error: "Vai trò không hợp lệ." }, 400);
+            if (id === userData.user.id) return jsonResponse({ error: "Không thể tự sửa tài khoản tại màn hình quản lý nhân viên." }, 400);
             if (fullName.length < 2 || fullName.length > 100) {
                 return jsonResponse({ error: "Họ tên phải từ 2 đến 100 ký tự." }, 400);
             }
@@ -187,7 +190,7 @@ Deno.serve(async (request: Request) => {
                 .from("profiles")
                 .update({ full_name: fullName, role })
                 .eq("id", id)
-                .eq("role", "cashier");
+                .in("role", ["admin", "cashier", "seller"]);
             if (profileUpdateError) {
                 console.error("Không thể cập nhật hồ sơ nhân viên:", profileUpdateError);
                 return jsonResponse({ error: "Không thể cập nhật hồ sơ nhân viên." }, 500);
@@ -223,7 +226,7 @@ Deno.serve(async (request: Request) => {
             }
 
             return jsonResponse({
-                employee: { id, full_name: fullName, email: updatedUserData.user.email, role: "cashier" }
+                employee: { id, full_name: fullName, email: updatedUserData.user.email, role }
             });
         }
 
