@@ -15,7 +15,7 @@ begin
     from public.profiles p
     where p.id = auth.uid();
 
-    if v_role not in ('admin', 'cashier') then
+    if coalesce(v_role, '') not in ('admin', 'cashier') then
         raise exception 'Bạn không có quyền xem danh sách đơn hàng.';
     end if;
 
@@ -68,7 +68,7 @@ begin
     from public.profiles p
     where p.id = auth.uid();
 
-    if v_role not in ('admin', 'cashier') then
+    if coalesce(v_role, '') not in ('admin', 'cashier') then
         raise exception 'Bạn không có quyền cập nhật đơn hàng.';
     end if;
 
