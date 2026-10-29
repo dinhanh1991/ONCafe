@@ -30,6 +30,19 @@ export class AuthService {
         return data;
     }
 
+    async sendPasswordResetEmail(email, redirectTo) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+            redirectTo
+        });
+
+        if (error) throw error;
+    }
+
+    async updatePassword(password) {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+    }
+
     async getMyProfile(userId) {
         const { data, error } = await supabase
             .from("profiles")
