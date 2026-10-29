@@ -316,3 +316,107 @@ main {
     font-size: 12px;
     line-height: 1.5;
 }
+
+
+/* Hộp thoại xác nhận và thông báo của ONCafe */
+.app-dialog-backdrop[hidden] {
+    display: none;
+}
+
+.app-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(18, 28, 22, 0.52);
+    backdrop-filter: blur(3px);
+}
+
+.app-dialog {
+    width: min(100%, 420px);
+    padding: 28px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--paper);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    animation: dialog-appear 160ms ease-out;
+}
+
+.app-dialog h3 {
+    margin: 14px 0 8px;
+    color: var(--ink);
+    font-size: 20px;
+}
+
+.app-dialog p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.dialog-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background: #fff0db;
+    color: #9a5a00;
+    font-size: 25px;
+    font-weight: 700;
+}
+
+.app-dialog[data-type="success"] .dialog-icon {
+    background: #e4f2e9;
+    color: #236043;
+}
+
+.app-dialog[data-type="error"] .dialog-icon {
+    background: #fbe8e6;
+    color: #a12b21;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.dialog-actions [hidden] {
+    display: none;
+}
+
+.dialog-actions .button-danger {
+    border-color: #b9382d;
+    background: #b9382d;
+    color: #fff;
+}
+
+.dialog-actions .button-danger:hover {
+    border-color: #92291f;
+    background: #92291f;
+}
+
+@keyframes dialog-appear {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-dialog {
+        animation: none;
+    }
+}
