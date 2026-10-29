@@ -9,6 +9,7 @@ import { EmployeeProfileView } from "./views/EmployeeProfileView.js";
 import { OrderRepository } from "./repositories/OrderRepo.js";
 import { OrderService } from "./services/OrderService.js";
 import { OrderView } from "./views/OrderView.js";
+import { CounterOrderView } from "./views/CounterOrderView.js";
 
 const authService = new AuthService();
 const productService = new ProductService(new ProductRepository());
@@ -157,6 +158,7 @@ async function startApp() {
     orderPanel.className = "app-panel";
     orderPanel.dataset.panel = "orders";
     let productPanel = null;
+    let counterPanel = null;
     let productView = null;
     let employeePanel = null;
     let employeeView = null;
@@ -185,6 +187,7 @@ async function startApp() {
             ["▦", "Tổng quan", "overview", true],
             ["◈", "Quản lý đồ uống", "drinks", canManageProducts],
             ["♙", "Quản lý nhân viên", "employees", canManageEmployees],
+            ["＋", "Tạo đơn tại quầy", "counter-order", isAdmin || isSeller || isCashier],
             ["☷", "Quản lý đơn hàng", "orders", true],
             ["↗", "Báo cáo doanh thu", "revenue", isAdmin || isCashier],
             ["★", "Đồ uống bán chạy", "popular", isAdmin || isSeller],
@@ -244,6 +247,11 @@ async function startApp() {
         expensePanel.hidden = true;
         expensePanel.innerHTML = `<section class="revenue-placeholder"><p class="eyebrow">QUẢN LÝ CHI PHÍ</p><h2>Tổng hợp chi tiêu</h2><p>Khu vực tổng hợp chi tiêu sẽ được xây dựng ở bước báo cáo tiếp theo.</p></section>`;
         panels.append(expensePanel);
+        counterPanel = document.createElement("section");
+        counterPanel.className = "app-panel";
+        counterPanel.dataset.panel = "counter-order";
+        counterPanel.hidden = true;
+        panels.append(counterPanel);
         panels.append(orderPanel);
         profilePanel = document.createElement("section");
         profilePanel.className = "app-panel";
@@ -319,6 +327,7 @@ async function startApp() {
 
     const sectionDetails = {
         overview: ["Tổng quan", isSeller ? "Theo dõi đơn hàng và mặt hàng được khách lựa chọn." : "Theo dõi nhanh tình hình hoạt động của ONCafe."],
+        "counter-order": ["Tạo đơn tại quầy", "Tạo đơn bán hàng, kiểm tra tồn kho và ghi nhận phương thức thanh toán."],
         drinks: ["Quản lý đồ uống", "Danh sách, thông tin và số lượng đồ uống trong quán."],
         employees: ["Quản lý nhân viên", "Quản lý tài khoản và thông tin nhân viên."],
         revenue: ["Báo cáo doanh thu", "Báo cáo doanh thu và hiệu quả kinh doanh."],
@@ -345,7 +354,7 @@ async function startApp() {
         }
         if (sectionName === "drinks" && canManageProducts) loadProducts();
         if (sectionName === "employees" && canManageEmployees) loadEmployees();
-        if (sectionName === "orders") loadOrders();
+        if (sectionName === "orders") loadOrders();\n        if (sectionName === "counter-order") void counterOrderView.render();
         if (sectionName === "overview" && isSeller) loadSellerOverview();
     }
 
