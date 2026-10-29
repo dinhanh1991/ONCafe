@@ -1,0 +1,178 @@
+-- ONCafe role permissions: sellers can manage products and staff orders.
+-- Run this migration in Supabase SQL Editor after existing staff_order_management migration.
+
+create or replace function public.oncafe_staff_list_orders()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_role text;
+    v_result jsonb;
+begin
+    select p.role into v_role
+    from public.profiles p
+    where p.id = auth.uid();
+
+    if coalesce(v_role, '') not in ('admin', 'cashier', 'seller') then
+        raise exception 'Bạn không có quyền xem danh sách đơn hàng.';
+    end if;
+
+    select coalesce(jsonb_agg(
+        jsonb_build_object(
+            'id', o.id,
+            'order_code', o.order_code,
+            'status', o.status,
+            'payment_method', o.payment_method,
+            'payment_status', o.payment_status,
+            'total_amount', o.total_amount,
+            'created_at', o.created_at,
+            'customer_name', c.full_name,
+            'customer_phone', c.phone,
+            'customer_address', c.address,
+            'items', coalesce((
+                select jsonb_agg(jsonb_build_object(
+                    'product_name', oi.product_name,
+                    'unit_price', oi.unit_price,
+                    'quantity', oi.quantity,
+                    'subtotal', oi.subtotal
+                ) order by oi.id)
+                from public.order_items oi
+                where oi.order_id = o.id
+            ), '[]'::jsonb)
+        ) order by o.created_at desc
+    ), '[]'::jsonb)
+    into v_result
+    from public.orders o
+    left join public.customers c on c.id = o.customer_id;
+
+    return v_result;
+end;
+$$;
+
+create or replace function public.oncafe_staff_update_order_status(
+    p_order_id bigint,
+    p_status text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_role text;
+    v_current_status text;
+    v_stock_deducted boolean;
+begin
+    select p.role into v_role
+    from public.profiles p
+    where p.id = auth.uid();
+
+    if coalesce(v_role, '') not in ('admin', 'cashier', 'seller') then
+        raise exception 'Bạn không có quyền cập nhật đơn hàng.';
+    end if;
+
+    if p_status not in ('confirmed', 'preparing', 'delivering', 'completed', 'rejected') then
+        raise exception 'Trạng thái đơn hàng không hợp lệ.';
+    end if;
+
+    select o.status, o.stock_deducted into v_current_status, v_stock_deducted
+    from public.orders o
+    where o.id = p_order_id
+    for update;
+
+    if not found then
+        raise exception 'Không tìm thấy đơn hàng.';
+    end if;
+
+    if v_current_status in ('completed', 'cancelled', 'rejected') then
+        raise exception 'Đơn hàng đã kết thúc, không thể thay đổi trạng thái.';
+    end if;
+
+    if p_status = 'confirmed' and v_current_status <> 'pending' then
+        raise exception 'Chỉ xác nhận được đơn đang chờ xử lý.';
+    end if;
+
+    if p_status = 'preparing' and v_current_status not in ('confirmed', 'pending') then
+        raise exception 'Chỉ chuyển sang pha chế khi đơn đang chờ hoặc đã xác nhận.';
+    end if;
+
+    if p_status = 'delivering' and v_current_status not in ('confirmed', 'preparing') then
+        raise exception 'Chỉ chuyển sang giao hàng sau khi xác nhận hoặc pha chế.';
+    end if;
+
+    if p_status = 'completed' and v_current_status not in ('preparing', 'delivering', 'confirmed') then
+        raise exception 'Đơn hàng chưa sẵn sàng để hoàn tất.';
+    end if;
+
+    if p_status = 'rejected' and v_current_status <> 'pending' then
+        raise exception 'Chỉ từ chối được đơn đang chờ xử lý.';
+    end if;
+
+    update public.orders
+    set status = p_status
+    where id = p_order_id;
+
+    -- If staff rejects an order, return the reserved quantities to stock.
+    -- This runs in the same transaction as the status change.
+    if p_status = 'rejected' and coalesce(v_stock_deducted, false) then
+        update public.products p
+        set quantity = p.quantity + oi.quantity
+        from public.order_items oi
+        where oi.order_id = p_order_id
+          and oi.product_id = p.id;
+
+        update public.orders
+        set stock_deducted = false
+        where id = p_order_id;
+    end if;
+end;
+$$;
+
+revoke all on function public.oncafe_staff_list_orders() from public;
+revoke all on function public.oncafe_staff_update_order_status(bigint, text) from public;
+grant execute on function public.oncafe_staff_list_orders() to authenticated;
+grant execute on function public.oncafe_staff_update_order_status(bigint, text) to authenticated;
+
+
+-- Product CRUD for admins and sellers. Policies are additive with existing policies.
+drop policy if exists "ONCafe staff can read products" on public.products;
+create policy "ONCafe staff can read products"
+on public.products for select to authenticated
+using (exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role in ('admin', 'seller', 'cashier')
+));
+
+drop policy if exists "ONCafe sellers manage products" on public.products;
+create policy "ONCafe sellers manage products"
+on public.products for all to authenticated
+using (exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role in ('admin', 'seller')
+))
+with check (exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role in ('admin', 'seller')
+));
+
+drop policy if exists "ONCafe staff read categories" on public.categories;
+create policy "ONCafe staff read categories"
+on public.categories for select to authenticated
+using (exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role in ('admin', 'seller', 'cashier')
+));
+
+drop policy if exists "ONCafe sellers manage categories" on public.categories;
+create policy "ONCafe sellers manage categories"
+on public.categories for all to authenticated
+using (exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role in ('admin', 'seller')
+))
+with check (exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role in ('admin', 'seller')
+));
