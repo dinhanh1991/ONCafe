@@ -1,6 +1,8 @@
 -- ONCafe: enforce stock availability and decrement inventory atomically during checkout.
 -- Run after 20261029_customer_checkout.sql. A failed order rolls back stock changes too.
 
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS stock_deducted BOOLEAN NOT NULL DEFAULT false;
+
 create or replace function public.oncafe_create_order(
     p_full_name text,
     p_phone text,
@@ -103,11 +105,11 @@ begin
 
     insert into public.orders (
         customer_id, created_by, order_code, status, payment_method,
-        payment_status, total_amount
+        payment_status, total_amount, stock_deducted
     )
     values (
         v_customer_id, v_user_id, v_order_code, 'pending',
-        p_payment_method, 'unpaid', v_total
+        p_payment_method, 'unpaid', v_total, true
     )
     returning id into v_order_id;
 
