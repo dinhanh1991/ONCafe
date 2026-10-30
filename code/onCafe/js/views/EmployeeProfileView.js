@@ -1,4 +1,5 @@
 import { CustomerValidator } from "../validators/CustomerValidator.js";
+import { ValidationUI } from "../validators/ValidationUI.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -12,6 +13,10 @@ export class EmployeeProfileView {
         this.onChangePassword = onChangePassword;
         this.busy = false;
         container.addEventListener("submit", (event) => void this.handleSubmit(event));
+        container.addEventListener("focusin", (event) => {
+            const form = event.target.closest("[data-profile-form], [data-password-form]");
+            if (form) ValidationUI.bind(form);
+        });
     }
 
     async render() {
@@ -99,10 +104,12 @@ export class EmployeeProfileView {
         try {
             if (form.matches("[data-profile-form]")) {
                 const validation = CustomerValidator.validate({ phone: form.elements.phone.value });
+                ValidationUI.bind(form);
                 if (!validation.isValid) {
-                    form.elements.phone.focus();
-                    throw new Error(validation.errors.phone);
+                    ValidationUI.showErrors(form, validation.errors);
+                    return;
                 }
+                ValidationUI.clearErrors(form);
                 await this.onSave({
                     fullName: form.elements.fullName.value.trim(),
                     phone: form.elements.phone.value.trim(),
@@ -112,8 +119,16 @@ export class EmployeeProfileView {
             } else {
                 const password = form.elements.password.value;
                 const confirmPassword = form.elements.confirmPassword.value;
-                if (password.length < 8) throw new Error("Mật khẩu mới cần có ít nhất 8 ký tự.");
-                if (password !== confirmPassword) throw new Error("Mật khẩu xác nhận không khớp.");
+                ValidationUI.bind(form);
+                if (password.length < 8) {
+                    ValidationUI.showErrors(form, { password: "Mật khẩu mới cần có ít nhất 8 ký tự." });
+                    return;
+                }
+                if (password !== confirmPassword) {
+                    ValidationUI.showErrors(form, { confirmPassword: "Mật khẩu xác nhận không khớp." });
+                    return;
+                }
+                ValidationUI.clearErrors(form);
                 await this.onChangePassword(password);
                 form.reset();
                 feedback.textContent = "Đã đổi mật khẩu thành công.";
