@@ -23,6 +23,25 @@ function formatPeriodLabel(value, period) {
     return `Năm ${year}`;
 }
 
+function getPreviousAnchorDate(value, period) {
+    const [year, month, day] = value.split("-").map(Number);
+    const date = period === "day"
+        ? new Date(Date.UTC(year, month - 1, day - 1))
+        : period === "month"
+            ? new Date(Date.UTC(year, month - 2, 1))
+            : new Date(Date.UTC(year - 1, month - 1, 1));
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+}
+
+function getComparisonLabel(currentValue, previousValue) {
+    const current = Number(currentValue) || 0;
+    const previous = Number(previousValue) || 0;
+    if (previous === 0) return current === 0 ? "Không phát sinh ở cả hai kỳ" : "Phát sinh mới so với kỳ trước";
+    const change = ((current - previous) / previous) * 100;
+    const prefix = change > 0 ? "Tăng " : change < 0 ? "Giảm " : "Không đổi ";
+    return `${prefix}${Math.abs(change).toFixed(1)}% so với kỳ trước`;
+}
+
 export class RevenueSummaryView {
     constructor(container, { onLoad }) {
         if (!container) throw new Error("Không tìm thấy vùng hiển thị tổng hợp doanh thu.");
@@ -54,10 +73,10 @@ export class RevenueSummaryView {
                 </div>
                 <p class="revenue-report-feedback" data-summary-feedback role="status" aria-live="polite"></p>
                 <section class="revenue-report-metrics" data-summary-metrics aria-label="Các chỉ số tổng hợp doanh thu">
-                    <article class="revenue-report-metric is-primary"><span>Doanh thu thuần</span><strong>—</strong><small>Đã thu trừ tiền hoàn</small></article>
-                    <article class="revenue-report-metric"><span>Tổng tiền đã thu</span><strong>—</strong><small>Đơn đã thanh toán</small></article>
-                    <article class="revenue-report-metric"><span>Tổng tiền hoàn</span><strong>—</strong><small>Đơn đã hoàn tiền</small></article>
-                    <article class="revenue-report-metric"><span>Đơn đã thanh toán</span><strong>—</strong><small>Không tính đơn chưa thu</small></article>
+                    <article class="revenue-report-metric is-primary"><span>Doanh thu thuần</span><strong>—</strong><small data-summary-compare="net_revenue">Đang so sánh...</small></article>
+                    <article class="revenue-report-metric"><span>Tổng tiền đã thu</span><strong>—</strong><small data-summary-compare="paid_amount">Đang so sánh...</small></article>
+                    <article class="revenue-report-metric"><span>Tổng tiền hoàn</span><strong>—</strong><small data-summary-compare="refunded_amount">Đang so sánh...</small></article>
+                    <article class="revenue-report-metric"><span>Đơn đã thanh toán</span><strong>—</strong><small data-summary-compare="paid_orders">Đang so sánh...</small></article>
                 </section>
                 <section class="revenue-report-card">
                     <div class="revenue-report-section-heading">
@@ -103,9 +122,18 @@ export class RevenueSummaryView {
         }
 
         try {
-            const report = await this.onLoad(this.period, this.anchorDate);
+            const previousAnchorDate = getPreviousAnchorDate(this.anchorDate, this.period);
+            const [report, previousReport] = await Promise.all([
+                this.onLoad(this.period, this.anchorDate),
+                this.onLoad(this.period, previousAnchorDate)
+            ]);
             if (requestId !== this.requestId) return;
             const summary = report?.summary || {};
+            const previousSummary = previousReport?.summary || {};
+            this.container.querySelectorAll("[data-summary-compare]").forEach((element) => {
+                const key = element.dataset.summaryCompare;
+                element.textContent = getComparisonLabel(summary[key], previousSummary[key]);
+            });
             const values = [
                 currencyFormatter.format(Number(summary.net_revenue) || 0),
                 currencyFormatter.format(Number(summary.paid_amount) || 0),
