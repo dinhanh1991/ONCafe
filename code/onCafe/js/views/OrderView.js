@@ -93,6 +93,7 @@ export class OrderView {
                         <option value="total-desc">Tổng tiền cao đến thấp</option>
                         <option value="total-asc">Tổng tiền thấp đến cao</option>
                     </select>
+                    <button class="button button-small" type="button" data-order-clear-filters>Làm mới bộ lọc</button>
                 </div>
                 <div class="order-list-summary" data-order-list-summary aria-live="polite"></div>
                 <p class="order-feedback" data-order-feedback role="status" aria-live="polite"></p>
@@ -160,7 +161,7 @@ export class OrderView {
         const pageOrders = orders.slice(startIndex, startIndex + this.pageSize);
 
         if (!orders.length) {
-            list.innerHTML = '<tr><td class="empty-state" colspan="6">Không có đơn hàng ở trạng thái này.</td></tr>';
+            list.innerHTML = '<tr><td class="empty-state" colspan="6">Không tìm thấy đơn hàng phù hợp. Hãy thử thay đổi từ khóa hoặc bộ lọc.</td></tr>';
             pagination.innerHTML = "";
             return;
         }
@@ -250,6 +251,28 @@ export class OrderView {
                 this.currentPage = requestedPage;
                 this.renderList();
             }
+            return;
+        }
+        const clearFiltersButton = event.target.closest("[data-order-clear-filters]");
+        if (clearFiltersButton && this.container.contains(clearFiltersButton)) {
+            this.filter = "all";
+            this.sourceFilter = "all";
+            this.paymentFilter = "all";
+            this.dateFrom = "";
+            this.dateTo = "";
+            this.searchTerm = "";
+            this.sortBy = "newest";
+            this.currentPage = 1;
+            const search = this.container.querySelector("[data-order-search]");
+            if (search) search.value = "";
+            this.container.querySelector("[data-order-filter]").value = this.filter;
+            this.container.querySelector("[data-order-source]").value = this.sourceFilter;
+            this.container.querySelector("[data-order-payment]").value = this.paymentFilter;
+            this.container.querySelector("[data-order-date-from]").value = "";
+            this.container.querySelector("[data-order-date-to]").value = "";
+            this.container.querySelector("[data-order-sort]").value = this.sortBy;
+            this.setFeedback("Đã xóa toàn bộ bộ lọc.");
+            this.renderList();
             return;
         }
         const printButton = event.target.closest("[data-print-order]");
