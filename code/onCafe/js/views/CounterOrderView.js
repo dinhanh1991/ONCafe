@@ -215,6 +215,8 @@ export class CounterOrderView {
             openLink.href = confirmUrl.href;
             this.container.querySelector('[data-qr-expiry]').textContent = 'Mã có hiệu lực đến ' + new Date(result.expires_at).toLocaleTimeString('vi-VN');
             if (feedback) feedback.textContent = 'Khách quét mã bằng iPhone để mở trang xác nhận.';
+            const retryButton = this.container.querySelector("[data-qr-retry]");
+            if (retryButton) retryButton.hidden = true;
         } catch (error) {
             const retryButton = this.container.querySelector("[data-qr-retry]");
             if (retryButton) retryButton.hidden = false;
