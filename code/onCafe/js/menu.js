@@ -101,6 +101,11 @@ function addToCart(productId) {
 function changeQuantity(productId, amount) {
     const item = cart.find((cartItem) => cartItem.id === productId);
     if (!item) return;
+    const product = availableProducts.find((available) => available.id === productId);
+    if (amount > 0 && product && item.quantity >= Number(product.quantity)) {
+        showStatus(`Số lượng ${product.name} đã đạt tồn kho hiện tại.`, true);
+        return;
+    }
 
     item.quantity += amount;
     if (item.quantity <= 0) {
@@ -129,6 +134,7 @@ function renderCart() {
         emptyMessage.className = "cart-empty";
         emptyMessage.textContent = "Giỏ hàng đang trống. Hãy chọn đồ uống bạn thích.";
         cartItems.append(emptyMessage);
+        updateCheckoutSummary();
         return;
     }
 
@@ -177,6 +183,7 @@ function renderCart() {
         row.append(details, controls);
         cartItems.append(row);
     });
+    updateCheckoutSummary();
 }
 
 async function loadMenu() {
