@@ -14,6 +14,7 @@ import { RevenueReportRepository } from "./repositories/RevenueReportRepo.js";
 import { RevenueReportService } from "./services/RevenueReportService.js";
 import { RevenueReportView } from "./views/RevenueReportView.js";
 import { RevenueSummaryView } from "./views/RevenueSummaryView.js";
+import { isSectionAllowed, getAdminPageUrl } from "./utils/AdminNavigation.js";
 
 const authService = new AuthService();
 const productService = new ProductService(new ProductRepository());
@@ -424,52 +425,18 @@ async function startApp() {
 
     let orderRefreshTimer = null;
 
-    function isSectionAllowed(sectionName) {
-        const permissions = {
-            overview: true,
-            drinks: canManageProducts,
-            employees: canManageEmployees,
-            "counter-order": isAdmin || isSeller,
-            orders: true,
-            "revenue-summary": isAdmin || isCashier,
-            revenue: isAdmin || isCashier,
-            popular: isAdmin || isSeller,
-            "my-profile": true
-        };
-        return permissions[sectionName] === true;
-    }
-
-    function getAdminPageUrl(sectionName) {
-        const pageFiles = {
-            overview: "dashboard",
-            drinks: "products",
-            employees: "employees",
-            "counter-order": "counter-sales",
-            orders: "orders",
-            "revenue-summary": "revenue-summary",
-            revenue: "revenue",
-            popular: "popular",
-            "my-profile": "profile"
-        };
-        const file = pageFiles[sectionName];
-        if (!file) return null;
-        return window.location.pathname.includes("/pages/admin/")
-            ? `./${file}.html`
-            : `./pages/admin/${file}.html`;
-    }
-
     function navigateToSection(sectionName) {
-        if (!isSectionAllowed(sectionName)) {
+        if (!isSectionAllowed(role, sectionName)) {
             showMessage("Tài khoản của bạn không có quyền truy cập trang này.", true);
             return;
         }
-        const targetUrl = getAdminPageUrl(sectionName);
+        const targetUrl = getAdminPageUrl(sectionName, window.location.pathname);
         if (targetUrl) window.location.href = targetUrl;
     }
 
     function activateSection(sectionName) {
         if (!sectionDetails[sectionName]) return;
-        if (!isSectionAllowed(sectionName)) {
+        if (!isSectionAllowed(role, sectionName)) {
             showMessage("Tài khoản của bạn không có quyền truy cập trang này.", true);
             return;
         }
