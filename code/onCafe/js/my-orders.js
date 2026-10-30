@@ -87,6 +87,7 @@ function renderOrders(orders) {
                     <p><span>Thanh toán</span><strong>${escapeHtml(PAYMENT[order.payment_method] || "—")} · ${escapeHtml(PAYMENT_STATUS[order.payment_status] || "—")}</strong></p>
                     ${order.fulfillment_method === "delivery" ? `<p><span>Địa chỉ giao hàng</span><strong>${escapeHtml(order.customer_address || "—")}</strong></p>` : ""}
                 </div>
+                ${arrivalNotice}
                 <details class="my-order-details">
                     <summary>Chi tiết ${(order.items || []).length} món</summary>
                     <ul>${items}</ul>
@@ -172,3 +173,8 @@ list.addEventListener("click", async (event) => {
 
 refreshButton.addEventListener("click", () => void loadOrders());
 void loadOrders();
+
+const ordersRefreshTimer = window.setInterval(() => {
+    if (!document.hidden) void loadOrders();
+}, 5000);
+window.addEventListener("beforeunload", () => window.clearInterval(ordersRefreshTimer));
