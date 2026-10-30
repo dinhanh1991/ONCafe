@@ -31,3 +31,14 @@
 .customer-order-qr a,.orders-login-link,.orders-empty a{color:#176b52;font-weight:700}.customer-order-qr p{max-width:450px;color:#76665d;font-size:13px;line-height:1.6}
 .orders-empty{text-align:center;padding:42px 20px}.orders-empty h2{color:#38251d}.orders-empty p{color:#76665d}
 @media(max-width:650px){.my-orders-shell{width:calc(100% - 28px);margin-top:26px}.my-orders-heading,.my-order-footer{align-items:stretch;flex-direction:column}.my-orders-heading{gap:12px}.orders-refresh-button{width:100%}.my-order-meta{grid-template-columns:1fr}.my-order-card{padding:16px}.my-order-card-header{flex-direction:column}.my-order-actions{width:100%}.my-order-actions button{flex:1}}
+
+.delivery-arrival-notice {
+    margin: 14px 0;
+    padding: 13px 15px;
+    border: 1px solid #c8dfce;
+    border-radius: 9px;
+    background: #f0f8f1;
+    color: #285d37;
+    line-height: 1.55;
+    font-weight: 600;
+}
