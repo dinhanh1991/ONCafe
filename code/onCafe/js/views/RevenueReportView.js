@@ -6,8 +6,14 @@ const currencyFormatter = new Intl.NumberFormat("vi-VN", {
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 
 function getLocalDateValue() {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).formatToParts(new Date());
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    return `${values.year}-${values.month}-${values.day}`;
 }
 
 function formatDateLabel(value, period) {
@@ -15,6 +21,25 @@ function formatDateLabel(value, period) {
     if (period === "day") return `Ngày ${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
     if (period === "month") return `Tháng ${String(month).padStart(2, "0")}/${year}`;
     return `Năm ${year}`;
+}
+
+function getPreviousAnchorDate(value, period) {
+    const [year, month, day] = value.split("-").map(Number);
+    const date = period === "day"
+        ? new Date(Date.UTC(year, month - 1, day - 1))
+        : period === "month"
+            ? new Date(Date.UTC(year, month - 2, 1))
+            : new Date(Date.UTC(year - 1, month - 1, 1));
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+}
+
+function getComparisonLabel(currentValue, previousValue) {
+    const current = Number(currentValue) || 0;
+    const previous = Number(previousValue) || 0;
+    if (previous === 0) return current === 0 ? "Không phát sinh ở cả hai kỳ" : "Phát sinh mới so với kỳ trước";
+    const change = ((current - previous) / previous) * 100;
+    const prefix = change > 0 ? "Tăng " : change < 0 ? "Giảm " : "Không đổi ";
+    return `${prefix}${Math.abs(change).toFixed(1)}% so với kỳ trước`;
 }
 
 function createElement(tag, className, text) {
@@ -55,10 +80,10 @@ export class RevenueReportView {
                 </div>
                 <p class="revenue-report-feedback" data-revenue-feedback role="status" aria-live="polite"></p>
                 <section class="revenue-report-metrics" data-revenue-summary aria-label="Tổng hợp số liệu doanh thu">
-                    <article class="revenue-report-metric is-primary"><span>Doanh thu thuần</span><strong>—</strong><small>Đã thu trừ tiền hoàn</small></article>
-                    <article class="revenue-report-metric"><span>Đã thu</span><strong>—</strong><small>Đơn đã thanh toán</small></article>
-                    <article class="revenue-report-metric"><span>Đã hoàn tiền</span><strong>—</strong><small>Đơn có trạng thái hoàn tiền</small></article>
-                    <article class="revenue-report-metric"><span>Đơn đã thanh toán</span><strong>—</strong><small>Không tính đơn chưa thu</small></article>
+                    <article class="revenue-report-metric is-primary"><span>Doanh thu thuần</span><strong>—</strong><small data-revenue-compare="net_revenue">Đang so sánh...</small></article>
+                    <article class="revenue-report-metric"><span>Đã thu</span><strong>—</strong><small data-revenue-compare="paid_amount">Đang so sánh...</small></article>
+                    <article class="revenue-report-metric"><span>Đã hoàn tiền</span><strong>—</strong><small data-revenue-compare="refunded_amount">Đang so sánh...</small></article>
+                    <article class="revenue-report-metric"><span>Đơn đã thanh toán</span><strong>—</strong><small data-revenue-compare="paid_orders">Đang so sánh...</small></article>
                 </section>
                 <section class="revenue-report-card">
                     <div class="revenue-report-section-heading"><div><p class="eyebrow">BIẾN ĐỘNG DOANH THU</p><h3>Tiền đã thu theo thời gian</h3></div></div>
@@ -116,9 +141,13 @@ export class RevenueReportView {
         if (rows) rows.innerHTML = '<tr><td colspan="5">Đang tải dữ liệu...</td></tr>';
 
         try {
-            const report = await this.onLoad(this.period, this.anchorDate);
+            const previousAnchorDate = getPreviousAnchorDate(this.anchorDate, this.period);
+            const [report, previousReport] = await Promise.all([
+                this.onLoad(this.period, this.anchorDate),
+                this.onLoad(this.period, previousAnchorDate)
+            ]);
             if (requestId !== this.requestId) return;
-            this.renderReport(report);
+            this.renderReport(report, previousReport);
             if (feedback) feedback.textContent = "Đã cập nhật báo cáo.";
         } catch (error) {
             if (requestId !== this.requestId) return;
@@ -132,8 +161,13 @@ export class RevenueReportView {
         }
     }
 
-    renderReport(report) {
+    renderReport(report, previousReport) {
         const summary = report?.summary || {};
+        const previousSummary = previousReport?.summary || {};
+        this.container.querySelectorAll("[data-revenue-compare]").forEach((element) => {
+            const key = element.dataset.revenueCompare;
+            element.textContent = getComparisonLabel(summary[key], previousSummary[key]);
+        });
         const metrics = this.container.querySelector("[data-revenue-summary]");
         const chart = this.container.querySelector("[data-revenue-chart]");
         const rows = this.container.querySelector("[data-revenue-rows]");
