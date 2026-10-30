@@ -492,7 +492,25 @@ main {
     color: var(--muted);
     font-size: 13px;
 }
+.order-manager {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.order-manager .table-scroll {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
 .order-table {
+    width: 100%;
     min-width: 980px;
 }
 .order-table td {
