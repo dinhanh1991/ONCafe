@@ -416,3 +416,6 @@
 .customer-qr-panel img{width:200px;height:200px;object-fit:contain;background:#fff}
 .customer-qr-panel a{color:#176b52;font-weight:700}
 .customer-qr-panel p,.customer-qr-panel small{max-width:340px;color:#76665d;line-height:1.5}
+
+.checkout-payment-rule { margin: 0; padding: 12px 14px; border-left: 3px solid #176b52; border-radius: 6px; background: #f4f8f5; color: #385b49; line-height: 1.55; }
+.checkout-field small { color: #76665d; line-height: 1.5; }
