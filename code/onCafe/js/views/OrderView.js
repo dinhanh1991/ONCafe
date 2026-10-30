@@ -29,7 +29,7 @@ export class OrderView {
         this.searchTerm = "";
         this.sortBy = "newest";
         this.currentPage = 1;
-        this.pageSize = 5;
+        this.pageSize = 10;
         this.busy = new Set();
         this.container.addEventListener("click", (event) => this.handleClick(event));
         this.container.addEventListener("input", (event) => {
@@ -121,7 +121,7 @@ export class OrderView {
             return;
         }
 
-        pagination.innerHTML = `<span>Trang ${this.currentPage} / ${totalPages} · ${orders.length} đơn hàng · 5 đơn/trang</span>
+        pagination.innerHTML = `<span>Trang ${this.currentPage} / ${totalPages} · ${orders.length} đơn hàng · 10 đơn/trang</span>
             <div class="pagination-actions">
                 <button class="button button-small" type="button" data-order-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
                 <button class="button button-small" type="button" data-order-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
