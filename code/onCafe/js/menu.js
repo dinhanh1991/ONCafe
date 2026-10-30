@@ -1,6 +1,7 @@
 import { supabase } from "./config/supabase.js";
 import { ValidationUtils } from "./validators/ValidationUtils.js";
 import { OrderValidator } from "./validators/OrderValidator.js";
+import { ValidationUI } from "./validators/ValidationUI.js";
 
 const menuGrid = document.querySelector("#menuGrid");
 const menuStatus = document.querySelector("#menuStatus");
@@ -239,6 +240,7 @@ const fulfillmentSelect = checkoutForm?.querySelector('[name="fulfillmentMethod"
 const addressInput = checkoutForm?.querySelector('[name="address"]');
 const paymentSelect = checkoutForm?.querySelector('[name="paymentMethod"]');
 const checkoutTotalSummary = document.querySelector("#checkoutTotalSummary");
+ValidationUI.bind(checkoutForm);
 
 function updateCheckoutSummary() {
     if (!checkoutTotalSummary) return;
@@ -525,21 +527,22 @@ if (checkoutForm) {
         const phone = ValidationUtils.normalizeVietnamPhone(formData.get("phone"));
         const address = String(formData.get("address") || "").trim();
 
+        const fieldErrors = {};
         if (fullName.length < 2) {
-            showCheckoutMessage("Vui lòng nhập đầy đủ họ và tên người nhận.", true);
-            checkoutForm.querySelector('[name="fullName"]')?.focus();
-            return;
+            fieldErrors.fullName = "Vui lòng nhập đầy đủ họ và tên người nhận.";
         }
         if (!ValidationUtils.isValidVietnamPhone(phone)) {
-            showCheckoutMessage("Số điện thoại chưa hợp lệ. Hãy nhập số di động Việt Nam gồm 10 chữ số hoặc dạng +84.", true);
-            checkoutForm.querySelector('[name="phone"]')?.focus();
-            return;
+            fieldErrors.phone = "Số điện thoại chưa hợp lệ. Hãy nhập số di động Việt Nam gồm 10 chữ số hoặc dạng +84.";
         }
         if (fulfillmentMethod === "delivery" && address.length < 20) {
-            showCheckoutMessage("Địa chỉ giao hàng chưa đầy đủ. Vui lòng nhập số nhà/đường hoặc thôn xóm, phường/xã, quận/huyện và tỉnh/thành phố.", true);
-            addressInput?.focus();
+            fieldErrors.address = "Địa chỉ giao hàng chưa đầy đủ. Nhập số nhà/đường hoặc thôn xóm, phường/xã, quận/huyện và tỉnh/thành phố.";
+        }
+        if (Object.keys(fieldErrors).length) {
+            ValidationUI.showErrors(checkoutForm, fieldErrors);
+            showCheckoutMessage("");
             return;
         }
+        ValidationUI.clearErrors(checkoutForm);
         const items = cart.map((item) => ({
             id: item.id,
             quantity: item.quantity
