@@ -135,6 +135,14 @@ async function startApp() {
             <article class="dashboard-metric"><span>Đơn hàng hôm nay</span><strong data-cashier-today-count>—</strong><small>Tất cả nguồn đơn</small></article>
             <article class="dashboard-metric"><span>Chưa thanh toán</span><strong data-cashier-unpaid-count>—</strong><small>Đơn chưa ghi nhận thanh toán</small></article>
         </section>
+        <section class="cashier-dashboard-comparison" aria-label="So sánh doanh thu và trạng thái đơn hàng">
+            <p data-cashier-revenue-comparison>Đang so sánh doanh thu với ngày hôm qua...</p>
+            <div class="cashier-dashboard-statuses">
+                <span>Hoàn tất: <strong data-cashier-completed-count>—</strong></span>
+                <span>Đang xử lý: <strong data-cashier-active-count>—</strong></span>
+                <span>Đã hoàn tiền: <strong data-cashier-refunded-count>—</strong></span>
+            </div>
+        </section>
         <section class="dashboard-shortcuts cashier-dashboard-shortcuts">
             <h3>Truy cập nhanh</h3>
             <div>
@@ -564,63 +572,69 @@ async function startApp() {
             "[data-cashier-today-revenue]",
             "[data-cashier-paid-count]",
             "[data-cashier-today-count]",
-            "[data-cashier-unpaid-count]"
+            "[data-cashier-unpaid-count]",
+            "[data-cashier-completed-count]",
+            "[data-cashier-active-count]",
+            "[data-cashier-refunded-count]"
         ];
         const metrics = metricSelectors.map((selector) => dashboardPanel.querySelector(selector));
-        if (metrics.some((element) => !element)) return;
+        const comparison = dashboardPanel.querySelector("[data-cashier-revenue-comparison]");
+        if (metrics.some((element) => !element) || !comparison) return;
         metrics.forEach((element) => { element.textContent = "…"; });
+        comparison.textContent = "Đang so sánh doanh thu với ngày hôm qua...";
 
         try {
-            const [orders, revenueReport] = await Promise.all([
-                orderService.getStaffOrders(),
-                revenueReportService.getReport("day", new Intl.DateTimeFormat("en-CA", {
-                    timeZone: "Asia/Ho_Chi_Minh",
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit"
-                }).format(new Date()))
-            ]);
             const today = new Intl.DateTimeFormat("en-CA", {
-                timeZone: "Asia/Ho_Chi_Minh",
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit"
+                timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit"
             }).format(new Date());
-            const todayOrders = orders.filter((order) => {
-                if (!order.created_at) return false;
-                const orderDate = new Intl.DateTimeFormat("en-CA", {
-                    timeZone: "Asia/Ho_Chi_Minh",
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit"
-                }).format(new Date(order.created_at));
-                return orderDate === today;
-            });
+            const yesterdayDate = new Date(Date.parse(today + "T00:00:00Z") - 86400000);
+            const yesterday = yesterdayDate.toISOString().slice(0, 10);
+            const [orders, todayReport, yesterdayReport] = await Promise.all([
+                orderService.getStaffOrders(),
+                revenueReportService.getReport("day", today),
+                revenueReportService.getReport("day", yesterday)
+            ]);
+            const todayOrders = orders.filter((order) => order.created_at &&
+                new Intl.DateTimeFormat("en-CA", {
+                    timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit"
+                }).format(new Date(order.created_at)) === today);
             const paidOrders = todayOrders.filter((order) => order.payment_status === "paid");
             const unpaidOrders = todayOrders.filter((order) =>
                 order.payment_status === "unpaid" && !["cancelled", "rejected"].includes(order.status)
             );
+            const completedOrders = todayOrders.filter((order) => order.status === "completed");
+            const activeOrders = todayOrders.filter((order) =>
+                ["confirmed", "preparing", "ready_for_pickup", "delivering"].includes(order.status)
+            );
+            const refundedOrders = todayOrders.filter((order) => order.payment_status === "refunded");
             const currencyFormatter = new Intl.NumberFormat("vi-VN", {
-                style: "currency",
-                currency: "VND",
-                maximumFractionDigits: 0
+                style: "currency", currency: "VND", maximumFractionDigits: 0
             });
+            const currentRevenue = Number(todayReport?.summary?.net_revenue) || 0;
+            const previousRevenue = Number(yesterdayReport?.summary?.net_revenue) || 0;
+            let comparisonText = "Doanh thu hôm nay bằng ngày hôm qua.";
+            if (previousRevenue === 0 && currentRevenue > 0) {
+                comparisonText = "Hôm nay đã phát sinh doanh thu, hôm qua chưa có doanh thu.";
+            } else if (previousRevenue === 0 && currentRevenue === 0) {
+                comparisonText = "Hôm nay và hôm qua chưa phát sinh doanh thu.";
+            } else {
+                const change = ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+                comparisonText = `Doanh thu hôm nay ${change >= 0 ? "tăng" : "giảm"} ${Math.abs(change).toFixed(1)}% so với hôm qua (${currencyFormatter.format(previousRevenue)}).`;
+            }
 
-            metrics[0].textContent = currencyFormatter.format(Number(revenueReport?.summary?.net_revenue) || 0);
-            metrics[1].textContent = String(Number(revenueReport?.summary?.paid_orders) || paidOrders.length);
+            metrics[0].textContent = currencyFormatter.format(currentRevenue);
+            metrics[1].textContent = String(Number(todayReport?.summary?.paid_orders) || paidOrders.length);
             metrics[2].textContent = String(todayOrders.length);
             metrics[3].textContent = String(unpaidOrders.length);
+            metrics[4].textContent = String(completedOrders.length);
+            metrics[5].textContent = String(activeOrders.length);
+            metrics[6].textContent = String(refundedOrders.length);
+            comparison.textContent = comparisonText;
         } catch (error) {
             console.error("Không thể tải tổng quan thu ngân:", error);
             metrics.forEach((element) => { element.textContent = "—"; });
-            const existingMessage = dashboardPanel.querySelector("[data-cashier-overview-error]");
-            if (existingMessage) existingMessage.remove();
-            const message = document.createElement("p");
-            message.className = "app-error";
-            message.dataset.cashierOverviewError = "";
-            message.setAttribute("role", "alert");
-            message.textContent = error.message || "Không thể tải số liệu tổng quan. Vui lòng thử lại.";
-            dashboardPanel.querySelector(".cashier-dashboard-welcome")?.after(message);
+            comparison.textContent = error.message || "Không thể tải số liệu so sánh doanh thu.";
+            comparison.classList.add("app-error");
         }
     }
 
