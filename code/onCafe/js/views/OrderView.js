@@ -2,7 +2,7 @@ import { formatCurrency } from "../utils/FormatUtils.js";
 
 const STATUS = {
     pending: "Chờ xác nhận", confirmed: "Đã xác nhận", preparing: "Đang pha chế",
-    delivering: "Đang giao", completed: "Hoàn tất", cancelled: "Đã hủy", rejected: "Đã từ chối"
+    ready_for_pickup: "Sẵn sàng nhận", delivering: "Đang giao", completed: "Hoàn tất", cancelled: "Đã hủy", rejected: "Đã từ chối"
 };
 const PAYMENT = { cash: "Tiền mặt", qr: "QR / chuyển khoản", card: "Thẻ" };
 const PAYMENT_STATUS = { unpaid: "Chưa thanh toán", paid: "Đã thanh toán", refunded: "Đã hoàn tiền" };
@@ -67,7 +67,7 @@ export class OrderView {
                 </div>
                 <p class="order-feedback" data-order-feedback role="status" aria-live="polite"></p>
                 <div class="table-scroll"><table class="product-table order-table">
-                    <thead><tr><th>Mã đơn / Thời gian</th><th>Khách hàng</th><th>Chi tiết món / Tổng tiền</th><th>Trạng thái đơn</th><th>Thanh toán</th><th>Thao tác</th></tr></thead>
+                    <thead><tr><th>Mã đơn / Loại đơn / Thời gian</th><th>Khách hàng / Nhận hàng</th><th>Chi tiết món / Tổng tiền</th><th>Trạng thái đơn</th><th>Thanh toán</th><th>Thao tác</th></tr></thead>
                     <tbody data-order-list></tbody>
                 </table></div>
                 <nav class="product-pagination" data-order-pagination aria-label="Phân trang đơn hàng"></nav>
@@ -126,10 +126,13 @@ export class OrderView {
             </div>`;
 
         list.innerHTML = pageOrders.map((order) => {
-            const items = (order.items || []).map((item) =>
+            const itemRows = (order.items || []).map((item) =>
                 `<div>${escapeHtml(item.product_name)} × ${escapeHtml(item.quantity)} <small>(${formatCurrency(Number(item.subtotal) || 0)})</small></div>`
             ).join("") || "Không có chi tiết món";
-            const note = order.customer_address ? `<p class="order-address"><strong>Địa chỉ / ghi chú:</strong> ${escapeHtml(order.customer_address)}</p>` : "";
+            const items = `<details class="order-detail"><summary>Xem ${(order.items || []).length} món</summary><div class="order-detail-items">${itemRows}</div><p>Phí giao hàng: ${formatCurrency(Number(order.delivery_fee) || 0)}</p></details>`;
+            const note = order.customer_address ? `<p class="order-address"><strong>Địa chỉ:</strong> ${escapeHtml(order.customer_address)}</p>` : "";
+            const sourceLabel = order.order_source === "online" ? "Đơn online" : "Tại quầy";
+            const fulfillmentLabel = order.fulfillment_method === "delivery" ? "Giao tận nhà" : "Nhận tại cửa hàng";
             const actions = this.getActions(order).map(([status, label, style]) =>
                 `<button class="button button-small ${style || ""}" type="button" data-order-action="${status}" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>${label}</button>`
             ).join("");
@@ -138,12 +141,12 @@ export class OrderView {
                 : order.payment_status === "refunded"
                     ? `<span class="status status-inactive">Đã hoàn tiền</span>`
                     : order.payment_method === "qr"
-                        ? `<span class="status status-pending">Chờ thanh toán QR</span>`
+                        ? `<span class="status status-pending">Chờ khách xác nhận QR</span>`
                         : `<button class="button button-small button-primary" type="button" data-payment-action="paid" data-order-id="${escapeHtml(order.id)}">Xác nhận đã thu</button>`;
             const extraActions = `${paymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}">In hóa đơn</button>`;
             return `<tr>
-                <td><strong>${escapeHtml(order.order_code || "#" + order.id)}</strong><br><small>${escapeHtml(formatDate(order.created_at))}</small></td>
-                <td><strong>${escapeHtml(order.customer_name || "Khách hàng")}</strong><br><small>${escapeHtml(order.customer_phone || "Chưa có SĐT")}</small>${note}</td>
+                <td><strong>${escapeHtml(order.order_code || "#" + order.id)}</strong><br><span class="order-source-label ${order.order_source === "online" ? "is-online" : "is-counter"}">${sourceLabel}</span><br><small>${escapeHtml(formatDate(order.created_at))}</small></td>
+                <td><strong>${escapeHtml(order.customer_name || "Khách hàng")}</strong><br><small>${escapeHtml(order.customer_phone || "Chưa có SĐT")}</small><br><span class="order-fulfillment-label">${fulfillmentLabel}</span>${note}</td>
                 <td><div class="order-item-summary">${items}</div><strong>${formatCurrency(Number(order.total_amount) || 0)}</strong></td>
                 <td><span class="status ${this.statusClass(order.status)}">${escapeHtml(STATUS[order.status] || order.status || "Không rõ")}</span></td>
                 <td>${escapeHtml(PAYMENT[order.payment_method] || order.payment_method || "—")}<br><small>${escapeHtml(PAYMENT_STATUS[order.payment_status] || order.payment_status || "—")}</small></td>
@@ -159,7 +162,13 @@ export class OrderView {
             ["rejected", "Từ chối", "button-danger"]
         ];
         if (order.status === "confirmed") return [["preparing", "Bắt đầu pha chế", "button-primary"]];
-        if (order.status === "preparing") return [["delivering", "Bắt đầu giao", "button-primary"]];
+        if (order.status === "preparing") {
+            if (order.order_source === "online" && order.fulfillment_method === "pickup") {
+                return [["ready_for_pickup", "Sẵn sàng nhận", "button-primary"]];
+            }
+            return [["delivering", order.order_source === "online" ? "Bắt đầu giao" : "Chuyển bước", "button-primary"]];
+        }
+        if (order.status === "ready_for_pickup") return [["completed", "Đã giao khách", "button-primary"]];
         if (order.status === "delivering") return [["completed", "Hoàn tất đơn", "button-primary"]];
         // Đơn hoàn tất, bị từ chối hoặc đã hủy không còn thao tác.
         return [];
