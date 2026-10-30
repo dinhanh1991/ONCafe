@@ -54,7 +54,7 @@ export class OrderView {
                     <select id="order-filter" data-order-filter aria-label="Lọc theo trạng thái">
                         <option value="all">Tất cả đơn</option><option value="pending">Chờ xác nhận</option>
                         <option value="confirmed">Đã xác nhận</option><option value="preparing">Đang pha chế</option>
-                        <option value="delivering">Đang giao</option><option value="completed">Hoàn tất</option>
+                        <option value="ready_for_pickup">Sẵn sàng nhận</option><option value="delivering">Đang giao</option><option value="completed">Hoàn tất</option>
                         <option value="rejected">Đã từ chối</option><option value="cancelled">Đã hủy</option>
                     </select>
                     <label class="visually-hidden" for="order-sort">Sắp xếp đơn hàng</label>
@@ -130,7 +130,8 @@ export class OrderView {
                 `<div>${escapeHtml(item.product_name)} × ${escapeHtml(item.quantity)} <small>(${formatCurrency(Number(item.subtotal) || 0)})</small></div>`
             ).join("") || "Không có chi tiết món";
             const items = `<details class="order-detail"><summary>Xem ${(order.items || []).length} món</summary><div class="order-detail-items">${itemRows}</div><p>Phí giao hàng: ${formatCurrency(Number(order.delivery_fee) || 0)}</p></details>`;
-            const note = order.customer_address ? `<p class="order-address"><strong>Địa chỉ:</strong> ${escapeHtml(order.customer_address)}</p>` : "";
+            const note = order.fulfillment_method === "delivery" && order.customer_address
+                ? `<p class="order-address"><strong>Địa chỉ giao:</strong> ${escapeHtml(order.customer_address)}</p>` : "";
             const sourceLabel = order.order_source === "online" ? "Đơn online" : "Tại quầy";
             const fulfillmentLabel = order.fulfillment_method === "delivery" ? "Giao tận nhà" : "Nhận tại cửa hàng";
             const actions = this.getActions(order).map(([status, label, style]) =>
@@ -277,8 +278,8 @@ export class OrderView {
         printWindow.document.write(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Hóa đơn ${escapeHtml(order.order_code)}</title>
             <style>body{font:14px Arial,sans-serif;max-width:360px;margin:24px auto;color:#222}h1,p{text-align:center}table{width:100%;border-collapse:collapse;margin:18px 0}td{padding:7px 0;border-bottom:1px dashed #ccc}td:last-child{text-align:right}.total{font-size:18px;font-weight:bold;text-align:right}.muted{color:#555;font-size:12px}</style>
             </head><body><h1>ONCafe</h1><p>HÓA ĐƠN BÁN HÀNG</p><p class="muted">${escapeHtml(order.order_code || "#" + order.id)}<br>${escapeHtml(formatDate(order.created_at))}</p>
-            <p>Khách hàng: ${escapeHtml(order.customer_name || "Khách lẻ")}<br>Điện thoại: ${escapeHtml(order.customer_phone || "—")}</p>
-            <table><tbody>${items}</tbody></table><p class="total">Tổng: ${formatCurrency(Number(order.total_amount) || 0)}</p>
+            <p>Khách hàng: ${escapeHtml(order.customer_name || "Khách lẻ")}<br>Điện thoại: ${escapeHtml(order.customer_phone || "—")}<br>Nhận hàng: ${escapeHtml(order.fulfillment_method === "delivery" ? "Giao tận nhà" : "Nhận tại cửa hàng")}</p>
+            <table><tbody>${items}</tbody></table><p>Phí giao hàng: ${formatCurrency(Number(order.delivery_fee) || 0)}</p><p class="total">Tổng: ${formatCurrency(Number(order.total_amount) || 0)}</p>
             <p>Thanh toán: ${escapeHtml(PAYMENT[order.payment_method] || order.payment_method || "—")}<br>Trạng thái: ${escapeHtml(PAYMENT_STATUS[order.payment_status] || order.payment_status || "—")}</p>
             <p>Cảm ơn quý khách!</p><script>window.onload=()=>window.print();<\/script></body></html>`);
         printWindow.document.close();
