@@ -1,4 +1,6 @@
 import { supabase } from "./config/supabase.js";
+import { ValidationUtils } from "./validators/ValidationUtils.js";
+import { OrderValidator } from "./validators/OrderValidator.js";
 
 const menuGrid = document.querySelector("#menuGrid");
 const menuStatus = document.querySelector("#menuStatus");
@@ -529,7 +531,7 @@ if (checkoutForm) {
             checkoutForm.querySelector('[name="fullName"]')?.focus();
             return;
         }
-        if (!phonePattern.test(phone)) {
+        if (!ValidationUtils.isValidVietnamPhone(phone)) {
             showCheckoutMessage("Số điện thoại chưa hợp lệ. Hãy nhập số điện thoại Việt Nam gồm 10–11 chữ số.", true);
             checkoutForm.querySelector('[name="phone"]')?.focus();
             return;
@@ -543,6 +545,11 @@ if (checkoutForm) {
             id: item.id,
             quantity: item.quantity
         }));
+        const itemValidation = OrderValidator.validateItems(items);
+        if (!itemValidation.isValid) {
+            showCheckoutMessage(itemValidation.errors.items, true);
+            return;
+        }
 
         submitOrderButton.disabled = true;
         showCheckoutMessage("Đang gửi đơn hàng lên hệ thống...");
