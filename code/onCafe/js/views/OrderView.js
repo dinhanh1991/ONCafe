@@ -15,6 +15,20 @@ function formatDate(value) {
     return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
 }
 
+function toLocalDateKey(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    return `${values.year}-${values.month}-${values.day}`;
+}
+
 export class OrderView {
     constructor(container, { onUpdateStatus, onUpdatePayment, onMarkArrived, onRefresh, readOnly = false }) {
         if (!container) throw new Error("Không tìm thấy vùng hiển thị đơn hàng.");
@@ -26,6 +40,10 @@ export class OrderView {
         this.onRefresh = onRefresh;
         this.orders = [];
         this.filter = "all";
+        this.sourceFilter = "all";
+        this.paymentFilter = "all";
+        this.dateFrom = "";
+        this.dateTo = "";
         this.searchTerm = "";
         this.sortBy = "newest";
         this.currentPage = 1;
@@ -51,14 +69,23 @@ export class OrderView {
                 </header>
                 <div class="order-toolbar">
                     <label class="visually-hidden" for="order-search">Tìm đơn hàng</label>
-                    <input id="order-search" data-order-search type="search" placeholder="Tìm mã đơn, khách hàng hoặc món" value="${escapeHtml(this.searchTerm)}">
+                    <input id="order-search" data-order-search type="search" placeholder="Tìm mã đơn, khách hàng, SĐT hoặc món" value="${escapeHtml(this.searchTerm)}">
                     <label class="visually-hidden" for="order-filter">Lọc trạng thái</label>
                     <select id="order-filter" data-order-filter aria-label="Lọc theo trạng thái">
-                        <option value="all">Tất cả đơn</option><option value="pending">Chờ xác nhận</option>
+                        <option value="all">Tất cả trạng thái</option><option value="pending">Chờ xác nhận</option>
                         <option value="confirmed">Đã xác nhận</option><option value="preparing">Đang pha chế</option>
                         <option value="ready_for_pickup">Sẵn sàng nhận</option><option value="delivering">Đang giao</option><option value="completed">Hoàn tất</option>
                         <option value="rejected">Đã từ chối</option><option value="cancelled">Đã hủy</option>
                     </select>
+                    <select data-order-source aria-label="Lọc nguồn đơn">
+                        <option value="all">Tất cả nguồn đơn</option><option value="online">Đơn online</option><option value="counter">Đơn tại quầy</option>
+                    </select>
+                    <select data-order-payment aria-label="Lọc thanh toán">
+                        <option value="all">Mọi thanh toán</option><option value="paid">Đã thanh toán</option>
+                        <option value="unpaid">Chưa thanh toán</option><option value="refunded">Đã hoàn tiền</option>
+                    </select>
+                    <label class="order-date-filter"><span>Từ ngày</span><input type="date" data-order-date-from value="${escapeHtml(this.dateFrom)}"></label>
+                    <label class="order-date-filter"><span>Đến ngày</span><input type="date" data-order-date-to value="${escapeHtml(this.dateTo)}"></label>
                     <label class="visually-hidden" for="order-sort">Sắp xếp đơn hàng</label>
                     <select id="order-sort" data-order-sort aria-label="Sắp xếp đơn hàng">
                         <option value="newest">Mới nhất</option>
@@ -67,6 +94,7 @@ export class OrderView {
                         <option value="total-asc">Tổng tiền thấp đến cao</option>
                     </select>
                 </div>
+                <div class="order-list-summary" data-order-list-summary aria-live="polite"></div>
                 <p class="order-feedback" data-order-feedback role="status" aria-live="polite"></p>
                 <div class="table-scroll"><table class="product-table order-table">
                     <thead><tr><th>Mã đơn / Loại đơn / Thời gian</th><th>Khách hàng / Nhận hàng</th><th>Chi tiết món / Tổng tiền</th><th>Trạng thái đơn</th><th>Thanh toán</th><th>${this.readOnly ? "Thông tin" : "Thao tác"}</th></tr></thead>
@@ -75,6 +103,8 @@ export class OrderView {
                 <nav class="product-pagination" data-order-pagination aria-label="Phân trang đơn hàng"></nav>
             </section>`;
         this.container.querySelector("[data-order-filter]").value = this.filter;
+        this.container.querySelector("[data-order-source]").value = this.sourceFilter;
+        this.container.querySelector("[data-order-payment]").value = this.paymentFilter;
         this.container.querySelector("[data-order-sort]").value = this.sortBy;
         this.renderList();
         return this;
@@ -90,7 +120,14 @@ export class OrderView {
                 order.customer_phone,
                 ...(Array.isArray(order.items) ? order.items.map((item) => item.product_name) : [])
             ].join(" ").toLocaleLowerCase("vi");
-            return (this.filter === "all" || order.status === this.filter) && searchable.includes(term);
+            const orderDate = toLocalDateKey(order.created_at);
+            const matchesStatus = this.filter === "all" || order.status === this.filter;
+            const matchesSource = this.sourceFilter === "all" ||
+                (this.sourceFilter === "online" ? order.order_source === "online" : order.order_source !== "online");
+            const matchesPayment = this.paymentFilter === "all" || order.payment_status === this.paymentFilter;
+            const matchesDateFrom = !this.dateFrom || (orderDate && orderDate >= this.dateFrom);
+            const matchesDateTo = !this.dateTo || (orderDate && orderDate <= this.dateTo);
+            return matchesStatus && matchesSource && matchesPayment && matchesDateFrom && matchesDateTo && searchable.includes(term);
         });
         orders.sort((first, second) => {
             if (this.sortBy.startsWith("total-")) {
@@ -108,7 +145,14 @@ export class OrderView {
         const list = this.container.querySelector("[data-order-list]");
         if (!list) return;
         const orders = this.getFilteredOrders();
-        this.container.querySelector("[data-order-count]").textContent = `${orders.length} đơn hàng`;
+        this.container.querySelector("[data-order-count]").textContent = `${orders.length} đơn hàng phù hợp`;
+        const summary = this.container.querySelector("[data-order-list-summary]");
+        if (summary) {
+            const totalAmount = orders.reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0);
+            const paidAmount = orders.filter((item) => item.payment_status === "paid")
+                .reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0);
+            summary.innerHTML = `<span><strong>${orders.length}</strong> đơn phù hợp</span><span>Tổng giá trị đơn: <strong>${formatCurrency(totalAmount)}</strong></span><span>Đã thanh toán: <strong>${formatCurrency(paidAmount)}</strong></span>`;
+        }
         const pagination = this.container.querySelector("[data-order-pagination]");
         const totalPages = Math.max(1, Math.ceil(orders.length / this.pageSize));
         this.currentPage = Math.min(this.currentPage, totalPages);
@@ -364,11 +408,24 @@ export class OrderView {
     handleChange(event) {
         if (event.target.matches("[data-order-filter]")) {
             this.filter = event.target.value;
+        } else if (event.target.matches("[data-order-source]")) {
+            this.sourceFilter = event.target.value;
+        } else if (event.target.matches("[data-order-payment]")) {
+            this.paymentFilter = event.target.value;
+        } else if (event.target.matches("[data-order-date-from]")) {
+            this.dateFrom = event.target.value;
+        } else if (event.target.matches("[data-order-date-to]")) {
+            this.dateTo = event.target.value;
         } else if (event.target.matches("[data-order-sort]")) {
             this.sortBy = event.target.value;
         } else {
             return;
         }
+        if (this.dateFrom && this.dateTo && this.dateFrom > this.dateTo) {
+            this.setFeedback("Ngày bắt đầu không được sau ngày kết thúc.", true);
+            return;
+        }
+        this.setFeedback("");
         this.currentPage = 1;
         this.renderList();
     }
