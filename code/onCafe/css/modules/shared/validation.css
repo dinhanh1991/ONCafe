@@ -1,0 +1,17 @@
+/* Thông báo lỗi validation ngay dưới trường nhập liệu */
+.field-error {
+    display: block;
+    margin-top: 5px;
+    color: #c62828;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.45;
+}
+.is-invalid {
+    border-color: #d32f2f !important;
+    outline-color: rgba(211, 47, 47, 0.16);
+}
+.is-invalid:focus {
+    border-color: #b71c1c !important;
+    box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.10);
+}
