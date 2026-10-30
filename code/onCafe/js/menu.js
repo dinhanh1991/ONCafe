@@ -225,14 +225,27 @@ const checkoutMessage = document.querySelector("#checkoutMessage");
 const submitOrderButton = document.querySelector("#submitOrderButton");
 const fulfillmentSelect = checkoutForm?.querySelector('[name="fulfillmentMethod"]');
 const addressInput = checkoutForm?.querySelector('[name="address"]');
+const paymentSelect = checkoutForm?.querySelector('[name="paymentMethod"]');
 const checkoutTotalSummary = document.querySelector("#checkoutTotalSummary");
 
 function updateCheckoutSummary() {
     if (!checkoutTotalSummary) return;
     const productTotal = cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
-    const deliveryFee = fulfillmentSelect?.value === "delivery" ? 15000 : 0;
+    const isDelivery = fulfillmentSelect?.value === "delivery";
+    const deliveryFee = isDelivery ? 15000 : 0;
     checkoutTotalSummary.textContent = `Tạm tính: ${currencyFormatter.format(productTotal)} · Phí giao hàng: ${currencyFormatter.format(deliveryFee)} · Tổng: ${currencyFormatter.format(productTotal + deliveryFee)}`;
-    if (addressInput) addressInput.required = fulfillmentSelect?.value === "delivery";
+    if (addressInput) {
+        addressInput.required = isDelivery;
+        addressInput.minLength = isDelivery ? 20 : 0;
+        addressInput.placeholder = isDelivery
+            ? "Nhập đầy đủ số nhà, tên đường/thôn xóm, phường/xã, quận/huyện và tỉnh/thành phố"
+            : "Địa chỉ hoặc ghi chú (không bắt buộc khi nhận tại cửa hàng)";
+    }
+    if (paymentSelect) {
+        const cashOption = paymentSelect.querySelector('option[value="cash"]');
+        if (cashOption) cashOption.hidden = isDelivery;
+        if (isDelivery) paymentSelect.value = "qr";
+    }
 }
 
 fulfillmentSelect?.addEventListener("change", updateCheckoutSummary);
@@ -391,9 +404,26 @@ if (checkoutForm) {
 
         const formData = new FormData(checkoutForm);
         const fulfillmentMethod = String(formData.get("fulfillmentMethod") || "pickup");
-        const paymentMethod = String(formData.get("paymentMethod") || "cash");
-        if (fulfillmentMethod === "delivery" && !String(formData.get("address") || "").trim()) {
-            showCheckoutMessage("Vui lòng nhập địa chỉ giao hàng.", true);
+        const paymentMethod = fulfillmentMethod === "delivery"
+            ? "qr"
+            : String(formData.get("paymentMethod") || "cash");
+        const fullName = String(formData.get("fullName") || "").trim();
+        const phone = String(formData.get("phone") || "").trim().replace(/[ .()-]/g, "");
+        const address = String(formData.get("address") || "").trim();
+        const phonePattern = /^(0(?:[35789]\\d{8}|2\\d{8,9})|\\+84(?:[35789]\\d{8}|2\\d{8,9}))$/;
+
+        if (fullName.length < 2) {
+            showCheckoutMessage("Vui lòng nhập đầy đủ họ và tên người nhận.", true);
+            checkoutForm.querySelector('[name="fullName"]')?.focus();
+            return;
+        }
+        if (!phonePattern.test(phone)) {
+            showCheckoutMessage("Số điện thoại chưa hợp lệ. Hãy nhập số điện thoại Việt Nam gồm 10–11 chữ số.", true);
+            checkoutForm.querySelector('[name="phone"]')?.focus();
+            return;
+        }
+        if (fulfillmentMethod === "delivery" && address.length < 20) {
+            showCheckoutMessage("Địa chỉ giao hàng chưa đầy đủ. Vui lòng nhập số nhà/đường hoặc thôn xóm, phường/xã, quận/huyện và tỉnh/thành phố.", true);
             addressInput?.focus();
             return;
         }
@@ -407,9 +437,9 @@ if (checkoutForm) {
 
         try {
             const { data, error } = await supabase.rpc("oncafe_create_order", {
-                p_full_name: String(formData.get("fullName") || "").trim(),
-                p_phone: String(formData.get("phone") || "").trim(),
-                p_address: String(formData.get("address") || "").trim(),
+                p_full_name: fullName,
+                p_phone: phone,
+                p_address: address,
                 p_payment_method: paymentMethod,
                 p_fulfillment_method: fulfillmentMethod,
                 p_items: items
