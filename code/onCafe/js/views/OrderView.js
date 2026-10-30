@@ -16,11 +16,12 @@ function formatDate(value) {
 }
 
 export class OrderView {
-    constructor(container, { onUpdateStatus, onUpdatePayment, onRefresh }) {
+    constructor(container, { onUpdateStatus, onUpdatePayment, onMarkArrived, onRefresh }) {
         if (!container) throw new Error("Không tìm thấy vùng hiển thị đơn hàng.");
         this.container = container;
         this.onUpdateStatus = onUpdateStatus;
         this.onUpdatePayment = onUpdatePayment;
+        this.onMarkArrived = onMarkArrived;
         this.onRefresh = onRefresh;
         this.orders = [];
         this.filter = "all";
@@ -132,6 +133,9 @@ export class OrderView {
             const items = `<details class="order-detail"><summary>Xem ${(order.items || []).length} món</summary><div class="order-detail-items">${itemRows}</div><p>Phí giao hàng: ${formatCurrency(Number(order.delivery_fee) || 0)}</p></details>`;
             const note = order.fulfillment_method === "delivery" && order.customer_address
                 ? `<p class="order-address"><strong>Địa chỉ giao:</strong> ${escapeHtml(order.customer_address)}</p>` : "";
+            const arrivalNote = order.delivery_arrived_at
+                ? `<p class="order-address"><strong>Đã thông báo khách lúc:</strong> ${escapeHtml(formatDate(order.delivery_arrived_at))}</p>`
+                : "";
             const sourceLabel = order.order_source === "online" ? "Đơn online" : "Tại quầy";
             const fulfillmentLabel = order.fulfillment_method === "delivery" ? "Giao tận nhà" : "Nhận tại cửa hàng";
             const actions = this.getActions(order).map(([status, label, style]) =>
@@ -147,7 +151,7 @@ export class OrderView {
             const extraActions = `${paymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}">In hóa đơn</button>`;
             return `<tr>
                 <td><strong>${escapeHtml(order.order_code || "#" + order.id)}</strong><br><span class="order-source-label ${order.order_source === "online" ? "is-online" : "is-counter"}">${sourceLabel}</span><br><small>${escapeHtml(formatDate(order.created_at))}</small></td>
-                <td><strong>${escapeHtml(order.customer_name || "Khách hàng")}</strong><br><small>${escapeHtml(order.customer_phone || "Chưa có SĐT")}</small><br><span class="order-fulfillment-label">${fulfillmentLabel}</span>${note}</td>
+                <td><strong>${escapeHtml(order.customer_name || "Khách hàng")}</strong><br><small>${escapeHtml(order.customer_phone || "Chưa có SĐT")}</small><br><span class="order-fulfillment-label">${fulfillmentLabel}</span>${note}${arrivalNote}</td>
                 <td><div class="order-item-summary">${items}</div><strong>${formatCurrency(Number(order.total_amount) || 0)}</strong></td>
                 <td><span class="status ${this.statusClass(order.status)}">${escapeHtml(STATUS[order.status] || order.status || "Không rõ")}</span></td>
                 <td>${escapeHtml(PAYMENT[order.payment_method] || order.payment_method || "—")}<br><small>${escapeHtml(PAYMENT_STATUS[order.payment_status] || order.payment_status || "—")}</small></td>
@@ -170,7 +174,14 @@ export class OrderView {
             return [["delivering", order.order_source === "online" ? "Bắt đầu giao" : "Chuyển bước", "button-primary"]];
         }
         if (order.status === "ready_for_pickup") return [["completed", "Đã giao khách", "button-primary"]];
-        if (order.status === "delivering") return [["completed", "Hoàn tất đơn", "button-primary"]];
+        if (order.status === "delivering") {
+            if (order.order_source === "online" && order.fulfillment_method === "delivery") {
+                return order.delivery_arrived_at
+                    ? [["completed", "Xác nhận đã giao", "button-primary"]]
+                    : [["mark_arrived", "Đã đến nơi", "button-primary"]];
+            }
+            return [["completed", "Hoàn tất đơn", "button-primary"]];
+        }
         // Đơn hoàn tất, bị từ chối hoặc đã hủy không còn thao tác.
         return [];
     }
@@ -239,7 +250,7 @@ export class OrderView {
         const { orderId, orderAction } = button.dataset;
         const order = this.orders.find((item) => String(item.id) === String(orderId));
         if (!order || this.busy.has(String(orderId))) return;
-        const label = STATUS[orderAction] || orderAction;
+        const label = orderAction === "mark_arrived" ? "Đã đến nơi" : (STATUS[orderAction] || orderAction);
         const confirmed = await this.showConfirmDialog({
             title: `Xác nhận ${label.toLowerCase()}`,
             message: `Bạn có chắc muốn chuyển đơn ${order.order_code || "#" + order.id} sang trạng thái "${label}" không?`,
@@ -252,8 +263,13 @@ export class OrderView {
         this.renderList();
         this.setFeedback("Đang cập nhật trạng thái đơn hàng...");
         try {
-            await this.onUpdateStatus(orderId, orderAction);
-            this.setFeedback("Cập nhật trạng thái đơn hàng thành công.");
+            if (orderAction === "mark_arrived") {
+                await this.onMarkArrived(orderId);
+                this.setFeedback("Đã ghi nhận nhân viên đến nơi và thông báo cho khách hàng.");
+            } else {
+                await this.onUpdateStatus(orderId, orderAction);
+                this.setFeedback("Cập nhật trạng thái đơn hàng thành công.");
+            }
             await this.refresh();
         } catch (error) {
             console.error("Cập nhật đơn hàng thất bại:", error);
