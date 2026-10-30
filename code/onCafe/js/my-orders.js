@@ -101,7 +101,7 @@ async function loadOrders() {
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError || !userData.user) {
             setMessage("Bạn cần đăng nhập để xem đơn hàng của mình.", true);
-            list.innerHTML = '<a class="orders-login-link" href="./login.html?redirect=my-orders">Đăng nhập</a>';
+            list.innerHTML = '<a class="orders-login-link" href="../auth/login.html?redirect=my-orders">Đăng nhập</a>';
             return;
         }
 
