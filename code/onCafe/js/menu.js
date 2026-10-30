@@ -327,14 +327,19 @@ function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, qrInfo) 
         }
     }
 
+    const trackButton = document.createElement("button");
+    trackButton.type = "button";
+    trackButton.className = "menu-add-button";
+    trackButton.textContent = "Theo dõi đơn hàng";
+
     const closeButton = document.createElement("button");
     closeButton.type = "button";
-    closeButton.className = "menu-add-button";
-    closeButton.textContent = "Đóng";
+    closeButton.className = "menu-order-dialog-secondary";
+    closeButton.textContent = "Tiếp tục xem thực đơn";
 
     dialog.append(icon, title, message);
     if (qrPanel) dialog.append(qrPanel);
-    dialog.append(closeButton);
+    dialog.append(trackButton, closeButton);
     overlay.append(dialog);
     document.body.append(overlay);
 
@@ -347,6 +352,9 @@ function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, qrInfo) 
     };
 
     closeButton.addEventListener("click", close);
+    trackButton.addEventListener("click", () => {
+        window.location.href = "./my-orders.html";
+    });
     overlay.addEventListener("click", (event) => {
         if (event.target === overlay) close();
     });
