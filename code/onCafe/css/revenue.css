@@ -28,3 +28,19 @@
 .revenue-report-note{margin:0;color:#81766e;font-size:11px;line-height:1.6}
 @media(max-width:900px){.revenue-report-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.revenue-report-heading{align-items:flex-start;flex-direction:column}.revenue-report-filters{grid-template-columns:1fr}.revenue-report-metric{padding:13px}.revenue-report-card{padding:14px}.revenue-chart-row{grid-template-columns:42px minmax(40px,1fr) 100px;gap:8px}.revenue-chart-value{font-size:10px}}
+
+/* Advanced cashier order filters and comparison indicators */
+.order-toolbar{display:flex;flex-wrap:wrap;align-items:end;gap:10px}
+.order-toolbar select,.order-toolbar input{min-height:40px;max-width:100%;padding:8px 10px;border:1px solid #ddd4ca;border-radius:8px;background:#fff;color:#30251f;font:inherit}
+.order-toolbar>input[type="search"]{flex:1 1 240px;min-width:210px}
+.order-date-filter{display:grid;gap:4px;color:#766b64;font-size:11px;font-weight:650}
+.order-date-filter input{min-width:145px}
+.order-list-summary{display:flex;flex-wrap:wrap;gap:10px 22px;padding:12px 14px;border:1px solid #e8e0d7;border-radius:10px;background:#fffdfb;color:#766b64;font-size:12px}
+.order-list-summary strong{color:#30251f}
+.revenue-report-metric small[data-revenue-compare],.revenue-report-metric small[data-summary-compare]{line-height:1.45}
+.cashier-dashboard-comparison{display:grid;gap:10px;margin:16px 0 22px;padding:15px 18px;border:1px solid #e8e0d7;border-radius:12px;background:#fff}
+.cashier-dashboard-comparison p{margin:0;color:#665b53;font-size:13px}
+.cashier-dashboard-comparison strong{color:#30251f}
+.cashier-dashboard-statuses{display:flex;flex-wrap:wrap;gap:10px 20px;color:#766b64;font-size:12px}
+.cashier-dashboard-statuses strong{color:#30251f}
+@media(max-width:640px){.order-toolbar{align-items:stretch}.order-toolbar select,.order-date-filter{flex:1 1 145px}.order-list-summary{display:grid;gap:7px}}
