@@ -30,7 +30,7 @@ export class CounterOrderView {
         this.container.innerHTML = `
             <section class="product-manager counter-order">
                 <header class="product-heading"><div><p class="eyebrow">BÁN HÀNG TẠI QUẦY</p><h2>Tạo đơn hàng</h2><p>Chọn đồ uống, kiểm tra tồn kho và tạo đơn.</p></div>
-                <button class="button" type="button" data-counter-refresh>↻ Tải lại đồ uống</button></header>
+                <button class="button" type="button" data-counter-refresh><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Tải lại đồ uống</button></header>
                 <p data-counter-feedback role="status" aria-live="polite"></p>
                 <form data-counter-form class="product-form">
                     <div class="product-form-grid">
@@ -51,7 +51,7 @@ export class CounterOrderView {
                     <div class="table-scroll"><table class="product-table"><thead><tr><th>Đồ uống</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Số lượng</th></tr></thead><tbody data-counter-products><tr><td colspan="5">Đang tải...</td></tr></tbody></table></div>
                     <h3>Giỏ hàng</h3><div data-counter-cart></div>
                     <p class="counter-total">Tổng tiền: <strong data-counter-total>0 ₫</strong></p>
-                    <div class="form-actions"><button class="button button-primary" type="submit">Tạo đơn hàng</button></div>
+                    <div class="form-actions"><button class="button button-primary" type="submit"><i class="bi bi-cart-check me-1" aria-hidden="true"></i>Tạo đơn hàng</button></div>
                 </form>
             </section>`;
         await this.loadProducts();
@@ -224,7 +224,7 @@ export class CounterOrderView {
                 <strong class="qr-demo-amount">${formatCurrency(order.total_amount)}</strong>
                 <p class="qr-demo-warning">Đây là xác nhận nội bộ, chưa kiểm tra giao dịch ngân hàng thực tế. Khách quét mã và xác nhận trên iPhone.</p>
                 <p data-qr-demo-feedback role="status" aria-live="polite">Đang tạo liên kết xác nhận...</p>
-                <button class="button button-primary" type="button" data-qr-retry hidden>Tạo lại mã QR</button>
+                <button class="button button-primary" type="button" data-qr-retry hidden><i class="bi bi-qr-code me-1" aria-hidden="true"></i>Tạo lại mã QR</button>
             </div>
             <div class="qr-demo-code">
                 <img class="qr-demo-image" data-qr-image alt="Mã QR mở trang xác nhận thanh toán trên điện thoại" />
