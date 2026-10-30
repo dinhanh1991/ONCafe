@@ -411,7 +411,7 @@ function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, qrInfo) 
         qrPanel.className = "customer-qr-panel";
         const note = document.createElement("p");
         note.textContent = qrInfo?.image
-            ? "Quét mã QR để mở trang xác nhận thanh toán. Đây là xác nhận nội bộ mô phỏng, không phải kết nối ngân hàng."
+            ? "Quét mã QR để tiếp tục xác nhận thanh toán."
             : `Chưa tạo được mã QR: ${qrInfo?.error || "Vui lòng vào Đơn hàng của tôi hoặc liên hệ cửa hàng để được hỗ trợ."}`;
         qrPanel.append(note);
         if (qrInfo?.image) {
