@@ -297,7 +297,7 @@ async function startApp() {
         onLoadProducts: () => productService.getAllProducts(),
         onCreateOrder: (order) => orderService.createCounterOrder(order),
         onCreated: () => orderView.refresh(),
-        onSimulateQrPayment: (id) => orderService.updatePayment(id, "paid")
+        onCreateQrConfirmation: (id) => orderService.createQrConfirmation(id)
     });
 
     async function loadProducts() {
@@ -345,8 +345,14 @@ async function startApp() {
         "my-profile": ["Thông tin tài khoản", "Cập nhật thông tin cá nhân và mật khẩu đăng nhập."]
     };
 
+    let orderRefreshTimer = null;
+
     function activateSection(sectionName) {
         if (!sectionDetails[sectionName]) return;
+        if (orderRefreshTimer) {
+            window.clearInterval(orderRefreshTimer);
+            orderRefreshTimer = null;
+        }
         if (navigation) {
             for (const button of navigation.querySelectorAll("[data-section]")) {
                 const active = button.dataset.section === sectionName;
@@ -362,7 +368,12 @@ async function startApp() {
         }
         if (sectionName === "drinks" && canManageProducts) loadProducts();
         if (sectionName === "employees" && canManageEmployees) loadEmployees();
-        if (sectionName === "orders") loadOrders();
+        if (sectionName === "orders") {
+            loadOrders();
+            orderRefreshTimer = window.setInterval(() => {
+                if (!document.hidden) void orderView.refresh();
+            }, 5000);
+        }
         if (sectionName === "counter-order") void counterOrderView.render();
         if (sectionName === "overview" && isSeller) loadSellerOverview();
     }
