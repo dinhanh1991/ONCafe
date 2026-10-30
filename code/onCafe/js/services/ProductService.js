@@ -77,7 +77,7 @@ export class ProductService {
         const result = ProductValidator.validate(data);
 
         if (!result.isValid) {
-            const error = new Error("Dữ liệu sản phẩm không hợp lệ.");
+            const error = new Error(Object.values(result.errors).join(" "));
             error.validationErrors = result.errors;
             throw error;
         }
