@@ -309,11 +309,25 @@ export class OrderView {
     }
 
     async refresh() {
+        const activeElement = document.activeElement;
+        const searchWasFocused = activeElement?.matches?.("[data-order-search]") &&
+            this.container.contains(activeElement);
+        const selectionStart = searchWasFocused ? activeElement.selectionStart : null;
+        const selectionEnd = searchWasFocused ? activeElement.selectionEnd : null;
+
         this.setFeedback("Đang tải danh sách đơn hàng...");
         try {
             const orders = await this.onRefresh();
             this.render(orders);
             this.setFeedback("");
+
+            if (searchWasFocused) {
+                const searchInput = this.container.querySelector("[data-order-search]");
+                searchInput?.focus({ preventScroll: true });
+                if (selectionStart !== null && selectionEnd !== null) {
+                    searchInput?.setSelectionRange(selectionStart, selectionEnd);
+                }
+            }
         } catch (error) {
             console.error("Tải đơn hàng thất bại:", error);
             this.setFeedback(error.message || "Không thể tải đơn hàng.", true);
