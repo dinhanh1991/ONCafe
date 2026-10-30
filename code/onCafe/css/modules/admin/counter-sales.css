@@ -1,0 +1,33 @@
+/* Bổ sung cho luồng bán hàng tại quầy */
+.counter-order [data-counter-feedback] {
+    min-height: 22px;
+    margin: 8px 0;
+}
+.counter-order h3 {
+    margin: 24px 0 12px;
+}
+.counter-order [data-counter-quantity] {
+    width: 88px;
+    min-width: 72px;
+}
+.counter-total {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+    font-size: 16px;
+}
+.counter-total strong {
+    color: var(--ink);
+    font-size: 22px;
+}
+.order-actions {
+    display: flex;
+    gap: 6px;
+}
+@media print {
+    .counter-order { break-inside: avoid; }
+}
+
+
