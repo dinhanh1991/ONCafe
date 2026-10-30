@@ -480,7 +480,7 @@ if (checkoutButton && checkoutForm) {
         const { data, error } = await supabase.auth.getUser();
         if (error || !data.user) {
             showStatus("Bạn cần đăng nhập trước khi đặt hàng. Hãy đăng nhập rồi quay lại thực đơn.", true);
-            window.location.href = "./login.html?redirect=menu";
+            window.location.href = "../auth/login.html?redirect=menu";
             return;
         }
 
