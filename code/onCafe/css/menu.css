@@ -444,3 +444,17 @@
     .menu-order-dialog{padding:23px 18px}
     .customer-qr-panel img{width:min(190px,65vw);height:auto;aspect-ratio:1}
 }
+
+
+/* Payment success modal also used on the menu page while the customer is checking out */
+.payment-success-backdrop{position:fixed;inset:0;z-index:11000;display:grid;place-items:center;padding:20px;background:rgba(28,22,18,.58);backdrop-filter:blur(4px)}
+.payment-success-dialog{width:min(100%,410px);padding:32px 26px;border:1px solid #e5eee7;border-radius:20px;background:#fff;text-align:center;box-shadow:0 22px 65px rgba(30,20,12,.25);animation:payment-success-in .22s ease-out}
+.payment-success-icon{display:grid;width:66px;height:66px;place-items:center;margin:0 auto 17px;border-radius:50%;background:#e8f6ed;color:#18794e;font-size:36px;font-weight:800}
+.payment-success-dialog h2{margin:0 0 10px;color:#176b52;font-size:25px}
+.payment-success-dialog p{margin:0;color:#65574d;line-height:1.7}
+.payment-success-total{display:block;margin:15px 0 22px;color:#176b52;font-size:22px}
+.payment-success-button{width:100%;min-height:48px;border:0;border-radius:9px;background:#176b52;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.payment-success-button:hover{background:#10513f}
+.payment-success-button:focus-visible{outline:3px solid #bd9367;outline-offset:3px}
+@keyframes payment-success-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.payment-success-dialog{animation:none}}
