@@ -211,7 +211,7 @@ async function createQr(orderId, button) {
         link.rel = "noopener";
         link.textContent = "Mở trang xác nhận thanh toán";
         const note = document.createElement("p");
-        note.textContent = `Mã QR có hiệu lực đến ${new Date(data.expires_at).toLocaleTimeString("vi-VN")}. Đây là xác nhận nội bộ mô phỏng, không phải kết nối ngân hàng.`;
+        note.textContent = `Mã QR có hiệu lực đến ${new Date(data.expires_at).toLocaleTimeString("vi-VN")}.`;
         panel.append(image, link, note);
         button.textContent = "Tạo lại mã QR";
         button.disabled = false;
