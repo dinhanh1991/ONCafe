@@ -64,7 +64,8 @@ function createMenuCard(product) {
     const addButton = document.createElement("button");
     addButton.type = "button";
     addButton.className = "menu-add-button";
-    addButton.textContent = "Thêm vào giỏ";
+    addButton.textContent = Number(product.quantity) > 0 ? "Thêm vào giỏ" : "Tạm hết hàng";
+    addButton.disabled = Number(product.quantity) <= 0;
     addButton.addEventListener("click", () => addToCart(product.id));
 
     content.append(category, name, price, addButton);
@@ -78,8 +79,13 @@ function addToCart(productId) {
 
     const existingItem = cart.find((item) => item.id === productId);
     if (existingItem) {
+        if (existingItem.quantity >= Number(product.quantity)) {
+            showStatus(`Số lượng ${product.name} trong giỏ đã đạt tồn kho hiện tại.`, true);
+            return;
+        }
         existingItem.quantity += 1;
     } else {
+        if (Number(product.quantity) < 1) return;
         cart.push({
             id: product.id,
             name: product.name,
@@ -181,7 +187,7 @@ async function loadMenu() {
 
     const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, image_url, is_available, categories(name)")
+        .select("id, name, price, image_url, is_available, quantity, categories(name)")
         .eq("is_available", true)
         .order("name", { ascending: true });
 
@@ -210,6 +216,36 @@ const checkoutButton = document.querySelector("#checkoutButton");
 const checkoutForm = document.querySelector("#checkoutForm");
 const checkoutMessage = document.querySelector("#checkoutMessage");
 const submitOrderButton = document.querySelector("#submitOrderButton");
+const fulfillmentSelect = checkoutForm?.querySelector('[name="fulfillmentMethod"]');
+const addressInput = checkoutForm?.querySelector('[name="address"]');
+const checkoutTotalSummary = document.querySelector("#checkoutTotalSummary");
+
+function updateCheckoutSummary() {
+    if (!checkoutTotalSummary) return;
+    const productTotal = cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
+    const deliveryFee = fulfillmentSelect?.value === "delivery" ? 15000 : 0;
+    checkoutTotalSummary.textContent = `Tạm tính: ${currencyFormatter.format(productTotal)} · Phí giao hàng: ${currencyFormatter.format(deliveryFee)} · Tổng: ${currencyFormatter.format(productTotal + deliveryFee)}`;
+    if (addressInput) addressInput.required = fulfillmentSelect?.value === "delivery";
+}
+
+fulfillmentSelect?.addEventListener("change", updateCheckoutSummary);
+
+async function createCustomerQrInfo(orderId) {
+    const { data, error } = await supabase.functions.invoke("oncafe-qr-payment", {
+        body: { action: "create", order_id: orderId }
+    });
+    if (error) throw new Error(data?.error || error.message || "Không tạo được mã QR.");
+    if (!data?.token) throw new Error(data?.error || "Không nhận được mã QR.");
+    const confirmUrl = new URL("./qr-confirm.html", window.location.href);
+    confirmUrl.searchParams.set("token", data.token);
+    const qrModule = await import("https://esm.sh/qrcode@1.5.4");
+    const QRCode = qrModule.default || qrModule;
+    return {
+        url: confirmUrl.href,
+        image: await QRCode.toDataURL(confirmUrl.href, { width: 220, margin: 2 }),
+        expiresAt: data.expires_at
+    };
+}
 
 function showCheckoutMessage(message, isError = false) {
     if (!checkoutMessage) return;
@@ -217,7 +253,7 @@ function showCheckoutMessage(message, isError = false) {
     checkoutMessage.classList.toggle("checkout-message-error", isError);
 }
 
-function showOrderSuccessPopup(order, paymentMethod) {
+function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, qrInfo) {
     const overlay = document.createElement("div");
     overlay.className = "menu-order-dialog-backdrop";
 
@@ -241,16 +277,44 @@ function showOrderSuccessPopup(order, paymentMethod) {
     message.id = "menu-order-dialog-message";
     const orderCode = order.order_code;
     const total = currencyFormatter.format(Number(order.total_amount) || 0);
-    message.textContent = paymentMethod === "qr"
-        ? `Đơn ${orderCode} đã được tạo với tổng tiền ${total}, nhưng chưa được thanh toán. Hệ thống chưa kết nối QR/ngân hàng nên trạng thái vẫn là chờ thanh toán.`
-        : `Đơn ${orderCode} đã được tạo với tổng tiền ${total}. Đơn đang chờ quán xác nhận.`;
+    const deliveryFee = Number(order.delivery_fee) || (fulfillmentMethod === "delivery" ? 15000 : 0);
+    const fulfillmentLabel = fulfillmentMethod === "delivery" ? "Giao tận nhà" : "Nhận tại cửa hàng";
+    message.textContent = `Đơn ${orderCode} đã được tạo. Hình thức nhận: ${fulfillmentLabel}. Phí giao hàng: ${currencyFormatter.format(deliveryFee)}. Tổng thanh toán: ${total}. Đơn đang chờ quán xác nhận.`;
+
+    let qrPanel = null;
+    if (paymentMethod === "qr") {
+        qrPanel = document.createElement("div");
+        qrPanel.className = "customer-qr-panel";
+        const note = document.createElement("p");
+        note.textContent = qrInfo?.image
+            ? "Quét mã QR để mở trang xác nhận thanh toán. Đây là xác nhận nội bộ mô phỏng, không phải kết nối ngân hàng."
+            : `Chưa tạo được mã QR: ${qrInfo?.error || "Vui lòng vào Đơn hàng của tôi hoặc liên hệ cửa hàng để được hỗ trợ."}`;
+        qrPanel.append(note);
+        if (qrInfo?.image) {
+            const image = document.createElement("img");
+            image.src = qrInfo.image;
+            image.alt = "Mã QR xác nhận thanh toán đơn hàng";
+            image.width = 200;
+            image.height = 200;
+            const link = document.createElement("a");
+            link.href = qrInfo.url;
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.textContent = "Mở trang xác nhận thanh toán";
+            const expiry = document.createElement("small");
+            expiry.textContent = `Mã có hiệu lực đến ${new Date(qrInfo.expiresAt).toLocaleTimeString("vi-VN")} (15 phút).`;
+            qrPanel.append(image, link, expiry);
+        }
+    }
 
     const closeButton = document.createElement("button");
     closeButton.type = "button";
     closeButton.className = "menu-add-button";
     closeButton.textContent = "Đóng";
 
-    dialog.append(icon, title, message, closeButton);
+    dialog.append(icon, title, message);
+    if (qrPanel) dialog.append(qrPanel);
+    dialog.append(closeButton);
     overlay.append(dialog);
     document.body.append(overlay);
 
@@ -286,11 +350,18 @@ if (checkoutButton && checkoutForm) {
 
         const user = data.user;
         const fullNameInput = checkoutForm.querySelector('[name="fullName"]');
-        if (!fullNameInput.value.trim()) {
-            fullNameInput.value = user.user_metadata?.full_name || "";
+        if (!fullNameInput.value.trim()) fullNameInput.value = user.user_metadata?.full_name || "";
+        const { data: profile } = await supabase.from("profiles")
+            .select("full_name, phone, address").eq("id", user.id).maybeSingle();
+        if (profile) {
+            if (!fullNameInput.value.trim()) fullNameInput.value = profile.full_name || "";
+            const phoneInput = checkoutForm.querySelector('[name="phone"]');
+            if (phoneInput && !phoneInput.value) phoneInput.value = profile.phone || "";
+            if (addressInput && !addressInput.value) addressInput.value = profile.address || "";
         }
 
         checkoutForm.hidden = false;
+        updateCheckoutSummary();
         checkoutForm.scrollIntoView({ behavior: "smooth", block: "start" });
         showCheckoutMessage("Vui lòng kiểm tra thông tin và xác nhận đơn hàng.");
     });
@@ -312,6 +383,13 @@ if (checkoutForm) {
         }
 
         const formData = new FormData(checkoutForm);
+        const fulfillmentMethod = String(formData.get("fulfillmentMethod") || "pickup");
+        const paymentMethod = String(formData.get("paymentMethod") || "cash");
+        if (fulfillmentMethod === "delivery" && !String(formData.get("address") || "").trim()) {
+            showCheckoutMessage("Vui lòng nhập địa chỉ giao hàng.", true);
+            addressInput?.focus();
+            return;
+        }
         const items = cart.map((item) => ({
             id: item.id,
             quantity: item.quantity
@@ -325,7 +403,8 @@ if (checkoutForm) {
                 p_full_name: String(formData.get("fullName") || "").trim(),
                 p_phone: String(formData.get("phone") || "").trim(),
                 p_address: String(formData.get("address") || "").trim(),
-                p_payment_method: String(formData.get("paymentMethod") || "cash"),
+                p_payment_method: paymentMethod,
+                p_fulfillment_method: fulfillmentMethod,
                 p_items: items
             });
 
@@ -336,13 +415,23 @@ if (checkoutForm) {
                 throw new Error("Hệ thống chưa trả về mã đơn hàng. Vui lòng kiểm tra mục đơn hàng trước khi đặt lại.");
             }
 
+            let qrInfo = null;
+            if (paymentMethod === "qr") {
+                try {
+                    qrInfo = await createCustomerQrInfo(order.order_id);
+                } catch (qrError) {
+                    qrInfo = { error: qrError.message || "Không thể tạo mã QR." };
+                }
+            }
+
             cart = [];
             saveCart();
             checkoutForm.reset();
             checkoutForm.hidden = true;
+            updateCheckoutSummary();
             showCheckoutMessage("");
             showStatus(`Đã tạo đơn ${order.order_code}.`);
-            showOrderSuccessPopup(order, String(formData.get("paymentMethod") || "cash"));
+            showOrderSuccessPopup({ ...order, delivery_fee: fulfillmentMethod === "delivery" ? 15000 : 0 }, paymentMethod, fulfillmentMethod, qrInfo);
         } catch (error) {
             console.error("Lỗi đặt hàng ONCafe:", error);
             showCheckoutMessage(error.message || "Không thể tạo đơn hàng. Vui lòng thử lại.", true);
