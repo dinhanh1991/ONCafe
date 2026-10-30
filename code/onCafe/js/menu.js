@@ -39,6 +39,9 @@ function createMenuCard(product) {
     const card = document.createElement("article");
     card.className = "menu-card";
 
+    const imageFrame = document.createElement("div");
+    imageFrame.className = "menu-card-image";
+
     const image = document.createElement("img");
     image.src = product.image_url || "../assets/images/bac-xiu.jpg";
     image.alt = product.name ? `Ảnh ${product.name}` : "Ảnh đồ uống";
@@ -46,6 +49,13 @@ function createMenuCard(product) {
     image.addEventListener("error", () => {
         image.src = "../assets/images/bac-xiu.jpg";
     }, { once: true });
+
+    const stock = document.createElement("span");
+    stock.className = `menu-card-stock${Number(product.quantity) > 0 ? "" : " menu-card-stock-empty"}`;
+    stock.textContent = Number(product.quantity) > 0
+        ? `Còn ${Number(product.quantity)} phần`
+        : "Tạm hết hàng";
+    imageFrame.append(image, stock);
 
     const content = document.createElement("div");
     content.className = "menu-card-content";
@@ -69,7 +79,7 @@ function createMenuCard(product) {
     addButton.addEventListener("click", () => addToCart(product.id));
 
     content.append(category, name, price, addButton);
-    card.append(image, content);
+    card.append(imageFrame, content);
     return card;
 }
 
