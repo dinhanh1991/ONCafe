@@ -313,7 +313,6 @@ export class ProductView {
         this.container.querySelector("[data-product-form-view]").hidden = true;
         detailView.hidden = false;
         this.container.querySelector("[data-product-form-view]").hidden = true;
-        this.container.querySelector("[data-product-list-view]").hidden = false;
     }
 
     async handleSubmit(event) {
