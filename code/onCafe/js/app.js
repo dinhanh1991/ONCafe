@@ -13,6 +13,7 @@ import { CounterOrderView } from "./views/CounterOrderView.js";
 import { RevenueReportRepository } from "./repositories/RevenueReportRepo.js";
 import { RevenueReportService } from "./services/RevenueReportService.js";
 import { RevenueReportView } from "./views/RevenueReportView.js";
+import { RevenueSummaryView } from "./views/RevenueSummaryView.js";
 
 const authService = new AuthService();
 const productService = new ProductService(new ProductRepository());
@@ -138,6 +139,7 @@ async function startApp() {
             <h3>Truy cập nhanh</h3>
             <div>
                 <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Quản lý đơn hàng <b aria-hidden="true">→</b></button>
+                <button class="dashboard-shortcut" type="button" data-open-section="revenue-summary"><span aria-hidden="true">₫</span> Tổng hợp doanh thu <b aria-hidden="true">→</b></button>
                 <button class="dashboard-shortcut" type="button" data-open-section="revenue"><span aria-hidden="true">↗</span> Báo cáo doanh thu <b aria-hidden="true">→</b></button>
             </div>
         </section>` : `
@@ -192,6 +194,7 @@ async function startApp() {
     let profilePanel = null;
     let employeeProfileView = null;
     let revenuePanel = null;
+    let revenueSummaryPanel = null;
     let expensePanel = null;
     let popularPanel = null;
     let navigation = null;
@@ -216,6 +219,7 @@ async function startApp() {
             ["♙", "Quản lý nhân viên", "employees", canManageEmployees],
             ["＋", "Tạo đơn tại quầy", "counter-order", isAdmin || isSeller],
             ["☷", "Quản lý đơn hàng", "orders", true],
+            ["₫", "Tổng hợp doanh thu", "revenue-summary", isAdmin || isCashier],
             ["↗", "Báo cáo doanh thu", "revenue", isAdmin || isCashier],
             ["★", "Đồ uống bán chạy", "popular", isAdmin || isSeller],
             ["♙", "Thông tin tài khoản", "my-profile", true]
@@ -248,6 +252,11 @@ async function startApp() {
             employeePanel.hidden = true;
             panels.append(employeePanel);
         }
+        revenueSummaryPanel = document.createElement("section");
+        revenueSummaryPanel.className = "admin-panel";
+        revenueSummaryPanel.dataset.panel = "revenue-summary";
+        revenueSummaryPanel.hidden = true;
+        panels.append(revenueSummaryPanel);
         revenuePanel = document.createElement("section");
         revenuePanel.className = "admin-panel";
         revenuePanel.dataset.panel = "revenue";
@@ -337,6 +346,10 @@ async function startApp() {
         readOnly: isCashier
     });
 
+    const revenueSummaryView = new RevenueSummaryView(revenueSummaryPanel, {
+        onLoad: (period, date) => revenueReportService.getReport(period, date)
+    });
+
     const revenueReportView = new RevenueReportView(revenuePanel, {
         onLoad: (period, date) => revenueReportService.getReport(period, date)
     });
@@ -391,7 +404,8 @@ async function startApp() {
         "counter-order": ["Tạo đơn tại quầy", "Tạo đơn bán hàng, kiểm tra tồn kho và ghi nhận phương thức thanh toán."],
         drinks: ["Quản lý đồ uống", "Danh sách, thông tin và số lượng đồ uống trong quán."],
         employees: ["Quản lý nhân viên", "Quản lý tài khoản và thông tin nhân viên."],
-        revenue: ["Báo cáo doanh thu", "Tổng hợp tiền đã thu, tiền hoàn và doanh thu thuần theo ngày, tháng, năm."],
+        "revenue-summary": ["Tổng hợp doanh thu", "Theo dõi doanh thu thuần, tiền đã thu, tiền hoàn và số đơn đã thanh toán theo ngày, tháng, năm."],
+        revenue: ["Báo cáo doanh thu", "Xem biểu đồ và bảng chi tiết doanh thu theo giờ, ngày hoặc tháng."],
         popular: ["Đồ uống bán chạy", "Theo dõi các sản phẩm được khách hàng lựa chọn nhiều nhất."],
         orders: ["Quản lý đơn hàng", isCashier ? "Tra cứu danh sách, chi tiết và trạng thái đơn hàng (chỉ xem)." : "Theo dõi và cập nhật trạng thái đơn hàng."],
         "my-profile": ["Thông tin tài khoản", "Cập nhật thông tin cá nhân và mật khẩu đăng nhập."]
@@ -428,6 +442,7 @@ async function startApp() {
             }, 5000);
         }
         if (sectionName === "counter-order" && (isAdmin || isSeller)) void counterOrderView.render();
+        if (sectionName === "revenue-summary" && (isAdmin || isCashier)) void revenueSummaryView.load();
         if (sectionName === "revenue" && (isAdmin || isCashier)) void revenueReportView.load();
         if (sectionName === "overview" && isSeller) loadSellerOverview();
         if (sectionName === "overview" && isCashier) loadCashierOverview();
