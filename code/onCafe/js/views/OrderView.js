@@ -134,7 +134,7 @@ export class OrderView {
                 `<button class="button button-small ${style || ""}" type="button" data-order-action="${status}" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>${label}</button>`
             ).join("");
             const paymentAction = order.payment_status === "paid"
-                ? `<span class="status status-active">${order.payment_method === "qr" ? "Đã thanh toán QR (mô phỏng)" : "Đã thu tiền"}</span>`
+                ? `<span class="status status-active">${order.payment_method === "qr" ? "Đã thanh toán QR" : "Đã thu tiền"}</span>`
                 : order.payment_status === "refunded"
                     ? `<span class="status status-inactive">Đã hoàn tiền</span>`
                     : order.payment_method === "qr"
