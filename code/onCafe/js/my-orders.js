@@ -21,6 +21,11 @@ const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+let previousPaymentStates = new Map();
+let hasLoadedOrders = false;
+let isLoadingOrders = false;
+const notifiedPaidOrders = new Set();
+
 function formatDate(value) {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? "—" :
@@ -32,9 +37,66 @@ function setMessage(text, isError = false) {
     message.classList.toggle("is-error", isError);
 }
 
+function showPaymentSuccessPopup(order) {
+    if (document.querySelector(".payment-success-backdrop")) return;
+
+    const overlay = document.createElement("div");
+    overlay.className = "payment-success-backdrop";
+
+    const dialog = document.createElement("section");
+    dialog.className = "payment-success-dialog";
+    dialog.setAttribute("role", "alertdialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "paymentSuccessTitle");
+    dialog.setAttribute("aria-describedby", "paymentSuccessMessage");
+
+    const icon = document.createElement("div");
+    icon.className = "payment-success-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "✓";
+
+    const title = document.createElement("h2");
+    title.id = "paymentSuccessTitle";
+    title.textContent = "Thanh toán thành công!";
+
+    const detail = document.createElement("p");
+    detail.id = "paymentSuccessMessage";
+    detail.textContent = `Cảm ơn quý khách đã mua hàng tại ONCafe. Đơn ${order.order_code || ""} đã được xác nhận thanh toán.`;
+
+    const total = document.createElement("strong");
+    total.className = "payment-success-total";
+    total.textContent = currency.format(Number(order.total_amount) || 0);
+
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "payment-success-button";
+    closeButton.textContent = "Tuyệt vời";
+
+    const close = () => {
+        overlay.remove();
+        document.removeEventListener("keydown", onKeydown);
+    };
+    const onKeydown = (event) => {
+        if (event.key === "Escape") close();
+    };
+
+    dialog.append(icon, title, detail, total, closeButton);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    closeButton.addEventListener("click", close);
+    overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) close();
+    });
+    document.addEventListener("keydown", onKeydown);
+    closeButton.focus();
+}
+
 async function loadOrders() {
+    if (isLoadingOrders) return;
+    isLoadingOrders = true;
     refreshButton.disabled = true;
-    setMessage("Đang tải đơn hàng...");
+    if (!hasLoadedOrders) setMessage("Đang tải đơn hàng...");
+
     try {
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError || !userData.user) {
@@ -46,12 +108,27 @@ async function loadOrders() {
         const { data, error } = await supabase.rpc("oncafe_my_orders");
         if (error) throw error;
         const orders = Array.isArray(data) ? data : [];
+
+        if (hasLoadedOrders) {
+            for (const order of orders) {
+                const previousStatus = previousPaymentStates.get(String(order.id));
+                if (previousStatus === "unpaid" && order.payment_status === "paid" &&
+                    order.payment_method === "qr" && !notifiedPaidOrders.has(String(order.id))) {
+                    notifiedPaidOrders.add(String(order.id));
+                    showPaymentSuccessPopup(order);
+                }
+            }
+        }
+
+        previousPaymentStates = new Map(orders.map((order) => [String(order.id), order.payment_status]));
+        hasLoadedOrders = true;
         renderOrders(orders);
-        setMessage(orders.length ? `Bạn có ${orders.length} đơn hàng.` : "Bạn chưa có đơn hàng online nào.");
+        setMessage(orders.length ? `Bạn có ${orders.length} đơn hàng. Trạng thái được tự động cập nhật.` : "Bạn chưa có đơn hàng online nào.");
     } catch (error) {
         console.error("Không thể tải đơn hàng khách hàng:", error);
         setMessage(error.message || "Không thể tải đơn hàng. Vui lòng thử lại.", true);
     } finally {
+        isLoadingOrders = false;
         refreshButton.disabled = false;
     }
 }
@@ -70,8 +147,9 @@ function renderOrders(orders) {
         const canCreateQr = order.status === "pending" && order.payment_method === "qr" && order.payment_status === "unpaid";
         const deliveryFee = Number(order.delivery_fee) || 0;
         const arrivalNotice = order.delivery_arrived_at ? `<p class="delivery-arrival-notice" role="status">ONCafe thông báo: Nhân viên giao hàng đã đến địa chỉ của bạn lúc ${escapeHtml(formatDate(order.delivery_arrived_at))}.</p>` : "";
-        const statusClass = ["completed"].includes(order.status) ? "is-complete" :
+        const statusClass = order.status === "completed" ? "is-complete" :
             ["cancelled", "rejected"].includes(order.status) ? "is-cancelled" : "is-pending";
+        const paymentClass = order.payment_status === "paid" ? "is-paid" : "is-unpaid";
         return `
             <article class="my-order-card" data-order-id="${escapeHtml(order.id)}">
                 <header class="my-order-card-header">
@@ -84,7 +162,7 @@ function renderOrders(orders) {
                 </header>
                 <div class="my-order-meta">
                     <p><span>Hình thức nhận</span><strong>${escapeHtml(FULFILLMENT[order.fulfillment_method] || "—")}</strong></p>
-                    <p><span>Thanh toán</span><strong>${escapeHtml(PAYMENT[order.payment_method] || "—")} · ${escapeHtml(PAYMENT_STATUS[order.payment_status] || "—")}</strong></p>
+                    <p><span>Thanh toán</span><strong class="payment-state ${paymentClass}">${escapeHtml(PAYMENT[order.payment_method] || "—")} · ${escapeHtml(PAYMENT_STATUS[order.payment_status] || "—")}</strong></p>
                     ${order.fulfillment_method === "delivery" ? `<p><span>Địa chỉ giao hàng</span><strong>${escapeHtml(order.customer_address || "—")}</strong></p>` : ""}
                 </div>
                 ${arrivalNotice}
