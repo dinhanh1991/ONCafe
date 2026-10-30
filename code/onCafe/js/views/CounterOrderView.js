@@ -1,6 +1,7 @@
 import { formatCurrency } from "../utils/FormatUtils.js";
 import { CustomerValidator } from "../validators/CustomerValidator.js";
 import { OrderValidator } from "../validators/OrderValidator.js";
+import { ValidationUI } from "../validators/ValidationUI.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -20,6 +21,10 @@ export class CounterOrderView {
         this.cart = new Map();
         this.busy = false;
         this.container.addEventListener("submit", (event) => void this.handleSubmit(event));
+        this.container.addEventListener("focusin", (event) => {
+            const form = event.target.closest("[data-counter-form]");
+            if (form) ValidationUI.bind(form);
+        });
         this.container.addEventListener("input", (event) => {
             if (event.target.matches("[data-counter-search]")) this.renderProducts();
         });
@@ -172,11 +177,13 @@ export class CounterOrderView {
             return;
         }
         const phoneValidation = CustomerValidator.validate({ phone: form.elements.customerPhone.value });
+        ValidationUI.bind(form);
         if (!phoneValidation.isValid) {
-            this.setFeedback(phoneValidation.errors.phone, true);
-            form.elements.customerPhone.focus();
+            ValidationUI.showErrors(form, { customerPhone: phoneValidation.errors.phone });
+            this.setFeedback("", false);
             return;
         }
+        ValidationUI.clearErrors(form);
         this.busy = true;
         const button = form.querySelector('button[type="submit"]');
         button.disabled = true;
