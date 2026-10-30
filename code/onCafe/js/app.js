@@ -147,7 +147,25 @@ async function startApp() {
                 <button class="dashboard-shortcut" type="button" data-open-section="drinks"><span aria-hidden="true">◈</span> Quản lý đồ uống <b aria-hidden="true">→</b></button>
                 <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Xem đơn hàng <b aria-hidden="true">→</b></button>
             </div>
-        </section>`;
+        </section>` : isCashier ? `
+        <section class="dashboard-welcome cashier-dashboard-welcome">
+            <p class="eyebrow">KHU VỰC THU NGÂN</p>
+            <h2 data-dashboard-greeting></h2>
+            <p>Theo dõi đơn hàng trong ca, xác nhận đơn mới và kiểm soát các khoản thanh toán.</p>
+        </section>
+        <section class="dashboard-metrics cashier-dashboard-metrics" aria-label="Tình hình đơn hàng trong ngày">
+            <article class="dashboard-metric"><span>Đơn hàng hôm nay</span><strong data-cashier-today-count>—</strong><small>Tất cả nguồn đơn</small></article>
+            <article class="dashboard-metric"><span>Chờ xác nhận</span><strong data-cashier-pending-count>—</strong><small>Cần tiếp nhận xử lý</small></article>
+            <article class="dashboard-metric"><span>Đang xử lý</span><strong data-cashier-active-count>—</strong><small>Đã xác nhận đến đang giao</small></article>
+            <article class="dashboard-metric"><span>Chưa thanh toán</span><strong data-cashier-unpaid-count>—</strong><small>Đơn chưa ghi nhận thanh toán</small></article>
+        </section>
+        <section class="dashboard-shortcuts cashier-dashboard-shortcuts">
+            <h3>Thao tác nhanh</h3>
+            <div>
+                <button class="dashboard-shortcut" type="button" data-open-section="counter-order"><span aria-hidden="true">＋</span> Tạo đơn tại quầy <b aria-hidden="true">→</b></button>
+                <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Quản lý đơn hàng <b aria-hidden="true">→</b></button>
+            </div>
+        </section>` : `
     dashboardPanel.querySelector("[data-dashboard-greeting]").textContent =
         `Chào mừng trở lại, ${profile.full_name || (isAdmin ? "Quản trị viên" : isSeller ? "nhân viên bán hàng" : "thu ngân")}`;
     dashboardPanel.querySelectorAll("[data-open-section]").forEach((button) => {
@@ -367,7 +385,7 @@ async function startApp() {
     }
 
     const sectionDetails = {
-        overview: ["Tổng quan", isSeller ? "Theo dõi đơn hàng và mặt hàng được khách lựa chọn." : "Theo dõi nhanh tình hình hoạt động của ONCafe."],
+        overview: ["Tổng quan", isSeller ? "Theo dõi đơn hàng và mặt hàng được khách lựa chọn." : isCashier ? "Theo dõi đơn hàng trong ca và tình hình thanh toán." : "Theo dõi nhanh tình hình hoạt động của ONCafe."],
         "counter-order": ["Tạo đơn tại quầy", "Tạo đơn bán hàng, kiểm tra tồn kho và ghi nhận phương thức thanh toán."],
         drinks: ["Quản lý đồ uống", "Danh sách, thông tin và số lượng đồ uống trong quán."],
         employees: ["Quản lý nhân viên", "Quản lý tài khoản và thông tin nhân viên."],
@@ -410,6 +428,7 @@ async function startApp() {
         }
         if (sectionName === "counter-order") void counterOrderView.render();
         if (sectionName === "overview" && isSeller) loadSellerOverview();
+        if (sectionName === "overview" && isCashier) loadCashierOverview();
         if (sectionName === "popular" && (isAdmin || isSeller)) loadPopularDrinks();
     }
 
@@ -520,6 +539,52 @@ async function startApp() {
             message.setAttribute("role", "alert");
             message.textContent = error.message || "Không thể tải dữ liệu đồ uống bán chạy.";
             chart.append(message);
+        }
+    }
+
+    async function loadCashierOverview() {
+        const metricSelectors = [
+            "[data-cashier-today-count]",
+            "[data-cashier-pending-count]",
+            "[data-cashier-active-count]",
+            "[data-cashier-unpaid-count]"
+        ];
+        const metrics = metricSelectors.map((selector) => dashboardPanel.querySelector(selector));
+        if (metrics.some((element) => !element)) return;
+        metrics.forEach((element) => { element.textContent = "…"; });
+
+        try {
+            const orders = await orderService.getStaffOrders();
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+            const todayOrders = orders.filter((order) => {
+                const createdAt = new Date(order.created_at).getTime();
+                return Number.isFinite(createdAt) && createdAt >= todayStart && createdAt < tomorrowStart;
+            });
+            const pendingOrders = todayOrders.filter((order) => order.status === "pending");
+            const activeOrders = todayOrders.filter((order) =>
+                ["confirmed", "preparing", "ready_for_pickup", "delivering"].includes(order.status)
+            );
+            const unpaidOrders = todayOrders.filter((order) =>
+                order.payment_status === "unpaid" && !["cancelled", "rejected"].includes(order.status)
+            );
+
+            metrics[0].textContent = String(todayOrders.length);
+            metrics[1].textContent = String(pendingOrders.length);
+            metrics[2].textContent = String(activeOrders.length);
+            metrics[3].textContent = String(unpaidOrders.length);
+        } catch (error) {
+            console.error("Không thể tải tổng quan thu ngân:", error);
+            metrics.forEach((element) => { element.textContent = "—"; });
+            const existingMessage = dashboardPanel.querySelector("[data-cashier-overview-error]");
+            if (existingMessage) existingMessage.remove();
+            const message = document.createElement("p");
+            message.className = "app-error";
+            message.dataset.cashierOverviewError = "";
+            message.setAttribute("role", "alert");
+            message.textContent = error.message || "Không thể tải số liệu đơn hàng. Vui lòng thử lại.";
+            dashboardPanel.querySelector(".cashier-dashboard-welcome")?.after(message);
         }
     }
 
