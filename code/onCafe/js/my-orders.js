@@ -69,7 +69,7 @@ function renderOrders(orders) {
         const canCancel = order.status === "pending" && order.payment_status === "unpaid";
         const canCreateQr = order.status === "pending" && order.payment_method === "qr" && order.payment_status === "unpaid";
         const deliveryFee = Number(order.delivery_fee) || 0;
-        const arrivalNotice = order.delivery_arrived_at ? `<p class="delivery-arrival-notice" role="status">ONCafe thông báo: Nhân viên đã đến địa chỉ giao hàng lúc ${escapeHtml(formatDate(order.delivery_arrived_at))}. Vui lòng liên hệ với nhân viên để nhận đơn.</p>` : "";
+        const arrivalNotice = order.delivery_arrived_at ? `<p class="delivery-arrival-notice" role="status">ONCafe thông báo: Nhân viên giao hàng đã đến địa chỉ của bạn lúc ${escapeHtml(formatDate(order.delivery_arrived_at))}.</p>` : "";
         const statusClass = ["completed"].includes(order.status) ? "is-complete" :
             ["cancelled", "rejected"].includes(order.status) ? "is-cancelled" : "is-pending";
         return `
