@@ -40,6 +40,17 @@ export class OrderRepository {
         };
     }
 
+    async createQrConfirmation(orderId) {
+        const id = Number(orderId);
+        if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
+        const { data, error } = await supabase.functions.invoke("oncafe-qr-payment", {
+            body: { action: "create", order_id: id }
+        });
+        if (error) throw error;
+        if (!data?.token) throw new Error(data?.error || "Không tạo được mã QR xác nhận.");
+        return data;
+    }
+
     async updatePayment(orderId, paymentStatus) {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
