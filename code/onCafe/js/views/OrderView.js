@@ -16,9 +16,10 @@ function formatDate(value) {
 }
 
 export class OrderView {
-    constructor(container, { onUpdateStatus, onUpdatePayment, onMarkArrived, onRefresh }) {
+    constructor(container, { onUpdateStatus, onUpdatePayment, onMarkArrived, onRefresh, readOnly = false }) {
         if (!container) throw new Error("Không tìm thấy vùng hiển thị đơn hàng.");
         this.container = container;
+        this.readOnly = readOnly;
         this.onUpdateStatus = onUpdateStatus;
         this.onUpdatePayment = onUpdatePayment;
         this.onMarkArrived = onMarkArrived;
@@ -68,7 +69,7 @@ export class OrderView {
                 </div>
                 <p class="order-feedback" data-order-feedback role="status" aria-live="polite"></p>
                 <div class="table-scroll"><table class="product-table order-table">
-                    <thead><tr><th>Mã đơn / Loại đơn / Thời gian</th><th>Khách hàng / Nhận hàng</th><th>Chi tiết món / Tổng tiền</th><th>Trạng thái đơn</th><th>Thanh toán</th><th>Thao tác</th></tr></thead>
+                    <thead><tr><th>Mã đơn / Loại đơn / Thời gian</th><th>Khách hàng / Nhận hàng</th><th>Chi tiết món / Tổng tiền</th><th>Trạng thái đơn</th><th>Thanh toán</th><th>${this.readOnly ? "Thông tin" : "Thao tác"}</th></tr></thead>
                     <tbody data-order-list></tbody>
                 </table></div>
                 <nav class="product-pagination" data-order-pagination aria-label="Phân trang đơn hàng"></nav>
@@ -138,16 +139,14 @@ export class OrderView {
                 : "";
             const sourceLabel = order.order_source === "online" ? "Đơn online" : "Tại quầy";
             const fulfillmentLabel = order.fulfillment_method === "delivery" ? "Giao tận nhà" : "Nhận tại cửa hàng";
-            const actions = this.getActions(order).map(([status, label, style]) =>
+            const actions = this.readOnly ? "" : this.getActions(order).map(([status, label, style]) =>
                 `<button class="button button-small ${style || ""}" type="button" data-order-action="${status}" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>${label}</button>`
             ).join("");
             const paymentAction = order.payment_status === "paid"
-                ? `<span class="status status-active">${order.payment_method === "qr" ? "Đã thanh toán QR" : "Đã thu tiền"}</span>`
+                ? `<span class="status status-active">${order.payment_method === "qr" ? "Đã thanh toán QR" : "Đã thanh toán"}</span>`
                 : order.payment_status === "refunded"
                     ? `<span class="status status-inactive">Đã hoàn tiền</span>`
-                    : order.payment_method === "qr"
-                        ? `<span class="status status-pending">Chờ khách xác nhận QR</span>`
-                        : `<button class="button button-small button-primary" type="button" data-payment-action="paid" data-order-id="${escapeHtml(order.id)}">Xác nhận đã thu</button>`;
+                    : `<span class="status status-pending">${order.payment_method === "qr" ? "Chờ khách xác nhận QR" : "Chưa thanh toán"}</span>`;
             const extraActions = `${paymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}">In hóa đơn</button>`;
             return `<tr>
                 <td><strong>${escapeHtml(order.order_code || "#" + order.id)}</strong><br><span class="order-source-label ${order.order_source === "online" ? "is-online" : "is-counter"}">${sourceLabel}</span><br><small>${escapeHtml(formatDate(order.created_at))}</small></td>
@@ -193,6 +192,8 @@ export class OrderView {
     }
 
     async handleClick(event) {
+        if (this.readOnly && event.target instanceof Element &&
+            event.target.closest("[data-order-action], [data-payment-action]")) return;
         const pageButton = event.target instanceof Element
             ? event.target.closest("button[data-order-page]")
             : null;
