@@ -1,4 +1,6 @@
 import { formatCurrency } from "../utils/FormatUtils.js";
+import { CustomerValidator } from "../validators/CustomerValidator.js";
+import { OrderValidator } from "../validators/OrderValidator.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -164,8 +166,15 @@ export class CounterOrderView {
         if (this.busy) return;
         const form = event.target;
         const items = [...this.cart.entries()].map(([id, quantity]) => ({ id: Number(id), quantity }));
-        if (!items.length) {
-            this.setFeedback("Vui lòng chọn ít nhất một đồ uống.", true);
+        const itemValidation = OrderValidator.validateItems(items);
+        if (!itemValidation.isValid) {
+            this.setFeedback(itemValidation.errors.items, true);
+            return;
+        }
+        const phoneValidation = CustomerValidator.validate({ phone: form.elements.customerPhone.value });
+        if (!phoneValidation.isValid) {
+            this.setFeedback(phoneValidation.errors.phone, true);
+            form.elements.customerPhone.focus();
             return;
         }
         this.busy = true;
