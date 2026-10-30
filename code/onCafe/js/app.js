@@ -297,7 +297,11 @@ async function startApp() {
         onLoadProducts: () => productService.getAllProducts(),
         onCreateOrder: (order) => orderService.createCounterOrder(order),
         onCreated: () => orderView.refresh(),
-        onCreateQrConfirmation: (id) => orderService.createQrConfirmation(id)
+        onCreateQrConfirmation: (id) => orderService.createQrConfirmation(id),
+        onCheckQrPayment: async (id) => {
+            const orders = await orderService.getStaffOrders();
+            return orders.find((order) => String(order.id) === String(id)) || null;
+        }
     });
 
     async function loadProducts() {
@@ -353,6 +357,7 @@ async function startApp() {
             window.clearInterval(orderRefreshTimer);
             orderRefreshTimer = null;
         }
+        if (sectionName !== "counter-order") counterOrderView.stopWatchingQrPayment();
         if (navigation) {
             for (const button of navigation.querySelectorAll("[data-section]")) {
                 const active = button.dataset.section === sectionName;
