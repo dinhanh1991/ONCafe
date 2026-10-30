@@ -7,6 +7,7 @@ if (nav) {
 
     async function updateNavigation(session) {
         nav.querySelector(".nav-user-name")?.remove();
+        nav.querySelector(".nav-orders-link")?.remove();
         nav.querySelector(".nav-logout-button")?.remove();
 
         if (!session?.user) {
@@ -37,6 +38,12 @@ if (nav) {
         name.className = "nav-user-name";
         name.textContent = "Xin chào, " + displayName;
         nav.appendChild(name);
+
+        const ordersLink = document.createElement("a");
+        ordersLink.className = "nav-orders-link";
+        ordersLink.href = "./my-orders.html";
+        ordersLink.textContent = "Đơn hàng của tôi";
+        nav.appendChild(ordersLink);
 
         const logoutButton = document.createElement("button");
         logoutButton.type = "button";
