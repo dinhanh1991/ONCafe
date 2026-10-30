@@ -1,3 +1,4 @@
+import { ValidationUtils } from "./ValidationUtils.js";
 
 export class ProductValidator {
     static validate(data) {
@@ -18,23 +19,15 @@ export class ProductValidator {
             product.price === "" ||
             product.price === null ||
             product.price === undefined ||
-            !Number.isFinite(price) ||
-            !Number.isInteger(price) ||
+            !Number.isSafeInteger(price) ||
             price < 0
         ) {
             errors.price = "Giá phải là số nguyên không âm.";
         }
 
-        const quantity = Number(product.quantity);
-
-        if (
-            product.quantity === "" ||
-            product.quantity === null ||
-            product.quantity === undefined ||
-            !Number.isInteger(quantity) ||
-            quantity < 0
-        ) {
-            errors.quantity = "Số lượng phải là số nguyên không âm.";
+        // Tồn kho được phép bằng 0; số lượng đặt/mua phải lớn hơn 0.
+        if (!ValidationUtils.isNonNegativeInteger(product.quantity)) {
+            errors.quantity = "Số lượng tồn kho phải là số nguyên không âm.";
         }
 
         return {
