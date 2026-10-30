@@ -1,3 +1,5 @@
+import { CustomerValidator } from "../validators/CustomerValidator.js";
+
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
 }[character]));
@@ -96,6 +98,11 @@ export class EmployeeProfileView {
 
         try {
             if (form.matches("[data-profile-form]")) {
+                const validation = CustomerValidator.validate({ phone: form.elements.phone.value });
+                if (!validation.isValid) {
+                    form.elements.phone.focus();
+                    throw new Error(validation.errors.phone);
+                }
                 await this.onSave({
                     fullName: form.elements.fullName.value.trim(),
                     phone: form.elements.phone.value.trim(),
