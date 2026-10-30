@@ -91,11 +91,6 @@ export class CounterOrderView {
     }
 
     async handleClick(event) {
-        const simulateButton = event.target.closest("[data-qr-simulate-payment]");
-        if (simulateButton) {
-            await this.simulateQrPayment(simulateButton);
-            return;
-        }
         if (!event.target.closest("[data-counter-refresh]")) return;
         await this.loadProducts();
     }
