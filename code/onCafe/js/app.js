@@ -10,11 +10,15 @@ import { OrderRepository } from "./repositories/OrderRepo.js";
 import { OrderService } from "./services/OrderService.js";
 import { OrderView } from "./views/OrderView.js";
 import { CounterOrderView } from "./views/CounterOrderView.js";
+import { RevenueReportRepository } from "./repositories/RevenueReportRepo.js";
+import { RevenueReportService } from "./services/RevenueReportService.js";
+import { RevenueReportView } from "./views/RevenueReportView.js";
 
 const authService = new AuthService();
 const productService = new ProductService(new ProductRepository());
 const employeeService = new EmployeeService();
 const orderService = new OrderService(new OrderRepository());
+const revenueReportService = new RevenueReportService(new RevenueReportRepository());
 const app = document.querySelector("#app");
 const logoutButton = document.querySelector("#logoutButton");
 const dashboardHomeLink = document.querySelector("#dashboardHomeLink");
@@ -339,6 +343,10 @@ async function startApp() {
         onRefresh: () => orderService.getStaffOrders()
     });
 
+    const revenueReportView = new RevenueReportView(revenuePanel, {
+        onLoad: (period, date) => revenueReportService.getReport(period, date)
+    });
+
     const counterOrderView = new CounterOrderView(counterPanel, {
         onLoadProducts: () => productService.getAllProducts(),
         onCreateOrder: (order) => orderService.createCounterOrder(order),
@@ -389,7 +397,7 @@ async function startApp() {
         "counter-order": ["Tạo đơn tại quầy", "Tạo đơn bán hàng, kiểm tra tồn kho và ghi nhận phương thức thanh toán."],
         drinks: ["Quản lý đồ uống", "Danh sách, thông tin và số lượng đồ uống trong quán."],
         employees: ["Quản lý nhân viên", "Quản lý tài khoản và thông tin nhân viên."],
-        revenue: ["Báo cáo doanh thu", "Báo cáo doanh thu và hiệu quả kinh doanh."],
+        revenue: ["Báo cáo doanh thu", "Tổng hợp tiền đã thu, tiền hoàn và doanh thu thuần theo ngày, tháng, năm."],
         popular: ["Đồ uống bán chạy", "Theo dõi các sản phẩm được khách hàng lựa chọn nhiều nhất."],
         expenses: ["Tổng hợp chi tiêu", "Theo dõi các khoản chi phí hoạt động của quán."],
         orders: ["Quản lý đơn hàng", "Theo dõi và cập nhật trạng thái đơn hàng."],
@@ -427,6 +435,7 @@ async function startApp() {
             }, 5000);
         }
         if (sectionName === "counter-order") void counterOrderView.render();
+        if (sectionName === "revenue" && (isAdmin || isCashier)) void revenueReportView.load();
         if (sectionName === "overview" && isSeller) loadSellerOverview();
         if (sectionName === "overview" && isCashier) loadCashierOverview();
         if (sectionName === "popular" && (isAdmin || isSeller)) loadPopularDrinks();
