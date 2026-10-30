@@ -4,12 +4,14 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 export class CounterOrderView {
-    constructor(container, { onLoadProducts, onCreateOrder, onCreated, onCreateQrConfirmation }) {
+    constructor(container, { onLoadProducts, onCreateOrder, onCreated, onCreateQrConfirmation, onCheckQrPayment }) {
         this.container = container;
         this.onLoadProducts = onLoadProducts;
         this.onCreateOrder = onCreateOrder;
         this.onCreated = onCreated;
         this.onCreateQrConfirmation = onCreateQrConfirmation;
+        this.onCheckQrPayment = onCheckQrPayment;
+        this.qrPaymentTimer = null;
         this.pendingQrOrder = null;
         this.products = [];
         this.cart = new Map();
@@ -20,6 +22,7 @@ export class CounterOrderView {
     }
 
     async render() {
+        this.stopWatchingQrPayment();
         this.container.innerHTML = `
             <section class="product-manager counter-order">
                 <header class="product-heading"><div><p class="eyebrow">BÁN HÀNG TẠI QUẦY</p><h2>Tạo đơn hàng</h2><p>Chọn đồ uống, kiểm tra tồn kho và tạo đơn.</p></div>
@@ -126,7 +129,7 @@ export class CounterOrderView {
                 this.pendingQrOrder = result;
                 this.renderQrSimulation(result);
                 await this.createQrForOrder(result);
-                this.setFeedback("Đã tạo đơn và mã QR xác nhận. Khách có thể quét mã bằng iPhone.");
+                this.watchQrPayment(result);
             } else {
                 this.pendingQrOrder = null;
                 this.removeQrSimulation();
@@ -185,6 +188,38 @@ export class CounterOrderView {
             if (feedback) { feedback.textContent = error.message || 'Không thể tạo mã QR.'; feedback.className = 'app-error'; }
         }
     }
+    watchQrPayment(order) {
+        this.stopWatchingQrPayment();
+        if (!order?.id || typeof this.onCheckQrPayment !== "function") return;
+
+        this.qrPaymentTimer = window.setInterval(async () => {
+            try {
+                const latestOrder = await this.onCheckQrPayment(order.id);
+                if (latestOrder?.payment_status !== "paid") return;
+
+                this.stopWatchingQrPayment();
+                const message = `Khách đã xác nhận thanh toán thành công cho đơn ${order.order_code || "#" + order.id}.`;
+                this.setFeedback(message);
+                const feedback = this.container.querySelector("[data-qr-demo-feedback]");
+                if (feedback) {
+                    feedback.textContent = "✓ ĐÃ XÁC NHẬN THANH TOÁN THÀNH CÔNG";
+                    feedback.className = "app-success";
+                }
+                const panel = this.container.querySelector("[data-qr-demo-panel]");
+                if (panel) panel.classList.add("qr-payment-confirmed");
+            } catch (error) {
+                console.error("Không thể kiểm tra xác nhận QR:", error);
+            }
+        }, 3000);
+    }
+
+    stopWatchingQrPayment() {
+        if (this.qrPaymentTimer) {
+            window.clearInterval(this.qrPaymentTimer);
+            this.qrPaymentTimer = null;
+        }
+    }
+
     setFeedback(message, isError = false) {
         const node = this.container.querySelector("[data-counter-feedback]");
         node.textContent = message;
