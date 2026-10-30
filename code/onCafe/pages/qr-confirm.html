@@ -9,10 +9,13 @@
         *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:#f7f3ec;color:#30251e;font-family:Arial,sans-serif}
         main{width:min(100%,440px);padding:30px 24px;background:#fff;border:1px solid #eadfd2;border-radius:18px;box-shadow:0 12px 35px #39271912}
         .brand{color:#96633e;font-weight:800;letter-spacing:2px}.eyebrow{margin:24px 0 8px;color:#98704e;font-size:12px;font-weight:700;letter-spacing:1.5px}
-        h1{margin:0 0 12px;font-size:27px}p{line-height:1.6;color:#65574d}.notice{margin:20px 0;padding:13px;background:#fff7e9;border-radius:10px;font-size:13px}
+        h1{margin:0 0 12px;font-size:27px}p{line-height:1.6;color:#65574d}
         button{width:100%;padding:15px;border:0;border-radius:10px;background:#805334;color:white;font-size:16px;font-weight:700;cursor:pointer}
-        button:disabled{opacity:.55;cursor:not-allowed}[role=status]{min-height:24px;margin-top:16px;font-size:14px}.error{color:#b42318}.success{color:#18794e}
-        .order-code{font-size:20px;font-weight:700;color:#30251e}
+        button:disabled{opacity:.55;cursor:not-allowed}[role=status]{min-height:24px;margin-top:16px;font-size:14px}.error{color:#b42318}
+        .success-overlay{position:fixed;inset:0;display:none;place-items:center;padding:20px;background:#21170f80;z-index:10}
+        .success-overlay.show{display:grid}.success-dialog{width:min(100%,360px);padding:30px 24px;text-align:center;background:#fff;border-radius:18px;box-shadow:0 16px 45px #0003}
+        .success-icon{width:58px;height:58px;margin:0 auto 16px;display:grid;place-items:center;border-radius:50%;background:#e8f6ed;color:#18794e;font-size:32px;font-weight:700}
+        .success-dialog h2{margin:0 0 10px;font-size:23px}.success-dialog p{margin:0 0 22px}.success-dialog button{width:100%}
     </style>
 </head>
 <body>
@@ -21,15 +24,27 @@
     <p class="eyebrow">XÁC NHẬN THANH TOÁN</p>
     <h1>Xác nhận đơn hàng</h1>
     <p>Bạn đang xác nhận đã thanh toán cho đơn hàng tại ONCafe.</p>
-    <div class="notice">Cảm ơn quý khách đã thanh toán!</div>
     <button id="confirmButton" type="button">Tôi xác nhận đã thanh toán</button>
     <p id="feedback" role="status" aria-live="polite"></p>
 </main>
+
+<div id="successOverlay" class="success-overlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+    <section class="success-dialog">
+        <div class="success-icon" aria-hidden="true">✓</div>
+        <h2 id="successTitle">Cảm ơn quý khách đã thanh toán!</h2>
+        <p id="successOrder"></p>
+        <button id="closeSuccess" type="button">Đóng</button>
+    </section>
+</div>
+
 <script type="module">
     import { supabase } from "../js/config/supabase.js";
 
     const button = document.querySelector("#confirmButton");
     const feedback = document.querySelector("#feedback");
+    const successOverlay = document.querySelector("#successOverlay");
+    const successOrder = document.querySelector("#successOrder");
+    const closeSuccess = document.querySelector("#closeSuccess");
     const token = new URLSearchParams(window.location.search).get("token") || "";
 
     if (!/^[a-f0-9]{64}$/.test(token)) {
@@ -49,14 +64,21 @@
             });
             if (error) throw new Error(data?.error || error.message || "Không thể xác nhận.");
             if (!data?.confirmed) throw new Error(data?.error || "Mã QR không còn hiệu lực.");
-            feedback.textContent = "Đã xác nhận thành công cho đơn " + data.order_code + ". Cảm ơn bạn!";
-            feedback.className = "success";
+
             button.textContent = "Đã xác nhận";
+            feedback.textContent = "";
+            successOrder.textContent = data.order_code ? "Đơn hàng " + data.order_code + " đã được xác nhận." : "Đơn hàng của quý khách đã được xác nhận.";
+            successOverlay.classList.add("show");
+            closeSuccess.focus();
         } catch (error) {
             feedback.textContent = error.message || "Có lỗi xảy ra. Vui lòng báo nhân viên.";
             feedback.className = "error";
             button.disabled = false;
         }
+    });
+
+    closeSuccess.addEventListener("click", () => {
+        successOverlay.classList.remove("show");
     });
 </script>
 </body>
