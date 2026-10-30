@@ -290,6 +290,7 @@ async function startApp() {
     const orderView = new OrderView(orderPanel, {
         onUpdateStatus: (id, status) => orderService.updateStatus(id, status),
         onUpdatePayment: (id, status) => orderService.updatePayment(id, status),
+        onMarkArrived: (id) => orderService.markDeliveryArrived(id),
         onRefresh: () => orderService.getStaffOrders()
     });
 
