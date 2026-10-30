@@ -301,7 +301,8 @@ async function startApp() {
         onCheckQrPayment: async (id) => {
             const orders = await orderService.getStaffOrders();
             return orders.find((order) => String(order.id) === String(id)) || null;
-        }
+        },
+        onQrPaymentConfirmed: () => activateSection("overview")
     });
 
     async function loadProducts() {
