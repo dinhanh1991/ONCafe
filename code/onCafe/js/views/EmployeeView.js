@@ -1,3 +1,5 @@
+import { EmployeeValidator } from "../validators/EmployeeValidator.js";
+
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
     "<": "&lt;",
@@ -298,6 +300,15 @@ export class EmployeeView {
             password: String(formData.get("password") || ""),
             role: String(formData.get("role") || "cashier")
         };
+        const validation = EmployeeValidator.validate(employee);
+        if (!validation.isValid) {
+            const errorElement = form.querySelector("[data-employee-form-error]");
+            errorElement.textContent = Object.values(validation.errors).join(" ");
+            if (validation.errors.fullName) form.elements.fullName.focus();
+            else form.elements.email.focus();
+            return;
+        }
+
         const wasEditing = this.editingId !== null;
         if (wasEditing) employee.id = this.editingId;
 
