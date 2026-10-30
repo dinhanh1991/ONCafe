@@ -131,7 +131,7 @@ async function startApp() {
         </section>
         <section class="dashboard-metrics cashier-dashboard-metrics" aria-label="Tình hình đơn hàng trong ngày">
             <article class="dashboard-metric"><span>Doanh thu hôm nay</span><strong data-cashier-today-revenue>—</strong><small>Đã thu trừ tiền hoàn</small></article>
-            <article class="dashboard-metric"><span>Đơn đã thanh toán</span><strong data-cashier-paid-count>—</strong><small>Đã ghi nhận thanh toán</small></article>
+            <article class="dashboard-metric"><span>Đơn thanh toán hôm nay</span><strong data-cashier-paid-count>—</strong><small>Tính theo thời điểm thu tiền</small></article>
             <article class="dashboard-metric"><span>Đơn hàng hôm nay</span><strong data-cashier-today-count>—</strong><small>Tất cả nguồn đơn</small></article>
             <article class="dashboard-metric"><span>Chưa thanh toán</span><strong data-cashier-unpaid-count>—</strong><small>Đơn chưa ghi nhận thanh toán</small></article>
         </section>
