@@ -150,3 +150,7 @@ textarea {
     align-items: center;
     justify-content: center;
 }
+
+.bi.me-1 {
+    margin-right: 0.25rem;
+}
