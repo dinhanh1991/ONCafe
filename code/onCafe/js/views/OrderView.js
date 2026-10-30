@@ -65,7 +65,7 @@ export class OrderView {
             <section class="order-manager" aria-labelledby="order-heading">
                 <header class="product-heading">
                     <div><p class="eyebrow">VẬN HÀNH QUÁN</p><h2 id="order-heading">Quản lý đơn hàng</h2><p data-order-count></p></div>
-                    <button class="button button-primary" type="button" data-order-refresh>↻ Tải lại</button>
+                    <button class="button button-primary" type="button" data-order-refresh><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Tải lại</button>
                 </header>
                 <div class="order-toolbar">
                     <label class="visually-hidden" for="order-search">Tìm đơn hàng</label>
@@ -93,7 +93,7 @@ export class OrderView {
                         <option value="total-desc">Tổng tiền cao đến thấp</option>
                         <option value="total-asc">Tổng tiền thấp đến cao</option>
                     </select>
-                    <button class="button button-small" type="button" data-order-clear-filters>Làm mới bộ lọc</button>
+                    <button class="button button-small" type="button" data-order-clear-filters><i class="bi bi-funnel me-1" aria-hidden="true"></i>Làm mới bộ lọc</button>
                 </div>
                 <div class="order-list-summary" data-order-list-summary aria-live="polite"></div>
                 <p class="order-feedback" data-order-feedback role="status" aria-live="polite"></p>
@@ -192,7 +192,7 @@ export class OrderView {
                 : order.payment_status === "refunded"
                     ? `<span class="status status-inactive">Đã hoàn tiền</span>`
                     : `<span class="status status-pending">${order.payment_method === "qr" ? "Chờ khách xác nhận QR" : "Chưa thanh toán"}</span>`;
-            const extraActions = `${paymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}">In hóa đơn</button>`;
+            const extraActions = `${paymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}"><i class="bi bi-printer me-1" aria-hidden="true"></i>In hóa đơn</button>`;
             return `<tr>
                 <td><strong>${escapeHtml(order.order_code || "#" + order.id)}</strong><br><span class="order-source-label ${order.order_source === "online" ? "is-online" : "is-counter"}">${sourceLabel}</span><br><small>${escapeHtml(formatDate(order.created_at))}</small></td>
                 <td><strong>${escapeHtml(order.customer_name || "Khách hàng")}</strong><br><small>${escapeHtml(order.customer_phone || "Chưa có SĐT")}</small><br><span class="order-fulfillment-label">${fulfillmentLabel}</span>${note}${arrivalNote}</td>

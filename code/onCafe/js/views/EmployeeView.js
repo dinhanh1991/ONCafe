@@ -63,7 +63,7 @@ export class EmployeeView {
                             <h2 id="employee-heading">Quản lý nhân viên</h2>
                             <p data-employee-count></p>
                         </div>
-                        <button class="button button-primary" type="button" data-employee-action="new">+ Thêm nhân viên</button>
+                        <button class="button button-primary" type="button" data-employee-action="new"><i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>Thêm nhân viên</button>
                     </header>
                     <div class="product-toolbar">
                         <label class="visually-hidden" for="employee-search">Tìm nhân viên</label>
@@ -101,7 +101,7 @@ export class EmployeeView {
                             <h2 id="employee-form-heading" data-employee-form-heading>Thêm nhân viên</h2>
                             <p data-employee-form-description>Tạo tài khoản thu ngân mới.</p>
                         </div>
-                        <button class="button" type="button" data-employee-action="back">← Danh sách</button>
+                        <button class="button" type="button" data-employee-action="back"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Danh sách</button>
                     </header>
                     <form class="product-form" data-employee-form novalidate>
                         <div class="product-form-grid employee-form-grid">
@@ -213,8 +213,8 @@ export class EmployeeView {
                 <td>${escapeHtml(employee.email)}</td>
                 <td><span class="status status-active">${escapeHtml(({ admin: "Quản trị viên", cashier: "Thu ngân", seller: "Người bán hàng" })[employee.role] || employee.role || "Chưa xác định")}</span></td>
                 <td class="row-actions">
-                    <button class="button button-small" type="button" data-employee-action="edit" data-id="${escapeHtml(employee.id)}" ${this.busy ? "disabled" : ""}>Sửa</button>
-                    <button class="button button-small button-danger" type="button" data-employee-action="delete" data-id="${escapeHtml(employee.id)}" ${this.busy ? "disabled" : ""}>Xóa</button>
+                    <button class="button button-small" type="button" data-employee-action="edit" data-id="${escapeHtml(employee.id)}" ${this.busy ? "disabled" : ""}><i class="bi bi-pencil me-1" aria-hidden="true"></i>Sửa</button>
+                    <button class="button button-small button-danger" type="button" data-employee-action="delete" data-id="${escapeHtml(employee.id)}" ${this.busy ? "disabled" : ""}><i class="bi bi-trash me-1" aria-hidden="true"></i>Xóa</button>
                 </td>
             </tr>`).join("");
     }

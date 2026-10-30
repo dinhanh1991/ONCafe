@@ -43,12 +43,12 @@ function showMessage(message, isError = false) {
     app.append(section);
 }
 
-function createNavButton(icon, label, value) {
+function createNavButton(iconClass, label, value) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "admin-nav-item";
     button.dataset.section = value;
-    button.innerHTML = `<span class="admin-nav-icon" aria-hidden="true">${icon}</span><span>${label}</span>`;
+    button.innerHTML = `<span class="admin-nav-icon" aria-hidden="true"><i class="bi ${iconClass}"></i></span><span>${label}</span>`;
     return button;
 }
 
@@ -83,10 +83,12 @@ async function startApp() {
     if (accountLabel) accountLabel.textContent = `Xin chào, ${profile.full_name || "nhân viên"}`;
     if (logoutButton) logoutButton.hidden = false;
     if (dashboardHomeLink) {
-        dashboardHomeLink.textContent = isSeller ? "Trang chủ Seller" : isAdmin ? "Trang chủ Admin" : "Trang tổng quan";
+        dashboardHomeLink.innerHTML = `<i class="bi bi-house-door-fill me-1" aria-hidden="true"></i>${isSeller ? "Trang chủ Seller" : isAdmin ? "Trang chủ Admin" : "Trang tổng quan"}`;
+
         dashboardHomeLink.href = window.location.pathname.includes("/pages/admin/")
             ? "./dashboard.html"
             : "./pages/admin/dashboard.html";
+
         dashboardHomeLink.hidden = false;
     }
 
@@ -124,8 +126,8 @@ async function startApp() {
         <section class="dashboard-shortcuts">
             <h3>Truy cập nhanh</h3>
             <div>
-                <button class="dashboard-shortcut" type="button" data-open-section="drinks"><span aria-hidden="true">◈</span> Quản lý đồ uống <b aria-hidden="true">→</b></button>
-                <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Quản lý đơn hàng <b aria-hidden="true">→</b></button>
+                <button class="dashboard-shortcut" type="button" data-open-section="drinks"><span aria-hidden="true"><i class="bi bi-cup-hot-fill"></i></span> Quản lý đồ uống <b aria-hidden="true"><i class="bi bi-arrow-right"></i></b></button>
+                <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true"><i class="bi bi-receipt"></i></span> Quản lý đơn hàng <b aria-hidden="true"><i class="bi bi-arrow-right"></i></b></button>
             </div>
         </section>` : isCashier ? `
         <section class="dashboard-welcome cashier-dashboard-welcome">
@@ -226,15 +228,15 @@ async function startApp() {
         navigation.className = "admin-navigation";
         navigation.setAttribute("aria-label", "Điều hướng nhân viên");
         const navItems = [
-            ["▦", "Tổng quan", "overview", true],
-            ["◈", "Quản lý đồ uống", "drinks", canManageProducts],
-            ["♙", "Quản lý nhân viên", "employees", canManageEmployees],
-            ["＋", "Tạo đơn tại quầy", "counter-order", isAdmin || isSeller],
-            ["☷", "Quản lý đơn hàng", "orders", true],
-            ["₫", "Tổng hợp doanh thu", "revenue-summary", isAdmin || isCashier],
-            ["↗", "Báo cáo doanh thu", "revenue", isAdmin || isCashier],
-            ["★", "Đồ uống bán chạy", "popular", isAdmin || isSeller],
-            ["♙", "Thông tin tài khoản", "my-profile", true]
+            ["bi-grid-1x2-fill", "Tổng quan", "overview", true],
+            ["bi-cup-hot-fill", "Quản lý đồ uống", "drinks", canManageProducts],
+            ["bi-people-fill", "Quản lý nhân viên", "employees", canManageEmployees],
+            ["bi-cart-plus-fill", "Tạo đơn tại quầy", "counter-order", isAdmin || isSeller],
+            ["bi-receipt", "Quản lý đơn hàng", "orders", true],
+            ["bi-cash-stack", "Tổng hợp doanh thu", "revenue-summary", isAdmin || isCashier],
+            ["bi-graph-up-arrow", "Báo cáo doanh thu", "revenue", isAdmin || isCashier],
+            ["bi-star-fill", "Đồ uống bán chạy", "popular", isAdmin || isSeller],
+            ["bi-person-circle", "Thông tin tài khoản", "my-profile", true]
         ];
         navItems.filter((item) => item[3]).forEach(([icon, label, section]) =>
             navigation.append(createNavButton(icon, label, section))
