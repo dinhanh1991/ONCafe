@@ -36,7 +36,7 @@ export class OrderService {
         return await this.orderRepository.createCounterOrder(order);
     }
 
-    async updatePayment(orderId, paymentStatus) {
+    async createQrConfirmation(orderId) {\n        return await this.orderRepository.createQrConfirmation(orderId);\n    }\n\n    async updatePayment(orderId, paymentStatus) {
         if (!["paid", "unpaid"].includes(paymentStatus)) {
             throw new Error("Trạng thái thanh toán không hợp lệ.");
         }
