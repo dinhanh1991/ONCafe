@@ -265,7 +265,7 @@ export class OrderView {
         try {
             if (orderAction === "mark_arrived") {
                 await this.onMarkArrived(orderId);
-                this.setFeedback("Đã ghi nhận nhân viên đến nơi và thông báo cho khách hàng.");
+                this.setFeedback("Đã thông báo khách hàng. Nếu đơn vẫn đang giao, hệ thống sẽ tự động hoàn tất sau 30 phút.");
             } else {
                 await this.onUpdateStatus(orderId, orderAction);
                 this.setFeedback("Cập nhật trạng thái đơn hàng thành công.");
