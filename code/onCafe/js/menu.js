@@ -267,6 +267,100 @@ async function createCustomerQrInfo(orderId) {
     };
 }
 
+function showPaymentConfirmedPopup(order) {
+    if (document.querySelector(".payment-success-backdrop")) return;
+
+    const overlay = document.createElement("div");
+    overlay.className = "payment-success-backdrop";
+
+    const dialog = document.createElement("section");
+    dialog.className = "payment-success-dialog";
+    dialog.setAttribute("role", "alertdialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "menuPaymentSuccessTitle");
+
+    const icon = document.createElement("div");
+    icon.className = "payment-success-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "✓";
+
+    const title = document.createElement("h2");
+    title.id = "menuPaymentSuccessTitle";
+    title.textContent = "Thanh toán thành công!";
+
+    const message = document.createElement("p");
+    message.textContent = "Cảm ơn quý khách đã mua hàng tại ONCafe. Đơn " + (order.order_code || "") + " đã được xác nhận thanh toán.";
+
+    const total = document.createElement("strong");
+    total.className = "payment-success-total";
+    total.textContent = currencyFormatter.format(Number(order.total_amount) || 0);
+
+    const trackButton = document.createElement("button");
+    trackButton.type = "button";
+    trackButton.className = "payment-success-button";
+    trackButton.textContent = "Theo dõi đơn hàng";
+
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "menu-order-dialog-secondary";
+    closeButton.textContent = "Đóng";
+
+    const close = () => {
+        overlay.remove();
+        document.removeEventListener("keydown", handleKeydown);
+    };
+    const handleKeydown = (event) => {
+        if (event.key === "Escape") close();
+    };
+
+    dialog.append(icon, title, message, total, trackButton, closeButton);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    trackButton.addEventListener("click", () => {
+        window.location.href = "./my-orders.html";
+    });
+    closeButton.addEventListener("click", close);
+    overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) close();
+    });
+    document.addEventListener("keydown", handleKeydown);
+    trackButton.focus();
+}
+
+let paymentWatchTimer = null;
+let paymentWatchBusy = false;
+
+function watchQrPayment(orderId) {
+    if (paymentWatchTimer) window.clearInterval(paymentWatchTimer);
+
+    paymentWatchTimer = window.setInterval(async () => {
+        if (document.hidden || paymentWatchBusy) return;
+        paymentWatchBusy = true;
+
+        try {
+            const { data, error } = await supabase.rpc("oncafe_my_orders");
+            if (error) throw error;
+
+            const orders = Array.isArray(data) ? data : [];
+            const order = orders.find((item) => String(item.id) === String(orderId));
+
+            if (order?.payment_status === "paid") {
+                window.clearInterval(paymentWatchTimer);
+                paymentWatchTimer = null;
+                showPaymentConfirmedPopup(order);
+            } else if (order && ["cancelled", "rejected"].includes(order.status)) {
+                window.clearInterval(paymentWatchTimer);
+                paymentWatchTimer = null;
+                showCheckoutMessage("Đơn hàng đã kết thúc trước khi thanh toán được xác nhận. Vui lòng kiểm tra mục Đơn hàng của tôi.", true);
+            }
+        } catch (error) {
+            console.warn("Chưa thể kiểm tra trạng thái thanh toán:", error);
+        } finally {
+            paymentWatchBusy = false;
+        }
+    }, 5000);
+}
+
 function showCheckoutMessage(message, isError = false) {
     if (!checkoutMessage) return;
     checkoutMessage.textContent = message;
@@ -477,6 +571,7 @@ if (checkoutForm) {
             showCheckoutMessage("");
             showStatus(`Đã tạo đơn ${order.order_code}.`);
             showOrderSuccessPopup({ ...order, delivery_fee: fulfillmentMethod === "delivery" ? 15000 : 0 }, paymentMethod, fulfillmentMethod, qrInfo);
+            if (paymentMethod === "qr") watchQrPayment(order.order_id);
         } catch (error) {
             console.error("Lỗi đặt hàng ONCafe:", error);
             showCheckoutMessage(error.message || "Không thể tạo đơn hàng. Vui lòng thử lại.", true);
@@ -487,3 +582,7 @@ if (checkoutForm) {
 }
 
 loadMenu();
+
+window.addEventListener("beforeunload", () => {
+    if (paymentWatchTimer) window.clearInterval(paymentWatchTimer);
+});
