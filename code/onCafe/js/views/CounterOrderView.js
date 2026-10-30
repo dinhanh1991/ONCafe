@@ -18,6 +18,9 @@ export class CounterOrderView {
         this.cart = new Map();
         this.busy = false;
         this.container.addEventListener("submit", (event) => void this.handleSubmit(event));
+        this.container.addEventListener("input", (event) => {
+            if (event.target.matches("[data-counter-search]")) this.renderProducts();
+        });
         this.container.addEventListener("change", (event) => this.handleChange(event));
         this.container.addEventListener("click", (event) => this.handleClick(event));
     }
@@ -37,7 +40,15 @@ export class CounterOrderView {
                         <label>Thanh toán<select name="paymentMethod"><option value="cash">Tiền mặt</option><option value="qr">Chuyển khoản QR</option></select></label>
                     </div>
                     <h3>Chọn đồ uống</h3>
-                    <div class="table-scroll"><table class="product-table"><thead><tr><th>Đồ uống</th><th>Giá</th><th>Tồn kho</th><th>Số lượng</th></tr></thead><tbody data-counter-products><tr><td colspan="4">Đang tải...</td></tr></tbody></table></div>
+                    <div class="counter-product-tools">
+                        <label for="counter-product-search">Tìm đồ uống</label>
+                        <input id="counter-product-search" data-counter-search type="search" placeholder="Nhập tên đồ uống...">
+                        <label for="counter-product-category">Danh mục</label>
+                        <select id="counter-product-category" data-counter-category>
+                            <option value="">Tất cả danh mục</option>
+                        </select>
+                    </div>
+                    <div class="table-scroll"><table class="product-table"><thead><tr><th>Đồ uống</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Số lượng</th></tr></thead><tbody data-counter-products><tr><td colspan="5">Đang tải...</td></tr></tbody></table></div>
                     <h3>Giỏ hàng</h3><div data-counter-cart></div>
                     <p class="counter-total">Tổng tiền: <strong data-counter-total>0 ₫</strong></p>
                     <div class="form-actions"><button class="button button-primary" type="submit">Tạo đơn hàng</button></div>
@@ -51,6 +62,11 @@ export class CounterOrderView {
         feedback.textContent = "Đang tải đồ uống...";
         try {
             this.products = (await this.onLoadProducts()).filter((p) => p.status !== "inactive" && Number(p.quantity) > 0);
+            for (const [id, quantity] of this.cart.entries()) {
+                const product = this.products.find((item) => String(item.id) === id);
+                if (!product) this.cart.delete(id);
+                else if (quantity > Number(product.quantity)) this.cart.set(id, Number(product.quantity));
+            }
             this.renderProducts();
             feedback.textContent = "";
         } catch (error) {
@@ -61,10 +77,27 @@ export class CounterOrderView {
 
     renderProducts() {
         const body = this.container.querySelector("[data-counter-products]");
-        body.innerHTML = this.products.map((p) => `<tr>
-            <td>${escapeHtml(p.name)}</td><td>${formatCurrency(p.price)}</td><td>${p.quantity}</td>
+        const categorySelect = this.container.querySelector("[data-counter-category]");
+        const selectedCategory = categorySelect?.value || "";
+        const categories = [...new Set(this.products.map((product) => String(product.category || "").trim()).filter(Boolean))]
+            .sort((first, second) => first.localeCompare(second, "vi"));
+        if (categorySelect) {
+            categorySelect.innerHTML = '<option value="">Tất cả danh mục</option>' +
+                categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
+            categorySelect.value = categories.includes(selectedCategory) ? selectedCategory : "";
+        }
+        const searchTerm = (this.container.querySelector("[data-counter-search]")?.value || "").trim().toLocaleLowerCase("vi");
+        const visibleProducts = this.products.filter((product) => {
+            const name = String(product.name || "").toLocaleLowerCase("vi");
+            const category = String(product.category || "");
+            return (!searchTerm || name.includes(searchTerm)) &&
+                (!categorySelect?.value || category === categorySelect.value);
+        });
+        body.innerHTML = visibleProducts.map((p) => `<tr>
+            <td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.category || "Khác")}</td>
+            <td>${formatCurrency(p.price)}</td><td>${p.quantity}</td>
             <td><input aria-label="Số lượng ${escapeHtml(p.name)}" type="number" min="0" max="${p.quantity}" value="${this.cart.get(String(p.id)) || 0}" data-counter-quantity="${p.id}"></td>
-        </tr>`).join("") || '<tr><td colspan="4">Không có đồ uống còn hàng.</td></tr>';
+        </tr>`).join("") || '<tr><td colspan="5">Không tìm thấy đồ uống phù hợp hoặc đã hết hàng.</td></tr>';
         this.renderCart();
     }
 
@@ -80,6 +113,10 @@ export class CounterOrderView {
     }
 
     handleChange(event) {
+        if (event.target.matches("[data-counter-category]")) {
+            this.renderProducts();
+            return;
+        }
         const input = event.target.closest("[data-counter-quantity]");
         if (!input) return;
         const id = String(input.dataset.counterQuantity);
