@@ -4,13 +4,19 @@
 
 :root {
     color-scheme: light;
-    --ink: #26332f;
-    --muted: #66736e;
-    --line: #d9e0db;
-    --paper: #ffffff;
-    --canvas: #f1f5f1;
-    --green: #176b52;
-    --green-dark: #10513f;
+    --ink: #38251d;
+    --muted: #76665d;
+    --line: #e5ddd5;
+    --paper: #fffdfa;
+    --canvas: #f7f3ed;
+    --brand-primary: #38251d;
+    --brand-dark: #2f211b;
+    --brand-hover: #624333;
+    --brand-accent: #e9bd85;
+    --brand-link: #87552f;
+    --success: #176b52;
+    --success-dark: #10513f;
+    --success-soft: #e8f5ec;
     --red: #a33a32;
 }
 
@@ -28,12 +34,12 @@ body {
     justify-content: space-between;
     align-items: center;
     gap: 20px;
-    background-color: #38251d;
+    background-color: var(--brand-dark);
     color: #ffffff;
 }
 
 .site-header .brand {
-    color: #e9bd85;
+    color: var(--brand-accent);
     font-size: 28px;
     font-weight: bold;
     text-decoration: none;
@@ -52,7 +58,7 @@ body {
 }
 
 .site-header nav a:hover {
-    color: #e9bd85;
+    color: var(--brand-accent);
 }
 
 .button,
@@ -74,14 +80,14 @@ input {
 
 /* Navigation state for signed-in users */
 .nav-user-name {
-    color: #e9bd85;
+    color: var(--brand-accent);
     font-size: 14px;
     font-weight: 600;
 }
 
 .nav-logout-button {
     padding: 7px 12px;
-    border: 1px solid #e9bd85;
+    border: 1px solid var(--brand-accent);
     border-radius: 7px;
     background: transparent;
     color: #ffffff;
@@ -91,7 +97,7 @@ input {
 }
 
 .nav-logout-button:hover {
-    background: #624333;
+    background: var(--brand-hover);
 }
 
 .nav-logout-button:disabled {
@@ -100,8 +106,8 @@ input {
 }
 
 
-.site-header nav a[aria-current="page"]{color:#e9bd85;font-weight:700}
-.site-header nav a:focus-visible,.nav-logout-button:focus-visible{outline:3px solid #e9bd85;outline-offset:4px;border-radius:4px}
+.site-header nav a[aria-current="page"]{color:var(--brand-accent);font-weight:700}
+.site-header nav a:focus-visible,.nav-logout-button:focus-visible{outline:3px solid var(--brand-accent);outline-offset:4px;border-radius:4px}
 .nav-user-name{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:600px){
     .site-header nav{width:100%;align-items:center}

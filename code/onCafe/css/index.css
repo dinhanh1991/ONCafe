@@ -52,7 +52,7 @@ main {
 }
 
 .app-access-message a {
-    color: var(--green-dark);
+    color: var(--brand-link);
     font-weight: 650;
 }
 
@@ -74,7 +74,7 @@ main {
 }
 
 .eyebrow {
-    color: var(--green);
+    color: var(--brand-link);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 1px;
@@ -91,17 +91,17 @@ main {
 }
 
 .button:hover {
-    border-color: var(--green);
+    border-color: var(--brand-link);
 }
 
 .button-primary {
-    border-color: var(--green);
-    background: var(--green);
+    border-color: var(--brand-primary);
+    background: var(--brand-primary);
     color: white;
 }
 
 .button-primary:hover {
-    background: var(--green-dark);
+    background: var(--brand-hover);
     color: white;
 }
 
@@ -448,8 +448,8 @@ main {
     font-weight: 650;
 }
 .app-tab.is-active {
-    border-bottom-color: var(--green);
-    color: var(--green-dark);
+    border-bottom-color: var(--brand-accent);
+    color: var(--brand-primary);
     background: var(--paper);
 }
 .app-tab[aria-current="false"] {
@@ -507,12 +507,6 @@ main {
     overflow-y: hidden;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
-}
-
-.order-table {
-    width: 100%;
-    min-width: 0;
-    table-layout: fixed;
 }
 
 .order-table th,
@@ -588,12 +582,10 @@ main {
 /* Giao diện quản lý theo tông màu thương hiệu ONCafe */
 :root {
     --ink: #38251d;
-    --muted: #766b64;
-    --line: #e6ddd4;
+    --muted: #76665d;
+    --line: #e5ddd5;
     --paper: #fffdfa;
-    --canvas: #f5f2ed;
-    --green: #87552f;
-    --green-dark: #624333;
+    --canvas: #f7f3ed;
     --red: #a33a32;
 }
 
@@ -607,7 +599,7 @@ body {
     position: relative;
     min-height: 76px;
     padding: 14px max(5%, calc((100% - 1320px) / 2));
-    background: #2f211b;
+    background: var(--brand-dark);
     box-shadow: 0 4px 18px rgba(47, 33, 27, 0.12);
 }
 
@@ -771,8 +763,10 @@ main#app {
 
 .button:focus-visible,
 .product-toolbar input:focus-visible,
+.product-toolbar select:focus-visible,
 .product-form input:focus-visible,
 .product-form select:focus-visible,
+.order-toolbar input:focus-visible,
 .order-toolbar select:focus-visible {
     outline: 3px solid rgba(166, 108, 63, 0.2);
     outline-offset: 1px;
@@ -965,6 +959,12 @@ main#app {
     width: 100%;
     min-width: 0;
     table-layout: fixed;
+}
+
+@media (max-width: 1100px) {
+    .order-table {
+        min-width: 940px;
+    }
 }
 
 .order-table td {
@@ -1665,6 +1665,10 @@ main#app {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .seller-dashboard-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .dashboard-shortcuts > div {
         grid-template-columns: 1fr;
     }
@@ -1698,6 +1702,21 @@ main#app {
         gap: 6px;
         overflow-x: auto;
         padding-bottom: 3px;
+        scrollbar-color: #d3bda5 transparent;
+        scrollbar-width: thin;
+    }
+
+    .admin-navigation::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .admin-navigation::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: #d3bda5;
+    }
+
+    .admin-navigation::-webkit-scrollbar-track {
+        background: transparent;
     }
 
     .admin-nav-item {
@@ -1750,6 +1769,10 @@ main#app {
 @media (max-width: 420px) {
     .dashboard-metrics {
         gap: 9px;
+    }
+
+    .seller-dashboard-metrics .dashboard-metric:last-child {
+        grid-column: 1 / -1;
     }
 
     .dashboard-metric {
@@ -1960,11 +1983,11 @@ main#app {
 
 
 .order-source-label{display:inline-block;margin:5px 0;padding:3px 7px;border-radius:5px;font-size:11px;font-weight:800;letter-spacing:.3px}
-.order-source-label.is-online{background:#e9f4ef;color:#176b52}
+.order-source-label.is-online{background:#f3e7d8;color:#87552f}
 .order-source-label.is-counter{background:#f1eee9;color:#6f6257}
-.order-fulfillment-label{display:inline-block;margin-top:4px;color:#176b52;font-size:12px;font-weight:700}
+.order-fulfillment-label{display:inline-block;margin-top:4px;color:#87552f;font-size:12px;font-weight:700}
 .order-detail{margin:5px 0;font-size:12px}
-.order-detail summary{color:#176b52;font-weight:700;cursor:pointer}
+.order-detail summary{color:#87552f;font-weight:700;cursor:pointer}
 .order-detail-items{padding:7px 0;line-height:1.7}
 .order-detail>p{margin:5px 0;color:#76665d}
 

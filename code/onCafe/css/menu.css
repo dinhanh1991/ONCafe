@@ -185,7 +185,7 @@
 .menu-card-price {
     min-height: 0 !important;
     margin: 12px 0 16px !important;
-    color: #176b52 !important;
+    color: #87552f !important;
     font-size: 18px;
     font-weight: 700;
 }
@@ -195,7 +195,7 @@
     padding: 11px 14px;
     border: 0;
     border-radius: 8px;
-    background: #176b52;
+    background: #38251d;
     color: #ffffff;
     font: inherit;
     font-weight: 700;
@@ -203,7 +203,7 @@
 }
 
 .menu-add-button:hover {
-    background: #10513f;
+    background: #624333;
 }
 
 .menu-add-button:focus-visible,
@@ -592,10 +592,10 @@
 .checkout-total-summary{margin:14px 0 0;padding:12px 14px;border-radius:8px;background:#f8f5f0;color:#5f5148;font-size:14px;line-height:1.6;font-weight:700}
 .customer-qr-panel{display:grid;justify-items:center;gap:10px;margin:16px 0;padding:16px;border-radius:10px;background:#f8f5f0;text-align:center}
 .customer-qr-panel img{width:200px;height:200px;object-fit:contain;background:#fff}
-.customer-qr-panel a{color:#176b52;font-weight:700}
+.customer-qr-panel a{color:#87552f;font-weight:700}
 .customer-qr-panel p,.customer-qr-panel small{max-width:340px;color:#76665d;line-height:1.5}
 
-.checkout-payment-rule { margin: 0; padding: 12px 14px; border-left: 3px solid #176b52; border-radius: 6px; background: #f4f8f5; color: #385b49; line-height: 1.55; }
+.checkout-payment-rule { margin: 0; padding: 12px 14px; border-left: 3px solid #a66c3f; border-radius: 6px; background: #f7f1e9; color: #503c30; line-height: 1.55; }
 .checkout-field small { color: #76665d; line-height: 1.5; }
 
 
@@ -609,7 +609,7 @@
 .menu-card:hover img{transform:scale(1.025)}
 .cart-panel{scroll-margin-top:20px}
 .checkout-form{scroll-margin-top:20px}
-.checkout-field input:focus-visible,.checkout-field textarea:focus-visible,.checkout-field select:focus-visible{outline:3px solid rgba(23,107,82,.22);border-color:#176b52}
+.checkout-field input:focus-visible,.checkout-field textarea:focus-visible,.checkout-field select:focus-visible{outline:3px solid rgba(166,108,63,.22);border-color:#a66c3f}
 .checkout-form h3{font-size:22px}
 .checkout-payment-rule{font-size:14px}
 .menu-order-dialog{max-height:min(88vh,850px);overflow:auto}

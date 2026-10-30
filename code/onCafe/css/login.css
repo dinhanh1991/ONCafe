@@ -3,7 +3,7 @@
     padding: 48px 24px;
     background:
         radial-gradient(ellipse at 12% 18%, rgba(233, 189, 133, 0.2), transparent 34%),
-        #f4f1eb;
+        var(--canvas);
 }
 
 .login-card {

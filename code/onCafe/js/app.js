@@ -10,11 +10,16 @@ import { OrderRepository } from "./repositories/OrderRepo.js";
 import { OrderService } from "./services/OrderService.js";
 import { OrderView } from "./views/OrderView.js";
 import { CounterOrderView } from "./views/CounterOrderView.js";
+import { RevenueReportRepository } from "./repositories/RevenueReportRepo.js";
+import { RevenueReportService } from "./services/RevenueReportService.js";
+import { RevenueReportView } from "./views/RevenueReportView.js";
+import { RevenueSummaryView } from "./views/RevenueSummaryView.js";
 
 const authService = new AuthService();
 const productService = new ProductService(new ProductRepository());
 const employeeService = new EmployeeService();
 const orderService = new OrderService(new OrderRepository());
+const revenueReportService = new RevenueReportService(new RevenueReportRepository());
 const app = document.querySelector("#app");
 const logoutButton = document.querySelector("#logoutButton");
 const dashboardHomeLink = document.querySelector("#dashboardHomeLink");
@@ -122,19 +127,28 @@ async function startApp() {
         <section class="dashboard-welcome cashier-dashboard-welcome">
             <p class="eyebrow">KHU VỰC THU NGÂN</p>
             <h2 data-dashboard-greeting></h2>
-            <p>Theo dõi đơn hàng trong ca, xác nhận đơn mới và kiểm soát các khoản thanh toán.</p>
+            <p>Theo dõi doanh thu, tình hình đơn hàng và trạng thái thanh toán trong ngày.</p>
         </section>
         <section class="dashboard-metrics cashier-dashboard-metrics" aria-label="Tình hình đơn hàng trong ngày">
+            <article class="dashboard-metric"><span>Doanh thu hôm nay</span><strong data-cashier-today-revenue>—</strong><small>Đã thu trừ tiền hoàn</small></article>
+            <article class="dashboard-metric"><span>Đơn thanh toán hôm nay</span><strong data-cashier-paid-count>—</strong><small>Tính theo thời điểm thu tiền</small></article>
             <article class="dashboard-metric"><span>Đơn hàng hôm nay</span><strong data-cashier-today-count>—</strong><small>Tất cả nguồn đơn</small></article>
-            <article class="dashboard-metric"><span>Chờ xác nhận</span><strong data-cashier-pending-count>—</strong><small>Cần tiếp nhận xử lý</small></article>
-            <article class="dashboard-metric"><span>Đang xử lý</span><strong data-cashier-active-count>—</strong><small>Đã xác nhận đến đang giao</small></article>
             <article class="dashboard-metric"><span>Chưa thanh toán</span><strong data-cashier-unpaid-count>—</strong><small>Đơn chưa ghi nhận thanh toán</small></article>
         </section>
+        <section class="cashier-dashboard-comparison" aria-label="So sánh doanh thu và trạng thái đơn hàng">
+            <p data-cashier-revenue-comparison>Đang so sánh doanh thu với ngày hôm qua...</p>
+            <div class="cashier-dashboard-statuses">
+                <span>Hoàn tất: <strong data-cashier-completed-count>—</strong></span>
+                <span>Đang xử lý: <strong data-cashier-active-count>—</strong></span>
+                <span>Đã hoàn tiền: <strong data-cashier-refunded-count>—</strong></span>
+            </div>
+        </section>
         <section class="dashboard-shortcuts cashier-dashboard-shortcuts">
-            <h3>Thao tác nhanh</h3>
+            <h3>Truy cập nhanh</h3>
             <div>
-                <button class="dashboard-shortcut" type="button" data-open-section="counter-order"><span aria-hidden="true">＋</span> Tạo đơn tại quầy <b aria-hidden="true">→</b></button>
                 <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Quản lý đơn hàng <b aria-hidden="true">→</b></button>
+                <button class="dashboard-shortcut" type="button" data-open-section="revenue-summary"><span aria-hidden="true">₫</span> Tổng hợp doanh thu <b aria-hidden="true">→</b></button>
+                <button class="dashboard-shortcut" type="button" data-open-section="revenue"><span aria-hidden="true">↗</span> Báo cáo doanh thu <b aria-hidden="true">→</b></button>
             </div>
         </section>` : `
         <section class="dashboard-welcome">
@@ -188,6 +202,7 @@ async function startApp() {
     let profilePanel = null;
     let employeeProfileView = null;
     let revenuePanel = null;
+    let revenueSummaryPanel = null;
     let expensePanel = null;
     let popularPanel = null;
     let navigation = null;
@@ -210,11 +225,11 @@ async function startApp() {
             ["▦", "Tổng quan", "overview", true],
             ["◈", "Quản lý đồ uống", "drinks", canManageProducts],
             ["♙", "Quản lý nhân viên", "employees", canManageEmployees],
-            ["＋", "Tạo đơn tại quầy", "counter-order", isAdmin || isSeller || isCashier],
+            ["＋", "Tạo đơn tại quầy", "counter-order", isAdmin || isSeller],
             ["☷", "Quản lý đơn hàng", "orders", true],
+            ["₫", "Tổng hợp doanh thu", "revenue-summary", isAdmin || isCashier],
             ["↗", "Báo cáo doanh thu", "revenue", isAdmin || isCashier],
             ["★", "Đồ uống bán chạy", "popular", isAdmin || isSeller],
-            ["₫", "Tổng hợp chi tiêu", "expenses", isAdmin || isCashier],
             ["♙", "Thông tin tài khoản", "my-profile", true]
         ];
         navItems.filter((item) => item[3]).forEach(([icon, label, section]) =>
@@ -245,6 +260,11 @@ async function startApp() {
             employeePanel.hidden = true;
             panels.append(employeePanel);
         }
+        revenueSummaryPanel = document.createElement("section");
+        revenueSummaryPanel.className = "admin-panel";
+        revenueSummaryPanel.dataset.panel = "revenue-summary";
+        revenueSummaryPanel.hidden = true;
+        panels.append(revenueSummaryPanel);
         revenuePanel = document.createElement("section");
         revenuePanel.className = "admin-panel";
         revenuePanel.dataset.panel = "revenue";
@@ -286,12 +306,6 @@ async function startApp() {
                 </section>
             </section>`;
         panels.append(popularPanel);
-        expensePanel = document.createElement("section");
-        expensePanel.className = "admin-panel";
-        expensePanel.dataset.panel = "expenses";
-        expensePanel.hidden = true;
-        expensePanel.innerHTML = `<section class="revenue-placeholder"><p class="eyebrow">QUẢN LÝ CHI PHÍ</p><h2>Tổng hợp chi tiêu</h2><p>Khu vực tổng hợp chi tiêu sẽ được xây dựng ở bước báo cáo tiếp theo.</p></section>`;
-        panels.append(expensePanel);
         counterPanel = document.createElement("section");
         counterPanel.className = "app-panel";
         counterPanel.dataset.panel = "counter-order";
@@ -333,10 +347,19 @@ async function startApp() {
     void employeeProfileView.render();
 
     const orderView = new OrderView(orderPanel, {
-        onUpdateStatus: (id, status) => orderService.updateStatus(id, status),
-        onUpdatePayment: (id, status) => orderService.updatePayment(id, status),
-        onMarkArrived: (id) => orderService.markDeliveryArrived(id),
-        onRefresh: () => orderService.getStaffOrders()
+        onUpdateStatus: isCashier ? null : (id, status) => orderService.updateStatus(id, status),
+        onUpdatePayment: isCashier ? null : (id, status) => orderService.updatePayment(id, status),
+        onMarkArrived: isCashier ? null : (id) => orderService.markDeliveryArrived(id),
+        onRefresh: () => orderService.getStaffOrders(),
+        readOnly: isCashier
+    });
+
+    const revenueSummaryView = new RevenueSummaryView(revenueSummaryPanel, {
+        onLoad: (period, date) => revenueReportService.getReport(period, date)
+    });
+
+    const revenueReportView = new RevenueReportView(revenuePanel, {
+        onLoad: (period, date) => revenueReportService.getReport(period, date)
     });
 
     const counterOrderView = new CounterOrderView(counterPanel, {
@@ -389,10 +412,10 @@ async function startApp() {
         "counter-order": ["Tạo đơn tại quầy", "Tạo đơn bán hàng, kiểm tra tồn kho và ghi nhận phương thức thanh toán."],
         drinks: ["Quản lý đồ uống", "Danh sách, thông tin và số lượng đồ uống trong quán."],
         employees: ["Quản lý nhân viên", "Quản lý tài khoản và thông tin nhân viên."],
-        revenue: ["Báo cáo doanh thu", "Báo cáo doanh thu và hiệu quả kinh doanh."],
+        "revenue-summary": ["Tổng hợp doanh thu", "Theo dõi doanh thu thuần, tiền đã thu, tiền hoàn và số đơn đã thanh toán theo ngày, tháng, năm."],
+        revenue: ["Báo cáo doanh thu", "Xem biểu đồ và bảng chi tiết doanh thu theo giờ, ngày hoặc tháng."],
         popular: ["Đồ uống bán chạy", "Theo dõi các sản phẩm được khách hàng lựa chọn nhiều nhất."],
-        expenses: ["Tổng hợp chi tiêu", "Theo dõi các khoản chi phí hoạt động của quán."],
-        orders: ["Quản lý đơn hàng", "Theo dõi và cập nhật trạng thái đơn hàng."],
+        orders: ["Quản lý đơn hàng", isCashier ? "Tra cứu danh sách, chi tiết và trạng thái đơn hàng (chỉ xem)." : "Theo dõi và cập nhật trạng thái đơn hàng."],
         "my-profile": ["Thông tin tài khoản", "Cập nhật thông tin cá nhân và mật khẩu đăng nhập."]
     };
 
@@ -426,7 +449,9 @@ async function startApp() {
                 if (!document.hidden) void orderView.refresh();
             }, 5000);
         }
-        if (sectionName === "counter-order") void counterOrderView.render();
+        if (sectionName === "counter-order" && (isAdmin || isSeller)) void counterOrderView.render();
+        if (sectionName === "revenue-summary" && (isAdmin || isCashier)) void revenueSummaryView.load();
+        if (sectionName === "revenue" && (isAdmin || isCashier)) void revenueReportView.load();
         if (sectionName === "overview" && isSeller) loadSellerOverview();
         if (sectionName === "overview" && isCashier) loadCashierOverview();
         if (sectionName === "popular" && (isAdmin || isSeller)) loadPopularDrinks();
@@ -544,47 +569,72 @@ async function startApp() {
 
     async function loadCashierOverview() {
         const metricSelectors = [
+            "[data-cashier-today-revenue]",
+            "[data-cashier-paid-count]",
             "[data-cashier-today-count]",
-            "[data-cashier-pending-count]",
+            "[data-cashier-unpaid-count]",
+            "[data-cashier-completed-count]",
             "[data-cashier-active-count]",
-            "[data-cashier-unpaid-count]"
+            "[data-cashier-refunded-count]"
         ];
         const metrics = metricSelectors.map((selector) => dashboardPanel.querySelector(selector));
-        if (metrics.some((element) => !element)) return;
+        const comparison = dashboardPanel.querySelector("[data-cashier-revenue-comparison]");
+        if (metrics.some((element) => !element) || !comparison) return;
         metrics.forEach((element) => { element.textContent = "…"; });
+        comparison.textContent = "Đang so sánh doanh thu với ngày hôm qua...";
 
         try {
-            const orders = await orderService.getStaffOrders();
-            const now = new Date();
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-            const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
-            const todayOrders = orders.filter((order) => {
-                const createdAt = new Date(order.created_at).getTime();
-                return Number.isFinite(createdAt) && createdAt >= todayStart && createdAt < tomorrowStart;
-            });
-            const pendingOrders = todayOrders.filter((order) => order.status === "pending");
-            const activeOrders = todayOrders.filter((order) =>
-                ["confirmed", "preparing", "ready_for_pickup", "delivering"].includes(order.status)
-            );
+            const today = new Intl.DateTimeFormat("en-CA", {
+                timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit"
+            }).format(new Date());
+            const yesterdayDate = new Date(Date.parse(today + "T00:00:00Z") - 86400000);
+            const yesterday = yesterdayDate.toISOString().slice(0, 10);
+            const [orders, todayReport, yesterdayReport] = await Promise.all([
+                orderService.getStaffOrders(),
+                revenueReportService.getReport("day", today),
+                revenueReportService.getReport("day", yesterday)
+            ]);
+            const todayOrders = orders.filter((order) => order.created_at &&
+                new Intl.DateTimeFormat("en-CA", {
+                    timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit"
+                }).format(new Date(order.created_at)) === today);
+            const paidOrders = todayOrders.filter((order) => order.payment_status === "paid");
             const unpaidOrders = todayOrders.filter((order) =>
                 order.payment_status === "unpaid" && !["cancelled", "rejected"].includes(order.status)
             );
+            const completedOrders = todayOrders.filter((order) => order.status === "completed");
+            const activeOrders = todayOrders.filter((order) =>
+                ["confirmed", "preparing", "ready_for_pickup", "delivering"].includes(order.status)
+            );
+            const refundedOrders = todayOrders.filter((order) => order.payment_status === "refunded");
+            const currencyFormatter = new Intl.NumberFormat("vi-VN", {
+                style: "currency", currency: "VND", maximumFractionDigits: 0
+            });
+            const currentRevenue = Number(todayReport?.summary?.net_revenue) || 0;
+            const previousRevenue = Number(yesterdayReport?.summary?.net_revenue) || 0;
+            let comparisonText = "Doanh thu hôm nay bằng ngày hôm qua.";
+            if (previousRevenue === 0 && currentRevenue > 0) {
+                comparisonText = "Hôm nay đã phát sinh doanh thu, hôm qua chưa có doanh thu.";
+            } else if (previousRevenue === 0 && currentRevenue === 0) {
+                comparisonText = "Hôm nay và hôm qua chưa phát sinh doanh thu.";
+            } else {
+                const change = ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+                comparisonText = `Doanh thu hôm nay ${change >= 0 ? "tăng" : "giảm"} ${Math.abs(change).toFixed(1)}% so với hôm qua (${currencyFormatter.format(previousRevenue)}).`;
+            }
 
-            metrics[0].textContent = String(todayOrders.length);
-            metrics[1].textContent = String(pendingOrders.length);
-            metrics[2].textContent = String(activeOrders.length);
+            metrics[0].textContent = currencyFormatter.format(currentRevenue);
+            metrics[1].textContent = String(Number(todayReport?.summary?.paid_orders) || paidOrders.length);
+            metrics[2].textContent = String(todayOrders.length);
             metrics[3].textContent = String(unpaidOrders.length);
+            metrics[4].textContent = String(completedOrders.length);
+            metrics[5].textContent = String(activeOrders.length);
+            metrics[6].textContent = String(refundedOrders.length);
+            comparison.textContent = comparisonText;
         } catch (error) {
             console.error("Không thể tải tổng quan thu ngân:", error);
             metrics.forEach((element) => { element.textContent = "—"; });
-            const existingMessage = dashboardPanel.querySelector("[data-cashier-overview-error]");
-            if (existingMessage) existingMessage.remove();
-            const message = document.createElement("p");
-            message.className = "app-error";
-            message.dataset.cashierOverviewError = "";
-            message.setAttribute("role", "alert");
-            message.textContent = error.message || "Không thể tải số liệu đơn hàng. Vui lòng thử lại.";
-            dashboardPanel.querySelector(".cashier-dashboard-welcome")?.after(message);
+            comparison.textContent = error.message || "Không thể tải số liệu so sánh doanh thu.";
+            comparison.classList.add("app-error");
         }
     }
 
