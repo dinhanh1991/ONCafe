@@ -1957,3 +1957,13 @@ main#app {
 
 .qr-demo-success { color:#386443; font-weight:650; }
 @media (max-width:600px) { .qr-demo-panel { grid-template-columns:1fr; padding:18px; } .qr-demo-code { grid-row:1; } }
+
+
+.order-source-label{display:inline-block;margin:5px 0;padding:3px 7px;border-radius:5px;font-size:11px;font-weight:800;letter-spacing:.3px}
+.order-source-label.is-online{background:#e9f4ef;color:#176b52}
+.order-source-label.is-counter{background:#f1eee9;color:#6f6257}
+.order-fulfillment-label{display:inline-block;margin-top:4px;color:#176b52;font-size:12px;font-weight:700}
+.order-detail{margin:5px 0;font-size:12px}
+.order-detail summary{color:#176b52;font-weight:700;cursor:pointer}
+.order-detail-items{padding:7px 0;line-height:1.7}
+.order-detail>p{margin:5px 0;color:#76665d}
