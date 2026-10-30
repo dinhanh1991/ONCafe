@@ -103,25 +103,29 @@ export class EmployeeView {
                         </div>
                         <button class="button" type="button" data-employee-action="back">← Danh sách</button>
                     </header>
-                    <form class="product-form" data-employee-form>
-                        <div class="product-form-grid">
-                            <label>Họ và tên
-                                <input name="fullName" type="text" minlength="2" maxlength="100" autocomplete="name" required>
-                            </label>
-                            <label>Email nhân viên
-                                <input name="email" type="email" maxlength="254" autocomplete="email" required>
-                            </label>
-                            <label>Vai trò
-                                <select name="role" required>
+                    <form class="product-form" data-employee-form novalidate>
+                        <div class="product-form-grid employee-form-grid">
+                            <div class="employee-form-field">
+                                <label for="employee-full-name">Họ và tên</label>
+                                <input id="employee-full-name" name="fullName" type="text" minlength="2" maxlength="100" autocomplete="name" required>
+                            </div>
+                            <div class="employee-form-field">
+                                <label for="employee-email">Email nhân viên</label>
+                                <input id="employee-email" name="email" type="email" maxlength="254" autocomplete="email" required>
+                            </div>
+                            <div class="employee-form-field">
+                                <label for="employee-role">Vai trò</label>
+                                <select id="employee-role" name="role" required>
                                     <option value="cashier">Thu ngân (Cashier)</option>
                                     <option value="seller">Người bán hàng (Seller)</option>
                                     <option value="admin">Quản trị viên (Admin)</option>
                                 </select>
-                            </label>
-                            <label data-employee-password-label>Mật khẩu ban đầu
-                                <input name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
-                                <small data-employee-password-help>Dùng ít nhất 8 ký tự; cung cấp cho nhân viên qua kênh riêng.</small>
-                            </label>
+                            </div>
+                            <div class="employee-form-field">
+                                <label for="employee-password" data-employee-password-label>Mật khẩu ban đầu</label>
+                                <input id="employee-password" name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" aria-describedby="employee-password-help" required>
+                                <small id="employee-password-help" data-employee-password-help>Dùng ít nhất 8 ký tự; cung cấp cho nhân viên qua kênh riêng.</small>
+                            </div>
                         </div>
                         <p class="form-error" data-employee-form-error role="alert"></p>
                         <div class="form-actions">
@@ -258,6 +262,7 @@ export class EmployeeView {
         const listView = this.container.querySelector("[data-employee-list-view]");
         const formView = this.container.querySelector("[data-employee-form-view]");
         const form = this.container.querySelector("[data-employee-form]");
+        ValidationUI.clearErrors(form);
         form.reset();
         this.container.querySelector("[data-employee-form-heading]").textContent =
             employee ? "Cập nhật nhân viên" : "Thêm nhân viên";
@@ -272,7 +277,7 @@ export class EmployeeView {
         const passwordLabel = form.querySelector("[data-employee-password-label]");
         const submitButton = form.querySelector('button[type="submit"]');
         passwordInput.required = !employee;
-        passwordLabel.childNodes[0].textContent = employee ? "Mật khẩu mới (không bắt buộc)" : "Mật khẩu ban đầu";
+        passwordLabel.textContent = employee ? "Mật khẩu mới (không bắt buộc)" : "Mật khẩu ban đầu";
         form.querySelector("[data-employee-password-help]").textContent = employee
             ? "Để trống nếu không muốn đổi mật khẩu."
             : "Dùng ít nhất 8 ký tự; cung cấp cho nhân viên qua kênh riêng.";
@@ -285,7 +290,9 @@ export class EmployeeView {
 
     closeForm() {
         this.editingId = null;
-        this.container.querySelector("[data-employee-form]").reset();
+        const form = this.container.querySelector("[data-employee-form]");
+        ValidationUI.clearErrors(form);
+        form.reset();
         this.container.querySelector("[data-employee-form-view]").hidden = true;
         this.container.querySelector("[data-employee-list-view]").hidden = false;
     }
