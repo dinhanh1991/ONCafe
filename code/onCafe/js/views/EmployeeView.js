@@ -1,4 +1,5 @@
 import { EmployeeValidator } from "../validators/EmployeeValidator.js";
+import { ValidationUI } from "../validators/ValidationUI.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
@@ -46,6 +47,10 @@ export class EmployeeView {
         });
         this.container.addEventListener("click", (event) => this.handleClick(event));
         this.container.addEventListener("submit", (event) => this.handleSubmit(event));
+        this.container.addEventListener("focusin", (event) => {
+            const form = event.target.closest("[data-employee-form]");
+            if (form) ValidationUI.bind(form);
+        });
     }
 
     render() {
@@ -301,13 +306,13 @@ export class EmployeeView {
             role: String(formData.get("role") || "cashier")
         };
         const validation = EmployeeValidator.validate(employee);
+        ValidationUI.bind(form);
         if (!validation.isValid) {
-            const errorElement = form.querySelector("[data-employee-form-error]");
-            errorElement.textContent = Object.values(validation.errors).join(" ");
-            if (validation.errors.fullName) form.elements.fullName.focus();
-            else form.elements.email.focus();
+            ValidationUI.showErrors(form, validation.errors);
+            form.querySelector("[data-employee-form-error]").textContent = "";
             return;
         }
+        ValidationUI.clearErrors(form);
 
         const wasEditing = this.editingId !== null;
         if (wasEditing) employee.id = this.editingId;
@@ -350,8 +355,13 @@ export class EmployeeView {
             });
         } catch (error) {
             console.error("Không thể lưu thông tin nhân viên:", error);
-            form.querySelector("[data-employee-form-error]").textContent =
-                error.message || "Không thể lưu thông tin nhân viên.";
+            if (error.validationErrors) {
+                ValidationUI.showErrors(form, error.validationErrors);
+                form.querySelector("[data-employee-form-error]").textContent = "";
+            } else {
+                form.querySelector("[data-employee-form-error]").textContent =
+                    error.message || "Không thể lưu thông tin nhân viên.";
+            }
             this.showDialog({
                 type: "error",
                 title: wasEditing ? "Không thể cập nhật nhân viên" : "Không thể tạo nhân viên",
