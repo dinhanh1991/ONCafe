@@ -38,7 +38,7 @@ export class RevenueReportView {
                 <header class="revenue-report-heading">
                     <div>
                         <p class="eyebrow">BÁO CÁO KINH DOANH</p>
-                        <h2 id="revenue-report-heading">Tổng hợp doanh thu</h2>
+                        <h2 id="revenue-report-heading">Báo cáo doanh thu</h2>
                         <p data-revenue-period-label></p>
                     </div>
                     <button class="button button-primary" type="button" data-revenue-refresh>↻ Làm mới</button>
