@@ -130,7 +130,7 @@ export class CounterOrderView {
             if (paymentMethod === "qr") {
                 this.pendingQrOrder = result;
                 this.renderQrSimulation(result);
-                this.setFeedback("Đơn đã tạo. Đây là màn hình QR mô phỏng phục vụ bài tập; chưa có giao dịch thật.");
+                this.setFeedback("Đơn hàng đã được tạo. Vui lòng hoàn tất thanh toán.");
             } else {
                 this.pendingQrOrder = null;
                 this.removeQrSimulation();
@@ -152,12 +152,12 @@ export class CounterOrderView {
         panel.dataset.qrDemoPanel = "";
         panel.innerHTML = `
             <div class="qr-demo-copy">
-                <p class="eyebrow">THANH TOÁN QR · CHẾ ĐỘ THỬ NGHIỆM</p>
+                <p class="eyebrow">THANH TOÁN QR</p>
                 <h3>Đơn ${escapeHtml(order.order_code || "#" + order.id)}</h3>
                 <p>Tổng tiền cần thanh toán</p>
                 <strong class="qr-demo-amount">${formatCurrency(order.total_amount)}</strong>
-                <p class="qr-demo-warning">QR minh họa, không thể quét để chuyển tiền. Nút bên dưới chỉ giả lập kết quả thanh toán thành công cho bài tập.</p>
-                <button class="button button-primary" type="button" data-qr-simulate-payment>Giả lập khách đã chuyển khoản</button>
+                <p class="qr-demo-warning">Mã QR hiện chưa hỗ trợ chuyển khoản thực tế.</p>
+                <button class="button button-primary" type="button" data-qr-simulate-payment>Xác nhận thanh toán</button>
                 <p data-qr-demo-feedback role="status" aria-live="polite"></p>
             </div>
             <div class="qr-demo-code">
@@ -175,7 +175,7 @@ export class CounterOrderView {
     async simulateQrPayment(button) {
         const order = this.pendingQrOrder;
         if (!order || !order.id || this.busy) {
-            this.setFeedback("Không tìm thấy đơn hàng cần mô phỏng thanh toán.", true);
+            this.setFeedback("Không tìm thấy đơn hàng cần thanh toán.", true);
             return;
         }
         const confirmed = await this.confirmQrPayment(order);
@@ -188,10 +188,10 @@ export class CounterOrderView {
         try {
             await this.onSimulateQrPayment(order.id);
             if (feedback) {
-                feedback.textContent = "Mô phỏng thành công: đơn đã được ghi nhận ĐÃ THANH TOÁN. Không có tiền thật được chuyển.";
+                feedback.textContent = "Thanh toán thành công. Đơn hàng đã được cập nhật.";
                 feedback.className = "qr-demo-success";
             }
-            button.textContent = "Đã mô phỏng thanh toán";
+            button.textContent = "Đã thanh toán";
             await this.onCreated();
         } catch (error) {
             if (feedback) {
@@ -215,8 +215,7 @@ export class CounterOrderView {
                     <h3 id="qr-confirm-title">Xác nhận thanh toán QR</h3>
                     <p id="qr-confirm-message">
                         Bạn xác nhận đơn ${escapeHtml(order.order_code || "#" + order.id)}
-                        đã thanh toán ${formatCurrency(order.total_amount)}?
-                        <br><br><strong>Đây là thao tác mô phỏng cho bài tập, không xác minh giao dịch ngân hàng và không có tiền thật được chuyển.</strong>
+                        đã nhận thanh toán ${formatCurrency(order.total_amount)}?
                     </p>
                     <div class="oncafe-dialog-actions">
                         <button type="button" class="button button-small" data-qr-confirm-cancel>Hủy</button>
