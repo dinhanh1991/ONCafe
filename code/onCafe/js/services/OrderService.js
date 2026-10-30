@@ -1,6 +1,7 @@
 const ALLOWED_STATUS = new Set([
     "confirmed",
     "preparing",
+    "ready_for_pickup",
     "delivering",
     "completed",
     "rejected"
