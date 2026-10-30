@@ -1,4 +1,5 @@
 import { AuthService } from "../services/AuthService.js";
+import { ValidationUtils } from "../validators/ValidationUtils.js";
 
 const authService = new AuthService();
 
@@ -26,6 +27,12 @@ if (loginForm) {
 
     loginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
+        const email = loginForm.elements.email.value.trim();
+        if (!ValidationUtils.isValidEmail(email)) {
+            showMessage(message, "Email không đúng định dạng. Vui lòng kiểm tra lại.", true);
+            loginForm.elements.email.focus();
+            return;
+        }
         const button = loginForm.querySelector('button[type="submit"]');
         button.disabled = true;
         forgotPassword.hidden = true;
@@ -34,7 +41,7 @@ if (loginForm) {
         try {
             const formData = new FormData(loginForm);
             const result = await authService.login({
-                email: formData.get("email"),
+                email,
                 password: formData.get("password")
             });
             const profile = await authService.getMyProfile(result.user.id);
@@ -64,7 +71,12 @@ if (loginForm) {
     });
 
     forgotPassword.addEventListener("click", async () => {
-        const email = loginForm.elements.email.value;
+        const email = loginForm.elements.email.value.trim();
+        if (!ValidationUtils.isValidEmail(email)) {
+            showMessage(message, "Vui lòng nhập email hợp lệ trước khi đặt lại mật khẩu.", true);
+            loginForm.elements.email.focus();
+            return;
+        }
         const redirectTo = new URL("./reset-password.html", window.location.href).href;
         forgotPassword.disabled = true;
         showMessage(message, "Đang gửi email đặt lại mật khẩu...");
@@ -147,6 +159,12 @@ if (registerForm) {
 
         try {
             const formData = new FormData(registerForm);
+            const email = String(formData.get("email") || "").trim();
+            if (!ValidationUtils.isValidEmail(email)) {
+                showMessage(message, "Email không đúng định dạng. Ví dụ: ten@gmail.com.", true);
+                registerForm.elements.email.focus();
+                return;
+            }
             const result = await authService.register({
                 fullName: formData.get("fullName"),
                 email: formData.get("email"),
