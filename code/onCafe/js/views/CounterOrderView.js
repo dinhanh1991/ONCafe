@@ -4,12 +4,12 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 export class CounterOrderView {
-    constructor(container, { onLoadProducts, onCreateOrder, onCreated, onSimulateQrPayment }) {
+    constructor(container, { onLoadProducts, onCreateOrder, onCreated, onCreateQrConfirmation }) {
         this.container = container;
         this.onLoadProducts = onLoadProducts;
         this.onCreateOrder = onCreateOrder;
         this.onCreated = onCreated;
-        this.onSimulateQrPayment = onSimulateQrPayment;
+        this.onCreateQrConfirmation = onCreateQrConfirmation;
         this.pendingQrOrder = null;
         this.products = [];
         this.cart = new Map();
@@ -130,7 +130,8 @@ export class CounterOrderView {
             if (paymentMethod === "qr") {
                 this.pendingQrOrder = result;
                 this.renderQrSimulation(result);
-                this.setFeedback("Đơn hàng đã được tạo. Vui lòng hoàn tất thanh toán.");
+                await this.createQrForOrder(result);
+                this.setFeedback("Đã tạo đơn và mã QR xác nhận. Khách có thể quét mã bằng iPhone.");
             } else {
                 this.pendingQrOrder = null;
                 this.removeQrSimulation();
@@ -156,14 +157,14 @@ export class CounterOrderView {
                 <h3>Đơn ${escapeHtml(order.order_code || "#" + order.id)}</h3>
                 <p>Tổng tiền cần thanh toán</p>
                 <strong class="qr-demo-amount">${formatCurrency(order.total_amount)}</strong>
-                <p class="qr-demo-warning">Mã QR hiện chưa hỗ trợ chuyển khoản thực tế.</p>
-                <button class="button button-primary" type="button" data-qr-simulate-payment>Xác nhận thanh toán</button>
-                <p data-qr-demo-feedback role="status" aria-live="polite"></p>
+                <p class="qr-demo-warning">Đây là xác nhận nội bộ, chưa kiểm tra giao dịch ngân hàng thực tế. Khách quét mã và xác nhận trên iPhone.</p>
+                <p data-qr-demo-feedback role="status" aria-live="polite">Đang tạo liên kết xác nhận...</p>
             </div>
             <div class="qr-demo-code">
-                <img class="qr-demo-image" alt="Mã QR mô phỏng chứa thông tin đơn hàng, không dùng để thanh toán thật"
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent("ONCAFE DEMO ONLY | Order: " + (order.order_code || order.id) + " | Amount: " + order.total_amount + " | NOT A PAYMENT")}" />
-                <small>DEMO · NOT PAYABLE</small>
+                <img class="qr-demo-image" data-qr-image alt="Mã QR mở trang xác nhận thanh toán trên điện thoại" />
+                <small>QUÉT QR ĐỂ XÁC NHẬN</small>
+                <p><a data-qr-open target="_blank" rel="noopener">Mở trang xác nhận</a></p>
+                <small data-qr-expiry></small>
             </div>`;
         this.container.querySelector(".counter-order").append(panel);
     }
@@ -172,75 +173,23 @@ export class CounterOrderView {
         this.container.querySelector("[data-qr-demo-panel]")?.remove();
     }
 
-    async simulateQrPayment(button) {
-        const order = this.pendingQrOrder;
-        if (!order || !order.id || this.busy) {
-            this.setFeedback("Không tìm thấy đơn hàng cần thanh toán.", true);
-            return;
-        }
-        const confirmed = await this.confirmQrPayment(order);
-        if (!confirmed) return;
-
-        this.busy = true;
-        button.disabled = true;
-        const feedback = this.container.querySelector("[data-qr-demo-feedback]");
-        if (feedback) feedback.textContent = "Đang cập nhật trạng thái thanh toán...";
+    async createQrForOrder(order) {
+        const feedback = this.container.querySelector('[data-qr-demo-feedback]');
         try {
-            await this.onSimulateQrPayment(order.id);
-            if (feedback) {
-                feedback.textContent = "Thanh toán thành công. Đơn hàng đã được cập nhật.";
-                feedback.className = "qr-demo-success";
-            }
-            button.textContent = "Đã thanh toán";
-            await this.onCreated();
+            const result = await this.onCreateQrConfirmation(order.id);
+            const confirmUrl = new URL('./pages/qr-confirm.html', window.location.href);
+            confirmUrl.searchParams.set('token', result.token);
+            const qrModule = await import('https://esm.sh/qrcode@1.5.4');
+            const QRCode = qrModule.default || qrModule;
+            this.container.querySelector('[data-qr-image]').src = await QRCode.toDataURL(confirmUrl.href, { width: 220, margin: 2 });
+            const openLink = this.container.querySelector('[data-qr-open]');
+            openLink.href = confirmUrl.href;
+            this.container.querySelector('[data-qr-expiry]').textContent = 'Mã có hiệu lực đến ' + new Date(result.expires_at).toLocaleTimeString('vi-VN');
+            if (feedback) feedback.textContent = 'Khách quét mã bằng iPhone để mở trang xác nhận.';
         } catch (error) {
-            if (feedback) {
-                feedback.textContent = error.message || "Không thể cập nhật trạng thái thanh toán.";
-                feedback.className = "app-error";
-            }
-            button.disabled = false;
-        } finally {
-            this.busy = false;
+            if (feedback) { feedback.textContent = error.message || 'Không thể tạo mã QR.'; feedback.className = 'app-error'; }
         }
     }
-
-    confirmQrPayment(order) {
-        return new Promise((resolve) => {
-            const overlay = document.createElement("div");
-            overlay.className = "oncafe-dialog-backdrop";
-            overlay.innerHTML = `
-                <section class="oncafe-dialog" role="dialog" aria-modal="true"
-                    aria-labelledby="qr-confirm-title" aria-describedby="qr-confirm-message">
-                    <div class="oncafe-dialog-icon" aria-hidden="true">✓</div>
-                    <h3 id="qr-confirm-title">Xác nhận thanh toán QR</h3>
-                    <p id="qr-confirm-message">
-                        Bạn xác nhận đơn ${escapeHtml(order.order_code || "#" + order.id)}
-                        đã nhận thanh toán ${formatCurrency(order.total_amount)}?
-                    </p>
-                    <div class="oncafe-dialog-actions">
-                        <button type="button" class="button button-small" data-qr-confirm-cancel>Hủy</button>
-                        <button type="button" class="button button-small button-primary" data-qr-confirm-accept>Đúng, xác nhận</button>
-                    </div>
-                </section>`;
-            document.body.append(overlay);
-
-            const finish = (value) => {
-                overlay.remove();
-                document.removeEventListener("keydown", handleKeydown);
-                resolve(value);
-            };
-            const handleKeydown = (event) => {
-                if (event.key === "Escape") finish(false);
-            };
-            overlay.addEventListener("click", (event) => {
-                if (event.target === overlay || event.target.closest("[data-qr-confirm-cancel]")) finish(false);
-                if (event.target.closest("[data-qr-confirm-accept]")) finish(true);
-            });
-            document.addEventListener("keydown", handleKeydown);
-            overlay.querySelector("[data-qr-confirm-accept]").focus();
-        });
-    }
-
     setFeedback(message, isError = false) {
         const node = this.container.querySelector("[data-counter-feedback]");
         node.textContent = message;
