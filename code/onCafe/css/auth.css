@@ -6,7 +6,7 @@
     align-items: center;
     min-height: 75vh;
     padding: 30px 16px;
-    background-color: #f8f3ed;
+    background-color: var(--canvas);
 }
 
 .auth-card {
@@ -14,7 +14,7 @@
     max-width: 440px;
     padding: 35px;
     border-radius: 16px;
-    background-color: #ffffff;
+    background-color: var(--paper);
     box-shadow: 0 8px 30px rgba(56, 37, 29, 0.1);
 }
 
