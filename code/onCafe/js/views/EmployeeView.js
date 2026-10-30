@@ -296,7 +296,11 @@ export class EmployeeView {
         if (this.busy) return;
 
         const form = event.target;
-        if (!form.reportValidity()) return;
+        const nativeErrors = Object.fromEntries(
+            [...form.elements]
+                .filter((field) => field.name && field.willValidate && !field.checkValidity())
+                .map((field) => [field.name, field.validationMessage])
+        );
 
         const formData = new FormData(form);
         const employee = {
@@ -306,9 +310,10 @@ export class EmployeeView {
             role: String(formData.get("role") || "cashier")
         };
         const validation = EmployeeValidator.validate(employee);
+        const errors = { ...nativeErrors, ...validation.errors };
         ValidationUI.bind(form);
-        if (!validation.isValid) {
-            ValidationUI.showErrors(form, validation.errors);
+        if (Object.keys(errors).length) {
+            ValidationUI.showErrors(form, errors);
             form.querySelector("[data-employee-form-error]").textContent = "";
             return;
         }
@@ -362,7 +367,7 @@ export class EmployeeView {
                 form.querySelector("[data-employee-form-error]").textContent =
                     error.message || "Không thể lưu thông tin nhân viên.";
             }
-            this.showDialog({
+            if (!error.validationErrors) this.showDialog({
                 type: "error",
                 title: wasEditing ? "Không thể cập nhật nhân viên" : "Không thể tạo nhân viên",
                 message: error.message || "Đã xảy ra lỗi khi lưu thông tin nhân viên.",
