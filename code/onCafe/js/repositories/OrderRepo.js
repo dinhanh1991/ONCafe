@@ -8,6 +8,16 @@ export class OrderRepository {
         return data;
     }
 
+    async markDeliveryArrived(orderId) {
+        const id = Number(orderId);
+        if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
+        const { data, error } = await supabase.rpc("oncafe_staff_mark_delivery_arrived", {
+            p_order_id: id
+        });
+        if (error) throw error;
+        return data;
+    }
+
     async updateStatus(orderId, status) {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
