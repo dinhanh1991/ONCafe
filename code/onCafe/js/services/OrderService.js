@@ -24,6 +24,12 @@ export class OrderService {
         return await this.orderRepository.updateStatus(orderId, status);
     }
 
+    async markDeliveryArrived(orderId) {
+        const id = Number(orderId);
+        if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
+        return await this.orderRepository.markDeliveryArrived(id);
+    }
+
     async createCounterOrder(order) {
         if (!order || !Array.isArray(order.items) || order.items.length === 0) {
             throw new Error("Vui lòng chọn ít nhất một đồ uống.");
