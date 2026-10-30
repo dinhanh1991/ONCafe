@@ -167,7 +167,7 @@ if (registerForm) {
             }
             const result = await authService.register({
                 fullName: formData.get("fullName"),
-                email: formData.get("email"),
+                email,
                 password: formData.get("password")
             });
 
