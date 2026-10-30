@@ -26,6 +26,7 @@ begin
             'payment_status', o.payment_status,
             'total_amount', o.total_amount,
             'paid_at', o.paid_at,
+            'delivery_arrived_at', o.delivery_arrived_at,
             'created_at', o.created_at,
             'order_source', o.order_source,
             'fulfillment_method', o.fulfillment_method,
