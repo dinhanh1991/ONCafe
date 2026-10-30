@@ -27,9 +27,17 @@ export class OrderRepository {
             p_items: order.items
         });
         if (error) throw error;
+
         const result = Array.isArray(data) ? data[0] : data;
-        if (!result) throw new Error("Đơn hàng đã gửi nhưng không nhận được thông tin xác nhận.");
-        return result;
+        if (!result) {
+            throw new Error("Đơn hàng đã gửi nhưng không nhận được thông tin xác nhận.");
+        }
+
+        return {
+            id: result.order_id,
+            order_code: result.order_code,
+            total_amount: result.total_amount
+        };
     }
 
     async updatePayment(orderId, paymentStatus) {
