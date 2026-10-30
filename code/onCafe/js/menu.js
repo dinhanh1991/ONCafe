@@ -217,6 +217,59 @@ function showCheckoutMessage(message, isError = false) {
     checkoutMessage.classList.toggle("checkout-message-error", isError);
 }
 
+function showOrderSuccessPopup(order, paymentMethod) {
+    const overlay = document.createElement("div");
+    overlay.className = "menu-order-dialog-backdrop";
+
+    const dialog = document.createElement("section");
+    dialog.className = "menu-order-dialog";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "menu-order-dialog-title");
+    dialog.setAttribute("aria-describedby", "menu-order-dialog-message");
+
+    const icon = document.createElement("div");
+    icon.className = "menu-order-dialog-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "✓";
+
+    const title = document.createElement("h2");
+    title.id = "menu-order-dialog-title";
+    title.textContent = "Đặt hàng thành công";
+
+    const message = document.createElement("p");
+    message.id = "menu-order-dialog-message";
+    const orderCode = order.order_code;
+    const total = currencyFormatter.format(Number(order.total_amount) || 0);
+    message.textContent = paymentMethod === "qr"
+        ? `Đơn ${orderCode} đã được tạo với tổng tiền ${total}, nhưng chưa được thanh toán. Hệ thống chưa kết nối QR/ngân hàng nên trạng thái vẫn là chờ thanh toán.`
+        : `Đơn ${orderCode} đã được tạo với tổng tiền ${total}. Đơn đang chờ quán xác nhận.`;
+
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "menu-add-button";
+    closeButton.textContent = "Đóng";
+
+    dialog.append(icon, title, message, closeButton);
+    overlay.append(dialog);
+    document.body.append(overlay);
+
+    const close = () => {
+        overlay.remove();
+        document.removeEventListener("keydown", handleKeydown);
+    };
+    const handleKeydown = (event) => {
+        if (event.key === "Escape") close();
+    };
+
+    closeButton.addEventListener("click", close);
+    overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) close();
+    });
+    document.addEventListener("keydown", handleKeydown);
+    closeButton.focus();
+}
+
 if (checkoutButton && checkoutForm) {
     checkoutButton.addEventListener("click", async () => {
         if (cart.length === 0) {
@@ -288,7 +341,8 @@ if (checkoutForm) {
             checkoutForm.reset();
             checkoutForm.hidden = true;
             showCheckoutMessage("");
-            showStatus(`Đặt hàng thành công! Mã đơn: ${order.order_code}. Tổng tiền: ${currencyFormatter.format(Number(order.total_amount) || 0)}. Đơn đang chờ xác nhận.`);
+            showStatus(`Đã tạo đơn ${order.order_code}.`);
+            showOrderSuccessPopup(order, String(formData.get("paymentMethod") || "cash"));
         } catch (error) {
             console.error("Lỗi đặt hàng ONCafe:", error);
             showCheckoutMessage(error.message || "Không thể tạo đơn hàng. Vui lòng thử lại.", true);

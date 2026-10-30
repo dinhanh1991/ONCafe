@@ -358,3 +358,54 @@
     opacity: 0.65;
     cursor: wait;
 }
+
+.menu-order-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(28, 22, 18, 0.52);
+    backdrop-filter: blur(3px);
+}
+
+.menu-order-dialog {
+    width: min(100%, 440px);
+    padding: 28px;
+    border: 1px solid #eee5dc;
+    border-radius: 18px;
+    background: #fffdfb;
+    box-shadow: 0 24px 70px rgba(30, 20, 12, 0.24);
+    text-align: center;
+}
+
+.menu-order-dialog-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    background: #e8f4eb;
+    color: #356b42;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.menu-order-dialog h2 {
+    margin: 0 0 9px;
+    color: #30251f;
+    font-size: 21px;
+}
+
+.menu-order-dialog p {
+    margin: 0;
+    color: #74665d;
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+.menu-order-dialog button {
+    margin-top: 24px;
+}
