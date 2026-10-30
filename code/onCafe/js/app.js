@@ -35,7 +35,7 @@ function showMessage(message, isError = false) {
     paragraph.textContent = message;
     const linkParagraph = document.createElement("p");
     const link = document.createElement("a");
-    link.href = "./pages/auth/login.html";
+    link.href = window.location.pathname.includes("/pages/admin/") ? "../auth/login.html" : "./pages/auth/login.html";
     link.textContent = "Đến trang đăng nhập";
     linkParagraph.append(link);
     section.append(paragraph, linkParagraph);
@@ -83,6 +83,9 @@ async function startApp() {
     if (logoutButton) logoutButton.hidden = false;
     if (dashboardHomeLink) {
         dashboardHomeLink.textContent = isSeller ? "Trang chủ Seller" : isAdmin ? "Trang chủ Admin" : "Trang tổng quan";
+        dashboardHomeLink.href = window.location.pathname.includes("/pages/admin/")
+            ? "./dashboard.html"
+            : "./pages/admin/dashboard.html";
         dashboardHomeLink.hidden = false;
     }
 
@@ -421,8 +424,55 @@ async function startApp() {
 
     let orderRefreshTimer = null;
 
+    function isSectionAllowed(sectionName) {
+        const permissions = {
+            overview: true,
+            drinks: canManageProducts,
+            employees: canManageEmployees,
+            "counter-order": isAdmin || isSeller,
+            orders: true,
+            "revenue-summary": isAdmin || isCashier,
+            revenue: isAdmin || isCashier,
+            popular: isAdmin || isSeller,
+            "my-profile": true
+        };
+        return permissions[sectionName] === true;
+    }
+
+    function getAdminPageUrl(sectionName) {
+        const pageFiles = {
+            overview: "dashboard",
+            drinks: "products",
+            employees: "employees",
+            "counter-order": "counter-sales",
+            orders: "orders",
+            "revenue-summary": "revenue-summary",
+            revenue: "revenue",
+            popular: "popular",
+            "my-profile": "profile"
+        };
+        const file = pageFiles[sectionName];
+        if (!file) return null;
+        return window.location.pathname.includes("/pages/admin/")
+            ? `./${file}.html`
+            : `./pages/admin/${file}.html`;
+    }
+
+    function navigateToSection(sectionName) {
+        if (!isSectionAllowed(sectionName)) {
+            showMessage("Tài khoản của bạn không có quyền truy cập trang này.", true);
+            return;
+        }
+        const targetUrl = getAdminPageUrl(sectionName);
+        if (targetUrl) window.location.href = targetUrl;
+    }
+
     function activateSection(sectionName) {
         if (!sectionDetails[sectionName]) return;
+        if (!isSectionAllowed(sectionName)) {
+            showMessage("Tài khoản của bạn không có quyền truy cập trang này.", true);
+            return;
+        }
         if (orderRefreshTimer) {
             window.clearInterval(orderRefreshTimer);
             orderRefreshTimer = null;
@@ -460,11 +510,11 @@ async function startApp() {
     if (navigation) {
         navigation.addEventListener("click", (event) => {
             const button = event.target.closest("[data-section]");
-            if (button) activateSection(button.dataset.section);
+            if (button) navigateToSection(button.dataset.section);
         });
         panels.addEventListener("click", (event) => {
             const button = event.target.closest("[data-open-section]");
-            if (button) activateSection(button.dataset.openSection);
+            if (button) navigateToSection(button.dataset.openSection);
         });
     }
 
@@ -705,7 +755,8 @@ async function startApp() {
         }
     }
 
-    activateSection("overview");
+    const requestedSection = document.body.dataset.adminSection || "overview";
+    activateSection(requestedSection);
 }
 
 if (logoutButton) {
@@ -713,7 +764,9 @@ if (logoutButton) {
         logoutButton.disabled = true;
         try {
             await authService.logout();
-            window.location.href = "./pages/auth/login.html";
+            window.location.href = window.location.pathname.includes("/pages/admin/")
+                ? "../auth/login.html"
+                : "./pages/auth/login.html";
         } catch (error) {
             console.error("Không thể đăng xuất:", error);
             logoutButton.disabled = false;
