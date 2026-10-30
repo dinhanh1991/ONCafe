@@ -95,8 +95,30 @@ export class CounterOrderView {
     }
 
     async handleClick(event) {
-        if (!event.target.closest("[data-counter-refresh]")) return;
-        await this.loadProducts();
+        if (event.target.closest("[data-counter-refresh]")) {
+            await this.loadProducts();
+            return;
+        }
+
+        if (event.target.closest("[data-qr-retry]")) {
+            const order = this.pendingQrOrder;
+            if (!order || this.busy) return;
+
+            const button = this.container.querySelector("[data-qr-retry]");
+            if (button) button.disabled = true;
+            try {
+                await this.createQrForOrder(order);
+                this.watchQrPayment(order);
+                this.setFeedback(`Đã tạo lại mã QR cho đơn ${order.order_code || "#" + order.id}.`);
+            } catch (error) {
+                this.setFeedback(
+                    `Đơn ${order.order_code || "#" + order.id} đã được tạo nhưng chưa có mã QR. ${error.message || "Vui lòng thử tạo lại mã QR."}`,
+                    true
+                );
+            } finally {
+                if (button?.isConnected) button.disabled = false;
+            }
+        }
     }
 
     async handleSubmit(event) {
@@ -129,8 +151,15 @@ export class CounterOrderView {
             if (paymentMethod === "qr") {
                 this.pendingQrOrder = result;
                 this.renderQrSimulation(result);
-                await this.createQrForOrder(result);
-                this.watchQrPayment(result);
+                try {
+                    await this.createQrForOrder(result);
+                    this.watchQrPayment(result);
+                } catch (error) {
+                    this.setFeedback(
+                        `Đơn ${result.order_code || "#" + result.id} đã được tạo nhưng chưa tạo được mã QR. Không tạo đơn mới; hãy thử tạo lại mã QR bên dưới. ${error.message || ""}`,
+                        true
+                    );
+                }
             } else {
                 this.pendingQrOrder = null;
                 this.removeQrSimulation();
@@ -158,6 +187,7 @@ export class CounterOrderView {
                 <strong class="qr-demo-amount">${formatCurrency(order.total_amount)}</strong>
                 <p class="qr-demo-warning">Đây là xác nhận nội bộ, chưa kiểm tra giao dịch ngân hàng thực tế. Khách quét mã và xác nhận trên iPhone.</p>
                 <p data-qr-demo-feedback role="status" aria-live="polite">Đang tạo liên kết xác nhận...</p>
+                <button class="button button-primary" type="button" data-qr-retry hidden>Tạo lại mã QR</button>
             </div>
             <div class="qr-demo-code">
                 <img class="qr-demo-image" data-qr-image alt="Mã QR mở trang xác nhận thanh toán trên điện thoại" />
@@ -186,7 +216,13 @@ export class CounterOrderView {
             this.container.querySelector('[data-qr-expiry]').textContent = 'Mã có hiệu lực đến ' + new Date(result.expires_at).toLocaleTimeString('vi-VN');
             if (feedback) feedback.textContent = 'Khách quét mã bằng iPhone để mở trang xác nhận.';
         } catch (error) {
-            if (feedback) { feedback.textContent = error.message || 'Không thể tạo mã QR.'; feedback.className = 'app-error'; }
+            const retryButton = this.container.querySelector("[data-qr-retry]");
+            if (retryButton) retryButton.hidden = false;
+            if (feedback) {
+                feedback.textContent = error.message || "Không thể tạo mã QR.";
+                feedback.className = "app-error";
+            }
+            throw error;
         }
     }
     watchQrPayment(order) {
