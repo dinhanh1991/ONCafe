@@ -40,14 +40,16 @@ if (loginForm) {
             const profile = await authService.getMyProfile(result.user.id);
 
             showMessage(message, "Đăng nhập thành công. Đang chuyển trang...");
-            const redirectToMenu = new URLSearchParams(window.location.search).get("redirect") === "menu";
+            const requestedRedirect = new URLSearchParams(window.location.search).get("redirect");
+            const customerRedirect = ["menu", "my-orders"].includes(requestedRedirect) ? requestedRedirect : "home";
 
             // Admin và thu ngân đều dùng màn hình quản lý nhân viên.
             // Chỉ tài khoản khách hàng mới được chuyển sang khu vực mua hàng.
             if (profile.role === "admin" || profile.role === "cashier" || profile.role === "seller") {
                 window.location.href = "../index.html";
             } else {
-                window.location.href = redirectToMenu ? "./menu.html" : "./home.html";
+                window.location.href = customerRedirect === "my-orders" ? "./my-orders.html"
+                    : customerRedirect === "menu" ? "./menu.html" : "./home.html";
             }
         } catch (error) {
             showMessage(
