@@ -35,7 +35,7 @@ function showMessage(message, isError = false) {
     paragraph.textContent = message;
     const linkParagraph = document.createElement("p");
     const link = document.createElement("a");
-    link.href = "./pages/login.html";
+    link.href = "./pages/auth/login.html";
     link.textContent = "Đến trang đăng nhập";
     linkParagraph.append(link);
     section.append(paragraph, linkParagraph);
@@ -713,7 +713,7 @@ if (logoutButton) {
         logoutButton.disabled = true;
         try {
             await authService.logout();
-            window.location.href = "./pages/login.html";
+            window.location.href = "./pages/auth/login.html";
         } catch (error) {
             console.error("Không thể đăng xuất:", error);
             logoutButton.disabled = false;
