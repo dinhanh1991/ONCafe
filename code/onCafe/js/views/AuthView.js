@@ -1,5 +1,6 @@
 import { AuthService } from "../services/AuthService.js";
 import { ValidationUtils } from "../validators/ValidationUtils.js";
+import { ValidationUI } from "../validators/ValidationUI.js";
 
 const authService = new AuthService();
 
@@ -23,16 +24,18 @@ if (passwordInput && togglePassword) {
 const loginForm = document.querySelector("#loginForm");
 if (loginForm) {
     const message = document.querySelector("#loginMessage");
+    ValidationUI.bind(loginForm);
     const forgotPassword = document.querySelector("#forgotPassword");
 
     loginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const email = loginForm.elements.email.value.trim();
         if (!ValidationUtils.isValidEmail(email)) {
-            showMessage(message, "Email không đúng định dạng. Vui lòng kiểm tra lại.", true);
-            loginForm.elements.email.focus();
+            ValidationUI.showErrors(loginForm, { email: "Email không đúng định dạng. Vui lòng kiểm tra lại." });
+            showMessage(message, "");
             return;
         }
+        ValidationUI.clearErrors(loginForm);
         const button = loginForm.querySelector('button[type="submit"]');
         button.disabled = true;
         forgotPassword.hidden = true;
@@ -151,6 +154,7 @@ if (resetPasswordForm) {
 const registerForm = document.querySelector("#registerForm");
 if (registerForm) {
     const message = document.querySelector("#registerMessage");
+    ValidationUI.bind(registerForm);
     registerForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const button = registerForm.querySelector('button[type="submit"]');
@@ -161,10 +165,11 @@ if (registerForm) {
             const formData = new FormData(registerForm);
             const email = String(formData.get("email") || "").trim();
             if (!ValidationUtils.isValidEmail(email)) {
-                showMessage(message, "Email không đúng định dạng. Ví dụ: ten@gmail.com.", true);
-                registerForm.elements.email.focus();
+                ValidationUI.showErrors(registerForm, { email: "Email không đúng định dạng. Ví dụ: ten@gmail.com." });
+                showMessage(message, "");
                 return;
             }
+            ValidationUI.clearErrors(registerForm);
             const result = await authService.register({
                 fullName: formData.get("fullName"),
                 email,
