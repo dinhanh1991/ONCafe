@@ -1,6 +1,7 @@
 import { formatCurrency } from "../utils/FormatUtils.js";
 import { CustomerValidator } from "../validators/CustomerValidator.js";
 import { OrderValidator } from "../validators/OrderValidator.js";
+import { ValidationUtils } from "../validators/ValidationUtils.js";
 import { ValidationUI } from "../validators/ValidationUI.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
@@ -103,7 +104,7 @@ export class CounterOrderView {
         body.innerHTML = visibleProducts.map((p) => `<tr>
             <td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.category || "Khác")}</td>
             <td>${formatCurrency(p.price)}</td><td>${p.quantity}</td>
-            <td><input aria-label="Số lượng ${escapeHtml(p.name)}" type="number" min="0" max="${p.quantity}" value="${this.cart.get(String(p.id)) || 0}" data-counter-quantity="${p.id}"></td>
+            <td><input name="quantity_${p.id}" aria-label="Số lượng ${escapeHtml(p.name)}" type="number" min="0" max="${p.quantity}" step="1" value="${this.cart.get(String(p.id)) || 0}" data-counter-quantity="${p.id}"></td>
         </tr>`).join("") || '<tr><td colspan="5">Không tìm thấy đồ uống phù hợp hoặc đã hết hàng.</td></tr>';
         this.renderCart();
     }
@@ -173,9 +174,21 @@ export class CounterOrderView {
         const items = [...this.cart.entries()].map(([id, quantity]) => ({ id: Number(id), quantity }));
         const itemValidation = OrderValidator.validateItems(items);
         if (!itemValidation.isValid) {
-            this.setFeedback(itemValidation.errors.items, true);
+            const quantityErrors = {};
+            for (const item of items) {
+                if (!ValidationUtils.isPositiveInteger(item.quantity)) {
+                    quantityErrors[`quantity_${item.id}`] = "Số lượng phải là số nguyên lớn hơn 0.";
+                }
+            }
+            if (Object.keys(quantityErrors).length) {
+                ValidationUI.showErrors(form, quantityErrors);
+                this.setFeedback("", false);
+            } else {
+                this.setFeedback(itemValidation.errors.items, true);
+            }
             return;
         }
+        ValidationUI.clearErrors(form);
         const phoneValidation = CustomerValidator.validate({ phone: form.elements.customerPhone.value });
         ValidationUI.bind(form);
         if (!phoneValidation.isValid) {
