@@ -4,13 +4,14 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 export class CounterOrderView {
-    constructor(container, { onLoadProducts, onCreateOrder, onCreated, onCreateQrConfirmation, onCheckQrPayment }) {
+    constructor(container, { onLoadProducts, onCreateOrder, onCreated, onCreateQrConfirmation, onCheckQrPayment, onQrPaymentConfirmed }) {
         this.container = container;
         this.onLoadProducts = onLoadProducts;
         this.onCreateOrder = onCreateOrder;
         this.onCreated = onCreated;
         this.onCreateQrConfirmation = onCreateQrConfirmation;
         this.onCheckQrPayment = onCheckQrPayment;
+        this.onQrPaymentConfirmed = onQrPaymentConfirmed;
         this.qrPaymentTimer = null;
         this.pendingQrOrder = null;
         this.products = [];
@@ -207,10 +208,34 @@ export class CounterOrderView {
                 }
                 const panel = this.container.querySelector("[data-qr-demo-panel]");
                 if (panel) panel.classList.add("qr-payment-confirmed");
+                this.showQrPaymentSuccess(order);
             } catch (error) {
                 console.error("Không thể kiểm tra xác nhận QR:", error);
             }
         }, 3000);
+    }
+
+    showQrPaymentSuccess(order) {
+        const overlay = document.createElement("div");
+        overlay.className = "oncafe-dialog-backdrop";
+        overlay.innerHTML = `
+            <section class="oncafe-dialog" role="dialog" aria-modal="true" aria-labelledby="qr-payment-success-title">
+                <div class="oncafe-dialog-icon" aria-hidden="true">✓</div>
+                <h3 id="qr-payment-success-title">Thanh toán đã được xác nhận</h3>
+                <p>Đơn ${escapeHtml(order.order_code || "#" + order.id)} đã được khách xác nhận.</p>
+                <div class="oncafe-dialog-actions">
+                    <button type="button" class="button button-primary" data-qr-success-ok>OK</button>
+                </div>
+            </section>`;
+        document.body.append(overlay);
+        const okButton = overlay.querySelector("[data-qr-success-ok]");
+        okButton.addEventListener("click", () => {
+            overlay.remove();
+            if (typeof this.onQrPaymentConfirmed === "function") {
+                this.onQrPaymentConfirmed();
+            }
+        });
+        okButton.focus();
     }
 
     stopWatchingQrPayment() {
