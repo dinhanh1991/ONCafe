@@ -118,6 +118,24 @@ async function startApp() {
                 <button class="dashboard-shortcut" type="button" data-open-section="drinks"><span aria-hidden="true">◈</span> Quản lý đồ uống <b aria-hidden="true">→</b></button>
                 <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Quản lý đơn hàng <b aria-hidden="true">→</b></button>
             </div>
+        </section>` : isCashier ? `
+        <section class="dashboard-welcome cashier-dashboard-welcome">
+            <p class="eyebrow">KHU VỰC THU NGÂN</p>
+            <h2 data-dashboard-greeting></h2>
+            <p>Theo dõi đơn hàng trong ca, xác nhận đơn mới và kiểm soát các khoản thanh toán.</p>
+        </section>
+        <section class="dashboard-metrics cashier-dashboard-metrics" aria-label="Tình hình đơn hàng trong ngày">
+            <article class="dashboard-metric"><span>Đơn hàng hôm nay</span><strong data-cashier-today-count>—</strong><small>Tất cả nguồn đơn</small></article>
+            <article class="dashboard-metric"><span>Chờ xác nhận</span><strong data-cashier-pending-count>—</strong><small>Cần tiếp nhận xử lý</small></article>
+            <article class="dashboard-metric"><span>Đang xử lý</span><strong data-cashier-active-count>—</strong><small>Đã xác nhận đến đang giao</small></article>
+            <article class="dashboard-metric"><span>Chưa thanh toán</span><strong data-cashier-unpaid-count>—</strong><small>Đơn chưa ghi nhận thanh toán</small></article>
+        </section>
+        <section class="dashboard-shortcuts cashier-dashboard-shortcuts">
+            <h3>Thao tác nhanh</h3>
+            <div>
+                <button class="dashboard-shortcut" type="button" data-open-section="counter-order"><span aria-hidden="true">＋</span> Tạo đơn tại quầy <b aria-hidden="true">→</b></button>
+                <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Quản lý đơn hàng <b aria-hidden="true">→</b></button>
+            </div>
         </section>` : `
         <section class="dashboard-welcome">
             <p class="eyebrow">TỔNG QUAN ONCAFE</p>
@@ -147,25 +165,7 @@ async function startApp() {
                 <button class="dashboard-shortcut" type="button" data-open-section="drinks"><span aria-hidden="true">◈</span> Quản lý đồ uống <b aria-hidden="true">→</b></button>
                 <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Xem đơn hàng <b aria-hidden="true">→</b></button>
             </div>
-        </section>` : isCashier ? `
-        <section class="dashboard-welcome cashier-dashboard-welcome">
-            <p class="eyebrow">KHU VỰC THU NGÂN</p>
-            <h2 data-dashboard-greeting></h2>
-            <p>Theo dõi đơn hàng trong ca, xác nhận đơn mới và kiểm soát các khoản thanh toán.</p>
-        </section>
-        <section class="dashboard-metrics cashier-dashboard-metrics" aria-label="Tình hình đơn hàng trong ngày">
-            <article class="dashboard-metric"><span>Đơn hàng hôm nay</span><strong data-cashier-today-count>—</strong><small>Tất cả nguồn đơn</small></article>
-            <article class="dashboard-metric"><span>Chờ xác nhận</span><strong data-cashier-pending-count>—</strong><small>Cần tiếp nhận xử lý</small></article>
-            <article class="dashboard-metric"><span>Đang xử lý</span><strong data-cashier-active-count>—</strong><small>Đã xác nhận đến đang giao</small></article>
-            <article class="dashboard-metric"><span>Chưa thanh toán</span><strong data-cashier-unpaid-count>—</strong><small>Đơn chưa ghi nhận thanh toán</small></article>
-        </section>
-        <section class="dashboard-shortcuts cashier-dashboard-shortcuts">
-            <h3>Thao tác nhanh</h3>
-            <div>
-                <button class="dashboard-shortcut" type="button" data-open-section="counter-order"><span aria-hidden="true">＋</span> Tạo đơn tại quầy <b aria-hidden="true">→</b></button>
-                <button class="dashboard-shortcut" type="button" data-open-section="orders"><span aria-hidden="true">☷</span> Quản lý đơn hàng <b aria-hidden="true">→</b></button>
-            </div>
-        </section>` : `
+        </section>`;
     dashboardPanel.querySelector("[data-dashboard-greeting]").textContent =
         `Chào mừng trở lại, ${profile.full_name || (isAdmin ? "Quản trị viên" : isSeller ? "nhân viên bán hàng" : "thu ngân")}`;
     dashboardPanel.querySelectorAll("[data-open-section]").forEach((button) => {
