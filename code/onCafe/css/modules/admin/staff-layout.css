@@ -1,0 +1,14 @@
+/* Dùng chung bố cục sidebar cho quản trị viên, người bán hàng và thu ngân */
+.staff-workspace {
+    display: grid;
+    min-height: calc(100vh - 76px);
+    grid-template-columns: 252px minmax(0, 1fr);
+}
+@media (max-width: 960px) {
+    .staff-workspace { grid-template-columns: 220px minmax(0, 1fr); }
+}
+@media (max-width: 680px) {
+    .staff-workspace { display: block; min-height: auto; }
+}
+
+
