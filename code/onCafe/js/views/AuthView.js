@@ -58,8 +58,8 @@ if (loginForm) {
             if (profile.role === "admin" || profile.role === "cashier" || profile.role === "seller") {
                 window.location.href = "../index.html";
             } else {
-                window.location.href = customerRedirect === "my-orders" ? "./my-orders.html"
-                    : customerRedirect === "menu" ? "./menu.html" : "./home.html";
+                window.location.href = customerRedirect === "my-orders" ? "../customer/my-orders.html"
+                    : customerRedirect === "menu" ? "../customer/menu.html" : "../customer/home.html";
             }
         } catch (error) {
             showMessage(
