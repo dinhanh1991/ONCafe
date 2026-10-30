@@ -12,6 +12,12 @@ ONCafe là ứng dụng web quản lý danh mục đồ uống, được xây d�
 - Quản lý sản phẩm, ảnh sản phẩm và tồn kho.
 - Tìm kiếm, thêm, chỉnh sửa và xóa sản phẩm trong khu vực quản lý.
 - Quản lý đơn hàng và cập nhật trạng thái đơn.
+- Đặt hàng online với lựa chọn nhận tại cửa hàng hoặc giao tận nhà.
+- Phí giao hàng cố định 15.000 đồng; nhận tại cửa hàng miễn phí.
+- Trang “Đơn hàng của tôi” để khách theo dõi trạng thái, xem chi tiết và hủy đơn đang chờ.
+- Đơn online xuất hiện chung trong danh sách quản lý đơn của nhân viên, có nhãn và hình thức nhận hàng.
+- Tồn kho được giữ trong giao dịch khi đặt hàng; hủy/từ chối/QR hết hạn hoàn kho một lần.
+- QR xác nhận nội bộ có thời hạn 15 phút; chưa tích hợp xác thực giao dịch ngân hàng.
 - Khu vực quản trị có sidebar riêng với Tổng quan, Quản lý đồ uống, Quản lý nhân viên, Chi tiết doanh thu và Quản lý đơn hàng.
 - Quản lý đồ uống có danh sách, tìm kiếm, thêm, xem chi tiết, chỉnh sửa và xóa.
 - Quản trị viên có thể xem danh sách thu ngân, tạo tài khoản, sửa họ tên/email/mật khẩu và xóa tài khoản.
@@ -36,6 +42,7 @@ code/onCafe/
 ├── pages/
 │   ├── home.html
 │   ├── menu.html
+│   ├── my-orders.html
 │   ├── login.html
 │   ├── register.html
 │   └── reset-password.html
@@ -49,6 +56,8 @@ code/onCafe/
 │   └── register.css
 └── js/
     ├── app.js
+    ├── menu.js
+    ├── my-orders.js
     ├── config/
     ├── import-export/
     ├── models/
