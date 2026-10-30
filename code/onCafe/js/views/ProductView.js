@@ -60,7 +60,7 @@ export class ProductView {
                             <h2 id="product-heading">Quản lý đồ uống</h2>
                             <p data-product-count></p>
                         </div>
-                        <button class="button button-primary" type="button" data-action="new">+ Thêm đồ uống</button>
+                        <button class="button button-primary" type="button" data-action="new"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Thêm đồ uống</button>
                     </header>
                     <div class="product-toolbar">
                         <label class="visually-hidden" for="product-search">Tìm sản phẩm</label>
@@ -101,7 +101,7 @@ export class ProductView {
                             <h2 id="product-form-heading" data-form-heading>Thêm đồ uống</h2>
                             <p data-form-description>Nhập thông tin đồ uống mới.</p>
                         </div>
-                        <button class="button" type="button" data-action="cancel">← Danh sách đồ uống</button>
+                        <button class="button" type="button" data-action="cancel"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Danh sách đồ uống</button>
                     </header>
                     <form class="product-form" data-product-form>
                         <div class="product-form-grid">
@@ -198,9 +198,9 @@ export class ProductView {
                 <td>${escapeHtml(product.quantity)}</td>
                 <td><span class="status ${product.status === "active" ? "status-active" : "status-inactive"}">${product.status === "active" ? "Đang bán" : "Ngừng bán"}</span></td>
                 <td class="row-actions">
-                    <button class="button button-small" type="button" data-action="detail" data-id="${escapeHtml(product.id)}">Chi tiết</button>
-                    <button class="button button-small" type="button" data-action="edit" data-id="${escapeHtml(product.id)}">Sửa</button>
-                    <button class="button button-small button-danger" type="button" data-action="delete" data-id="${escapeHtml(product.id)}">Xóa</button>
+                    <button class="button button-small" type="button" data-action="detail" data-id="${escapeHtml(product.id)}"><i class="bi bi-eye me-1" aria-hidden="true"></i>Chi tiết</button>
+                    <button class="button button-small" type="button" data-action="edit" data-id="${escapeHtml(product.id)}"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Sửa</button>
+                    <button class="button button-small button-danger" type="button" data-action="delete" data-id="${escapeHtml(product.id)}"><i class="bi bi-trash me-1" aria-hidden="true"></i>Xóa</button>
                 </td>
             </tr>`).join("");
     }
