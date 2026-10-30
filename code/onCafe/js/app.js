@@ -17,6 +17,7 @@ const employeeService = new EmployeeService();
 const orderService = new OrderService(new OrderRepository());
 const app = document.querySelector("#app");
 const logoutButton = document.querySelector("#logoutButton");
+const dashboardHomeLink = document.querySelector("#dashboardHomeLink");
 
 function showMessage(message, isError = false) {
     if (!app) return;
@@ -75,6 +76,10 @@ async function startApp() {
     const accountLabel = document.querySelector("#accountLabel");
     if (accountLabel) accountLabel.textContent = `Xin chào, ${profile.full_name || "nhân viên"}`;
     if (logoutButton) logoutButton.hidden = false;
+    if (dashboardHomeLink) {
+        dashboardHomeLink.textContent = isSeller ? "Trang chủ Seller" : "Trang tổng quan";
+        dashboardHomeLink.hidden = false;
+    }
 
     app.replaceChildren();
     const workspace = document.createElement("div");
