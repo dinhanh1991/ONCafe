@@ -239,7 +239,29 @@ async function startApp() {
         popularPanel.className = "admin-panel";
         popularPanel.dataset.panel = "popular";
         popularPanel.hidden = true;
-        popularPanel.innerHTML = `<section class="revenue-placeholder"><p class="eyebrow">BÁO CÁO SẢN PHẨM</p><h2>Đồ uống bán chạy</h2><p>Khu vực báo cáo sẽ được kết nối với dữ liệu đơn hàng hoàn tất ở bước tiếp theo.</p></section>`;
+        popularPanel.innerHTML = `
+            <section class="seller-popular-page">
+                <section class="dashboard-welcome">
+                    <p class="eyebrow">BÁO CÁO SẢN PHẨM</p>
+                    <h2>Đồ uống bán chạy</h2>
+                    <p>Xếp hạng các món được khách hàng mua nhiều nhất, tính trên những đơn hàng đã hoàn tất.</p>
+                </section>
+                <section class="dashboard-metrics seller-dashboard-metrics" aria-label="Tổng quan đồ uống bán chạy">
+                    <article class="dashboard-metric"><span>Đơn hoàn tất</span><strong data-popular-order-count>—</strong><small>Đơn đã giao thành công</small></article>
+                    <article class="dashboard-metric"><span>Tổng số ly đã bán</span><strong data-popular-units>—</strong><small>Tính từ đơn hoàn tất</small></article>
+                    <article class="dashboard-metric"><span>Số món có phát sinh bán</span><strong data-popular-product-count>—</strong><small>Các món có trong đơn hoàn tất</small></article>
+                </section>
+                <section class="dashboard-report-card seller-sales-card">
+                    <div>
+                        <p class="eyebrow">BẢNG XẾP HẠNG</p>
+                        <h3>Top 10 đồ uống bán chạy</h3>
+                        <p>Sắp xếp theo số lượng bán từ cao xuống thấp. Doanh thu được cộng từ các món trong đơn hoàn tất.</p>
+                    </div>
+                    <div class="seller-sales-chart" data-popular-drinks aria-live="polite">
+                        <p role="status">Đang tải dữ liệu...</p>
+                    </div>
+                </section>
+            </section>`;
         panels.append(popularPanel);
         expensePanel = document.createElement("section");
         expensePanel.className = "admin-panel";
@@ -383,6 +405,7 @@ async function startApp() {
         }
         if (sectionName === "counter-order") void counterOrderView.render();
         if (sectionName === "overview" && isSeller) loadSellerOverview();
+        if (sectionName === "popular" && (isAdmin || isSeller)) loadPopularDrinks();
     }
 
     if (navigation) {
@@ -394,6 +417,105 @@ async function startApp() {
             const button = event.target.closest("[data-open-section]");
             if (button) activateSection(button.dataset.openSection);
         });
+    }
+
+    async function loadPopularDrinks() {
+        const chart = popularPanel.querySelector("[data-popular-drinks]");
+        if (!chart) return;
+
+        chart.replaceChildren();
+        const loading = document.createElement("p");
+        loading.setAttribute("role", "status");
+        loading.textContent = "Đang tải dữ liệu đồ uống bán chạy...";
+        chart.append(loading);
+
+        try {
+            const orders = await orderService.getStaffOrders();
+            const completedOrders = orders.filter((order) => order.status === "completed");
+            const salesByProduct = new Map();
+
+            for (const order of completedOrders) {
+                for (const item of Array.isArray(order.items) ? order.items : []) {
+                    const name = String(item.product_name || "Đồ uống không tên").trim();
+                    const quantity = Number(item.quantity);
+                    if (!name || !Number.isFinite(quantity) || quantity <= 0) continue;
+
+                    const unitPrice = Number(item.unit_price) || 0;
+                    const subtotal = Number(item.subtotal);
+                    const revenue = Number.isFinite(subtotal) && subtotal >= 0
+                        ? subtotal
+                        : unitPrice * quantity;
+                    const current = salesByProduct.get(name) || { quantity: 0, revenue: 0 };
+                    current.quantity += quantity;
+                    current.revenue += revenue;
+                    salesByProduct.set(name, current);
+                }
+            }
+
+            const products = [...salesByProduct.entries()]
+                .sort((first, second) =>
+                    second[1].quantity - first[1].quantity ||
+                    second[1].revenue - first[1].revenue ||
+                    first[0].localeCompare(second[0], "vi")
+                )
+                .slice(0, 10);
+            const totalUnits = [...salesByProduct.values()]
+                .reduce((total, product) => total + product.quantity, 0);
+
+            popularPanel.querySelector("[data-popular-order-count]").textContent = String(completedOrders.length);
+            popularPanel.querySelector("[data-popular-units]").textContent = String(totalUnits);
+            popularPanel.querySelector("[data-popular-product-count]").textContent = String(salesByProduct.size);
+
+            chart.replaceChildren();
+            if (!products.length) {
+                const empty = document.createElement("p");
+                empty.className = "seller-sales-empty";
+                empty.textContent = "Chưa có đơn hàng hoàn tất có đồ uống để thống kê. Khi đơn hàng được chuyển sang Hoàn tất, dữ liệu sẽ xuất hiện tại đây.";
+                chart.append(empty);
+                return;
+            }
+
+            const maxQuantity = products[0][1].quantity;
+            const currencyFormatter = new Intl.NumberFormat("vi-VN", {
+                style: "currency",
+                currency: "VND",
+                maximumFractionDigits: 0
+            });
+
+            for (const [name, sales] of products) {
+                const row = document.createElement("div");
+                row.className = "seller-sales-row popular-drink-row";
+
+                const labelWrap = document.createElement("div");
+                labelWrap.className = "popular-drink-label";
+                const label = document.createElement("span");
+                label.className = "seller-sales-name";
+                label.textContent = name;
+                const revenue = document.createElement("small");
+                revenue.className = "popular-drink-revenue";
+                revenue.textContent = currencyFormatter.format(sales.revenue);
+                labelWrap.append(label, revenue);
+
+                const track = document.createElement("div");
+                track.className = "seller-sales-track";
+                const bar = document.createElement("span");
+                bar.style.width = `${Math.max(4, (sales.quantity / maxQuantity) * 100)}%`;
+                track.append(bar);
+
+                const value = document.createElement("strong");
+                value.textContent = `${sales.quantity} ly`;
+                row.append(labelWrap, track, value);
+                chart.append(row);
+            }
+        } catch (error) {
+            console.error("Không thể tải đồ uống bán chạy:", error);
+            chart.replaceChildren();
+            const message = document.createElement("p");
+            message.className = "app-error";
+            message.setAttribute("role", "alert");
+            message.textContent = error.message || "Không thể tải dữ liệu đồ uống bán chạy.";
+            chart.append(message);
+        }
     }
 
     async function loadSellerOverview() {
