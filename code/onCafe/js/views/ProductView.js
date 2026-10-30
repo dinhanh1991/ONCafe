@@ -1,4 +1,6 @@
 import { formatCurrency } from "../utils/FormatUtils.js";
+import { ProductValidator } from "../validators/ProductValidator.js";
+import { ValidationUI } from "../validators/ValidationUI.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
@@ -46,6 +48,10 @@ export class ProductView {
             this.renderList();
         });
         this.container.addEventListener("click", (event) => this.handleClick(event));
+        this.container.addEventListener("focusin", (event) => {
+            const form = event.target.closest("[data-product-form]");
+            if (form) ValidationUI.bind(form);
+        });
         this.container.addEventListener("submit", (event) => this.handleSubmit(event));
     }
 
@@ -326,6 +332,13 @@ export class ProductView {
         product.quantity = Number(product.quantity);
         product.imageFile = form.querySelector('[name="imageFile"]').files[0] ?? null;
         product.status = this.products.find((item) => String(item.id) === String(this.editingId))?.status ?? "active";
+        const validation = ProductValidator.validate(product);
+        ValidationUI.bind(form);
+        if (!validation.isValid) {
+            ValidationUI.showErrors(form, validation.errors);
+            return;
+        }
+        ValidationUI.clearErrors(form);
         const wasEditing = this.editingId !== null;
         if (wasEditing) product.id = this.editingId;
 
@@ -355,7 +368,12 @@ export class ProductView {
                         hideCancel: true
                     });
                 } catch (error) {
-                    form.querySelector("[data-form-error]").textContent = error.message || "Không thể lưu sản phẩm.";
+                    if (error.validationErrors) {
+                        ValidationUI.showErrors(form, error.validationErrors);
+                        form.querySelector("[data-form-error]").textContent = "";
+                    } else {
+                        form.querySelector("[data-form-error]").textContent = error.message || "Không thể lưu sản phẩm.";
+                    }
                 }
             }
         });
