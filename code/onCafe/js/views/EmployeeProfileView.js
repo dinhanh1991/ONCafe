@@ -77,7 +77,7 @@ export class EmployeeProfileView {
     }
 
     roleLabel(role) {
-        const labels = { admin: "Quản trị viên", cashier: "Thu ngân", customer: "Khách hàng" };
+        const labels = { admin: "Quản trị viên", seller: "Người bán hàng", cashier: "Thu ngân", customer: "Khách hàng" };
         return labels[role] || "Chưa xác định";
     }
 
