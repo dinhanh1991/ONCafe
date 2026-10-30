@@ -381,22 +381,33 @@ export class OrderView {
 
     async refresh() {
         const activeElement = document.activeElement;
-        const searchWasFocused = activeElement?.matches?.("[data-order-search]") &&
-            this.container.contains(activeElement);
-        const selectionStart = searchWasFocused ? activeElement.selectionStart : null;
-        const selectionEnd = searchWasFocused ? activeElement.selectionEnd : null;
+        const focusAttributes = [
+            "data-order-search",
+            "data-order-filter",
+            "data-order-source",
+            "data-order-payment",
+            "data-order-date-from",
+            "data-order-date-to",
+            "data-order-sort"
+        ];
+        const focusedAttribute = focusAttributes.find((attribute) =>
+            activeElement?.hasAttribute?.(attribute) && this.container.contains(activeElement)
+        );
+        const selectionStart = focusedAttribute === "data-order-search" ? activeElement.selectionStart : null;
+        const selectionEnd = focusedAttribute === "data-order-search" ? activeElement.selectionEnd : null;
 
-        this.setFeedback("Đang tải danh sách đơn hàng...");
         try {
             const orders = await this.onRefresh();
             this.render(orders);
             this.setFeedback("");
 
-            if (searchWasFocused) {
-                const searchInput = this.container.querySelector("[data-order-search]");
-                searchInput?.focus({ preventScroll: true });
-                if (selectionStart !== null && selectionEnd !== null) {
-                    searchInput?.setSelectionRange(selectionStart, selectionEnd);
+            if (focusedAttribute) {
+                const selector = `[${focusedAttribute}]`;
+                const focusedControl = this.container.querySelector(selector);
+                focusedControl?.focus({ preventScroll: true });
+                if (focusedAttribute === "data-order-search" &&
+                    selectionStart !== null && selectionEnd !== null) {
+                    focusedControl?.setSelectionRange(selectionStart, selectionEnd);
                 }
             }
         } catch (error) {
