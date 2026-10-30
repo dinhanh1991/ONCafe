@@ -410,7 +410,7 @@ if (checkoutForm) {
         const fullName = String(formData.get("fullName") || "").trim();
         const phone = String(formData.get("phone") || "").trim().replace(/[ .()-]/g, "");
         const address = String(formData.get("address") || "").trim();
-        const phonePattern = /^(0(?:[35789]\d{8}|2\d{8,9})|\\+84(?:[35789]\d{8}|2\d{8,9}))$/;
+        const phonePattern = /^(0(?:[35789]\d{8}|2\d{8,9})|[+]84(?:[35789]\d{8}|2\d{8,9}))$/;
 
         if (fullName.length < 2) {
             showCheckoutMessage("Vui lòng nhập đầy đủ họ và tên người nhận.", true);
