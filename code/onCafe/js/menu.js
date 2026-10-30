@@ -522,7 +522,7 @@ if (checkoutForm) {
             ? "qr"
             : String(formData.get("paymentMethod") || "cash");
         const fullName = String(formData.get("fullName") || "").trim();
-        const phone = String(formData.get("phone") || "").trim().replace(/[ .()-]/g, "");
+        const phone = ValidationUtils.normalizeVietnamPhone(formData.get("phone"));
         const address = String(formData.get("address") || "").trim();
 
         if (fullName.length < 2) {
@@ -531,7 +531,7 @@ if (checkoutForm) {
             return;
         }
         if (!ValidationUtils.isValidVietnamPhone(phone)) {
-            showCheckoutMessage("Số điện thoại chưa hợp lệ. Hãy nhập số điện thoại Việt Nam gồm 10–11 chữ số.", true);
+            showCheckoutMessage("Số điện thoại chưa hợp lệ. Hãy nhập số di động Việt Nam gồm 10 chữ số hoặc dạng +84.", true);
             checkoutForm.querySelector('[name="phone"]')?.focus();
             return;
         }
