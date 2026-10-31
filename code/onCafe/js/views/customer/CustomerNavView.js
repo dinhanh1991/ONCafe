@@ -1,4 +1,6 @@
-import { supabase } from "../../config/supabase.js";
+import { AuthService } from "../../services/AuthService.js";
+
+const authService = new AuthService();
 
 const nav = document.querySelector("#customerNav");
 
@@ -20,11 +22,7 @@ if (nav) {
         const user = session.user;
         let displayName = user.user_metadata?.full_name?.trim();
 
-        const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", user.id)
-            .maybeSingle();
+        const profile = await authService.getMyProfile(user.id);
 
         if (profile?.full_name?.trim()) {
             displayName = profile.full_name.trim();
@@ -52,9 +50,9 @@ if (nav) {
         logoutButton.addEventListener("click", async () => {
             logoutButton.disabled = true;
             logoutButton.textContent = "Đang đăng xuất...";
-            const { error } = await supabase.auth.signOut();
-
-            if (error) {
+            try {
+                await authService.logout();
+            } catch (error) {
                 logoutButton.disabled = false;
                 logoutButton.textContent = "Đăng xuất";
                 alert("Không thể đăng xuất: " + error.message);
@@ -66,10 +64,10 @@ if (nav) {
         nav.appendChild(logoutButton);
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const session = await authService.getCurrentSession();
     await updateNavigation(session);
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-        void updateNavigation(session);
+    authService.onAuthStateChange((_event, nextSession) => {
+        void updateNavigation(nextSession);
     });
 }
