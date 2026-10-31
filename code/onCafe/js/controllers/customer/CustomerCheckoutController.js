@@ -56,9 +56,11 @@ export class CustomerCheckoutController {
     }
 
     bindEvents() {
-        this.checkoutButton?.addEventListener("click", () => {
-            void this.openCheckout();
-        });
+        if (this.checkoutButton && this.checkoutForm) {
+            this.checkoutButton.addEventListener("click", () => {
+                void this.openCheckout();
+            });
+        }
 
         this.checkoutForm?.addEventListener("submit", (event) => {
             void this.submitOrder(event);
