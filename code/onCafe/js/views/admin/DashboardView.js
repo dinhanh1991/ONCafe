@@ -102,3 +102,224 @@ export function createDashboardPanel(profile, {
     });
     return dashboardPanel;
 }
+
+
+/**
+ * Chịu trách nhiệm cập nhật các chỉ số và biểu đồ trên màn hình tổng quan.
+ * Việc lấy dữ liệu và tính toán được điều phối ở Controller/Service.
+ */
+export class AdminOverviewView {
+    constructor({ dashboardPanel, popularPanel }) {
+        this.dashboardPanel = dashboardPanel;
+        this.popularPanel = popularPanel;
+    }
+
+    setAdminOverviewLoading() {
+        this.setText([
+            "[data-admin-today-revenue]",
+            "[data-admin-today-orders]",
+            "[data-admin-active-products]",
+            "[data-admin-employee-count]"
+        ], "…");
+    }
+
+    renderAdminOverview({ revenue, orders, products, employees }) {
+        this.setText([
+            "[data-admin-today-revenue]",
+            "[data-admin-today-orders]",
+            "[data-admin-active-products]",
+            "[data-admin-employee-count]"
+        ], null, [revenue, orders, products, employees]);
+    }
+
+    renderCashierOverview({ revenue, paid, today, unpaid, completed, active, refunded, comparison }) {
+        this.setText([
+            "[data-cashier-today-revenue]",
+            "[data-cashier-paid-count]",
+            "[data-cashier-today-count]",
+            "[data-cashier-unpaid-count]",
+            "[data-cashier-completed-count]",
+            "[data-cashier-active-count]",
+            "[data-cashier-refunded-count]"
+        ], null, [revenue, paid, today, unpaid, completed, active, refunded]);
+        const comparisonElement = this.dashboardPanel.querySelector("[data-cashier-revenue-comparison]");
+        if (comparisonElement) {
+            comparisonElement.textContent = comparison;
+            comparisonElement.classList.remove("app-error");
+        }
+    }
+
+    setCashierOverviewLoading() {
+        this.setText([
+            "[data-cashier-today-revenue]",
+            "[data-cashier-paid-count]",
+            "[data-cashier-today-count]",
+            "[data-cashier-unpaid-count]",
+            "[data-cashier-completed-count]",
+            "[data-cashier-active-count]",
+            "[data-cashier-refunded-count]"
+        ], "…");
+        const comparison = this.dashboardPanel.querySelector("[data-cashier-revenue-comparison]");
+        if (comparison) comparison.textContent = "Đang so sánh doanh thu với ngày hôm qua...";
+    }
+
+    renderPopularDrinks(statistics) {
+        const chart = this.popularPanel.querySelector("[data-popular-drinks]");
+        if (!chart) return;
+        this.setText([
+            "[data-popular-order-count]",
+            "[data-popular-units]",
+            "[data-popular-product-count]"
+        ], null, [
+            statistics.completedOrderCount,
+            statistics.totalUnits,
+            statistics.productCount
+        ]);
+        chart.replaceChildren();
+
+        if (!statistics.products.length) {
+            this.renderEmpty(chart, "Chưa có đơn hàng hoàn tất có đồ uống để thống kê. Khi đơn hàng được chuyển sang Hoàn tất, dữ liệu sẽ xuất hiện tại đây.");
+            return;
+        }
+
+        const maxQuantity = statistics.products[0][1].quantity;
+        const currencyFormatter = new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+            maximumFractionDigits: 0
+        });
+
+        for (const [name, sales] of statistics.products) {
+            const row = document.createElement("div");
+            row.className = "seller-sales-row popular-drink-row";
+            const labelWrap = document.createElement("div");
+            labelWrap.className = "popular-drink-label";
+            const label = document.createElement("span");
+            label.className = "seller-sales-name";
+            label.textContent = name;
+            const revenue = document.createElement("small");
+            revenue.className = "popular-drink-revenue";
+            revenue.textContent = currencyFormatter.format(sales.revenue);
+            labelWrap.append(label, revenue);
+
+            const track = document.createElement("div");
+            track.className = "seller-sales-track";
+            const bar = document.createElement("span");
+            bar.style.width = `${Math.max(4, (sales.quantity / maxQuantity) * 100)}%`;
+            track.append(bar);
+
+            const value = document.createElement("strong");
+            value.textContent = `${sales.quantity} ly`;
+            row.append(labelWrap, track, value);
+            chart.append(row);
+        }
+    }
+
+    setPopularDrinksLoading() {
+        const chart = this.popularPanel.querySelector("[data-popular-drinks]");
+        if (!chart) return;
+        this.renderLoading(chart, "Đang tải dữ liệu đồ uống bán chạy...");
+    }
+
+    renderSellerOverview(statistics) {
+        this.setText([
+            "[data-seller-order-count]",
+            "[data-seller-completed-count]",
+            "[data-seller-units-sold]"
+        ], null, [
+            statistics.orderCount,
+            statistics.completedOrderCount,
+            statistics.totalUnitsSold
+        ]);
+        const chart = this.dashboardPanel.querySelector("[data-seller-sales-chart]");
+        if (!chart) return;
+        chart.replaceChildren();
+
+        if (!statistics.topProducts.length) {
+            this.renderEmpty(chart, "Chưa có đồ uống nào được bán trong đơn hàng hoàn tất.");
+            return;
+        }
+
+        const maxQuantity = statistics.topProducts[0].quantity;
+        for (const { name, quantity } of statistics.topProducts) {
+            const row = document.createElement("div");
+            row.className = "seller-sales-row";
+            const label = document.createElement("span");
+            label.className = "seller-sales-name";
+            label.textContent = name;
+            const track = document.createElement("div");
+            track.className = "seller-sales-track";
+            const bar = document.createElement("span");
+            bar.style.width = `${Math.max(4, (quantity / maxQuantity) * 100)}%`;
+            track.append(bar);
+            const value = document.createElement("strong");
+            value.textContent = String(quantity);
+            row.append(label, track, value);
+            chart.append(row);
+        }
+    }
+
+    setSellerOverviewLoading() {
+        const chart = this.dashboardPanel.querySelector("[data-seller-sales-chart]");
+        if (chart) this.renderLoading(chart, "Đang tải thống kê bán hàng...");
+    }
+
+    renderChartError(chart, message) {
+        if (!chart) return;
+        chart.replaceChildren();
+        const element = document.createElement("p");
+        element.className = "app-error";
+        element.setAttribute("role", "alert");
+        element.textContent = message;
+        chart.append(element);
+    }
+
+    renderCashierOverviewError(message) {
+        const selectors = [
+            "[data-cashier-today-revenue]",
+            "[data-cashier-paid-count]",
+            "[data-cashier-today-count]",
+            "[data-cashier-unpaid-count]",
+            "[data-cashier-completed-count]",
+            "[data-cashier-active-count]",
+            "[data-cashier-refunded-count]"
+        ];
+        this.setText(selectors, "—");
+        const comparison = this.dashboardPanel.querySelector("[data-cashier-revenue-comparison]");
+        if (comparison) {
+            comparison.textContent = message;
+            comparison.classList.add("app-error");
+        }
+    }
+
+    renderAdminOverviewError() {
+        this.setText([
+            "[data-admin-today-revenue]",
+            "[data-admin-today-orders]",
+            "[data-admin-active-products]",
+            "[data-admin-employee-count]"
+        ], "—");
+    }
+
+    renderLoading(container, message) {
+        container.replaceChildren();
+        const element = document.createElement("p");
+        element.setAttribute("role", "status");
+        element.textContent = message;
+        container.append(element);
+    }
+
+    renderEmpty(container, message) {
+        const element = document.createElement("p");
+        element.className = "seller-sales-empty";
+        element.textContent = message;
+        container.append(element);
+    }
+
+    setText(selectors, fallback, values = []) {
+        selectors.forEach((selector, index) => {
+            const element = this.dashboardPanel.querySelector(selector);
+            if (element) element.textContent = values.length ? String(values[index]) : fallback;
+        });
+    }
+}
