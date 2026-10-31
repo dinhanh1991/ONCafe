@@ -40,7 +40,19 @@ export class OrderService {
         if (!["cash", "qr"].includes(order.paymentMethod)) {
             throw new Error("Phương thức thanh toán không hợp lệ.");
         }
-        return await this.orderRepository.createCounterOrder(order);
+        const createdOrder = await this.orderRepository.createCounterOrder(order);
+        if (order.paymentMethod === "cash") {
+            try {
+                await this.updatePayment(createdOrder.id, "paid");
+            } catch (error) {
+                const paymentError = new Error(
+                    `Đơn ${createdOrder.order_code || "#" + createdOrder.id} đã được tạo nhưng chưa ghi nhận thanh toán tiền mặt. Không tạo lại đơn; hãy cập nhật thanh toán trong mục Quản lý đơn hàng. ${error.message || ""}`
+                );
+                paymentError.orderCreated = createdOrder;
+                throw paymentError;
+            }
+        }
+        return createdOrder;
     }
 
     async createQrConfirmation(orderId) {

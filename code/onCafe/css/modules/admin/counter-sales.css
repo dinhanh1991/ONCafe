@@ -22,6 +22,26 @@
     color: var(--ink);
     font-size: 22px;
 }
+.counter-order-review {
+    margin: 20px 0;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--paper);
+}
+.counter-order-review h3 {
+    margin: 0 0 12px;
+}
+.counter-order-review ul {
+    margin: 0;
+    padding-left: 22px;
+}
+.counter-order-review li {
+    margin: 6px 0;
+}
+.counter-order-review p {
+    text-align: right;
+}
 .order-actions {
     display: flex;
     gap: 6px;
@@ -29,5 +49,3 @@
 @media print {
     .counter-order { break-inside: avoid; }
 }
-
-

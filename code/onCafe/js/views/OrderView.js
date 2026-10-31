@@ -192,7 +192,14 @@ export class OrderView {
                 : order.payment_status === "refunded"
                     ? `<span class="status status-inactive">Đã hoàn tiền</span>`
                     : `<span class="status status-pending">${order.payment_method === "qr" ? "Chờ khách xác nhận QR" : "Chưa thanh toán"}</span>`;
-            const extraActions = `${paymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}"><i class="bi bi-printer me-1" aria-hidden="true"></i>In hóa đơn</button>`;
+            const cashPaymentAction = !this.readOnly && order.payment_method === "cash"
+                ? order.payment_status === "unpaid"
+                    ? `<button class="button button-small button-primary" type="button" data-payment-action="paid" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>Xác nhận đã nhận tiền</button>`
+                    : order.payment_status === "paid"
+                        ? `<button class="button button-small" type="button" data-payment-action="unpaid" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>Hoàn tác thanh toán</button>`
+                        : ""
+                : "";
+            const extraActions = `${paymentAction}${cashPaymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}"><i class="bi bi-printer me-1" aria-hidden="true"></i>In hóa đơn</button>`;
             return `<tr>
                 <td><strong>${escapeHtml(order.order_code || "#" + order.id)}</strong><br><span class="order-source-label ${order.order_source === "online" ? "is-online" : "is-counter"}">${sourceLabel}</span><br><small>${escapeHtml(formatDate(order.created_at))}</small></td>
                 <td><strong>${escapeHtml(order.customer_name || "Khách hàng")}</strong><br><small>${escapeHtml(order.customer_phone || "Chưa có SĐT")}</small><br><span class="order-fulfillment-label">${fulfillmentLabel}</span>${note}${arrivalNote}</td>
