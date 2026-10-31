@@ -9,6 +9,7 @@ import { ValidationUtils } from "../../validators/ValidationUtils.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 import { showPaymentConfirmedPopup, showOrderSuccessPopup } from "../../ui/customer/OrderDialogs.js";
+import { CustomerPaymentMonitor } from "./CustomerPaymentMonitor.js";
 
 const customerMenuService = new CustomerMenuService(new CustomerMenuRepository());
 const customerCheckoutService = new CustomerCheckoutService(new CustomerOrderRepository());
@@ -130,34 +131,17 @@ function updateCheckoutSummary() {
 
 checkoutView.bindFulfillmentChange(updateCheckoutSummary);
 
-let paymentWatchTimer = null;
-let paymentWatchBusy = false;
+const customerPaymentMonitor = new CustomerPaymentMonitor({
+    getPaymentState: (orderId) => customerCheckoutService.getOrderPaymentState(orderId),
+    onPaid: (order) => showPaymentConfirmedPopup(order, currencyFormatter),
+    onEnded: () => showCheckoutMessage(
+        "Đơn hàng đã kết thúc trước khi thanh toán được xác nhận. Vui lòng kiểm tra mục Đơn hàng của tôi.",
+        true
+    )
+});
 
 function watchQrPayment(orderId) {
-    if (paymentWatchTimer) window.clearInterval(paymentWatchTimer);
-
-    paymentWatchTimer = window.setInterval(async () => {
-        if (document.hidden || paymentWatchBusy) return;
-        paymentWatchBusy = true;
-
-        try {
-            const order = await customerCheckoutService.getOrderPaymentState(orderId);
-
-            if (order?.payment_status === "paid") {
-                window.clearInterval(paymentWatchTimer);
-                paymentWatchTimer = null;
-                showPaymentConfirmedPopup(order, currencyFormatter);
-            } else if (order && ["cancelled", "rejected"].includes(order.status)) {
-                window.clearInterval(paymentWatchTimer);
-                paymentWatchTimer = null;
-                showCheckoutMessage("Đơn hàng đã kết thúc trước khi thanh toán được xác nhận. Vui lòng kiểm tra mục Đơn hàng của tôi.", true);
-            }
-        } catch (error) {
-            console.warn("Chưa thể kiểm tra trạng thái thanh toán:", error);
-        } finally {
-            paymentWatchBusy = false;
-        }
-    }, 5000);
+    customerPaymentMonitor.start(orderId);
 }
 
 function showCheckoutMessage(message, isError = false) {
@@ -299,5 +283,5 @@ if (checkoutForm) {
 loadMenu();
 
 window.addEventListener("beforeunload", () => {
-    if (paymentWatchTimer) window.clearInterval(paymentWatchTimer);
+    customerPaymentMonitor.stop();
 });
