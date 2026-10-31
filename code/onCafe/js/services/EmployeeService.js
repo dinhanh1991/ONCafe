@@ -2,9 +2,9 @@ import { supabase } from "../config/supabase.js";
 import { EmployeeRepository } from "../repositories/EmployeeRepo.js";
 
 export class EmployeeService {
-    constructor(repository = new EmployeeRepository(), supabaseClient = supabase) {
-        this.repository = repository;
+    constructor(repository = null, supabaseClient = supabase) {
         this.supabase = supabaseClient;
+        this.repository = repository ?? new EmployeeRepository(supabaseClient);
     }
 
     async getMyProfile() {
