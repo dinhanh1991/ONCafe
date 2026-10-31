@@ -3,15 +3,16 @@
  * Không truy cập DOM hoặc Supabase.
  */
 export class AdminOverviewService {
-    static aggregateCompletedSales(orders = []) {
+    static aggregateCompletedSales(orders = [], { trimNames = true, skipEmptyNames = true } = {}) {
         const completedOrders = orders.filter((order) => order.status === "completed");
         const salesByProduct = new Map();
 
         for (const order of completedOrders) {
             for (const item of Array.isArray(order.items) ? order.items : []) {
-                const name = String(item.product_name || "Đồ uống không tên").trim();
+                const rawName = String(item.product_name || "Đồ uống không tên");
+                const name = trimNames ? rawName.trim() : rawName;
                 const quantity = Number(item.quantity);
-                if (!name || !Number.isFinite(quantity) || quantity <= 0) continue;
+                if ((skipEmptyNames && !name) || !Number.isFinite(quantity) || quantity <= 0) continue;
 
                 const unitPrice = Number(item.unit_price) || 0;
                 const subtotal = Number(item.subtotal);
@@ -49,7 +50,10 @@ export class AdminOverviewService {
     }
 
     static getSellerOverview(orders = [], limit = 5) {
-        const { completedOrders, salesByProduct } = this.aggregateCompletedSales(orders);
+        const { completedOrders, salesByProduct } = this.aggregateCompletedSales(orders, {
+            trimNames: false,
+            skipEmptyNames: false
+        });
         const topProducts = [...salesByProduct.entries()]
             .sort((first, second) =>
                 second[1].quantity - first[1].quantity ||
