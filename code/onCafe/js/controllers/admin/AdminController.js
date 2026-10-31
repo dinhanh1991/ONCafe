@@ -1,4 +1,3 @@
-import { supabase } from "../../config/supabase.js";
 import { AuthService } from "../../services/AuthService.js";
 import { ProductRepository } from "../../repositories/ProductRepo.js";
 import { ProductService } from "../../services/ProductService.js";
@@ -34,20 +33,13 @@ function showMessage(message, isError = false) {
 
 async function startApp() {
     if (!app) throw new Error("Không tìm thấy vùng hiển thị ứng dụng.");
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) throw sessionError;
-    const session = sessionData.session;
+    const session = await authService.getCurrentSession();
     if (!session) {
         showMessage("Bạn cần đăng nhập để sử dụng hệ thống quản lý ONCafe.");
         return;
     }
 
-    const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("full_name, role")
-        .eq("id", session.user.id)
-        .single();
-    if (profileError) throw profileError;
+    const profile = await authService.getMyProfile(session.user.id);
 
     const role = profile.role;
     const isAdmin = role === "admin";
