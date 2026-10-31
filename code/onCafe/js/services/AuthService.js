@@ -63,6 +63,16 @@ export class AuthService {
         if (error) throw error;
     }
 
+    async getCurrentSession() {
+        const { data, error } = await this.supabase.auth.getSession();
+        if (error) throw error;
+        return data.session;
+    }
+
+    onAuthStateChange(callback) {
+        return this.supabase.auth.onAuthStateChange(callback);
+    }
+
     async getCurrentUser() {
         const { data, error } = await this.supabase.auth.getUser();
         if (error) throw error;
