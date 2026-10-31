@@ -4,6 +4,7 @@ import { CustomerMenuService } from "../../services/CustomerMenuService.js";
 import { CustomerCheckoutService } from "../../services/CustomerCheckoutService.js";
 import { CustomerCartService } from "../../services/CustomerCartService.js";
 import { CustomerMenuView } from "../../views/customer/CustomerMenuView.js";
+import { CustomerCheckoutView } from "../../views/customer/CustomerCheckoutView.js";
 import { ValidationUtils } from "../../validators/ValidationUtils.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
@@ -115,30 +116,20 @@ async function loadMenu() {
 const checkoutButton = document.querySelector("#checkoutButton");
 const checkoutForm = document.querySelector("#checkoutForm");
 const checkoutMessage = document.querySelector("#checkoutMessage");
+const checkoutView = new CustomerCheckoutView({
+    form: checkoutForm,
+    message: checkoutMessage,
+    totalSummary: document.querySelector("#checkoutTotalSummary"),
+    currencyFormatter
+});
 const submitOrderButton = document.querySelector("#submitOrderButton");
-const fulfillmentSelect = checkoutForm?.querySelector('[name="fulfillmentMethod"]');
-const addressInput = checkoutForm?.querySelector('[name="address"]');
-const paymentSelect = checkoutForm?.querySelector('[name="paymentMethod"]');
-const checkoutTotalSummary = document.querySelector("#checkoutTotalSummary");
 ValidationUI.bind(checkoutForm);
 
 function updateCheckoutSummary() {
-    if (!checkoutTotalSummary) return;
-    const productTotal = customerCartService.getSubtotal();
-    const isDelivery = fulfillmentSelect?.value === "delivery";
-    const deliveryFee = isDelivery ? 15000 : 0;
-    checkoutTotalSummary.textContent = `Tạm tính: ${currencyFormatter.format(productTotal)} · Phí giao hàng: ${currencyFormatter.format(deliveryFee)} · Tổng: ${currencyFormatter.format(productTotal + deliveryFee)}`;
-    if (addressInput) {
-        addressInput.required = true;
-        addressInput.minLength = isDelivery ? 20 : 1;
-        addressInput.placeholder = isDelivery
-            ? "Nhập đầy đủ số nhà, tên đường/thôn xóm, phường/xã, quận/huyện và tỉnh/thành phố"
-            : "Nhập địa chỉ hiện tại hoặc địa chỉ liên hệ";
-    }
-    if (paymentSelect) paymentSelect.value = "qr";
+    checkoutView.updateSummary(customerCartService.getSubtotal());
 }
 
-fulfillmentSelect?.addEventListener("change", updateCheckoutSummary);
+checkoutView.bindFulfillmentChange(updateCheckoutSummary);
 
 
 
@@ -173,9 +164,7 @@ function watchQrPayment(orderId) {
 }
 
 function showCheckoutMessage(message, isError = false) {
-    if (!checkoutMessage) return;
-    checkoutMessage.textContent = message;
-    checkoutMessage.classList.toggle("checkout-message-error", isError);
+    checkoutView.showMessage(message, isError);
 }
 
 if (checkoutButton && checkoutForm) {
@@ -197,19 +186,9 @@ if (checkoutButton && checkoutForm) {
             return;
         }
 
-        const fullNameInput = checkoutForm.querySelector('[name="fullName"]');
-        if (!fullNameInput.value.trim()) fullNameInput.value = user.user_metadata?.full_name || "";
         const profile = await customerCheckoutService.getCustomerProfile(user.id);
-        if (profile) {
-            if (!fullNameInput.value.trim()) fullNameInput.value = profile.full_name || "";
-            const phoneInput = checkoutForm.querySelector('[name="phone"]');
-            if (phoneInput && !phoneInput.value) phoneInput.value = profile.phone || "";
-            if (addressInput && !addressInput.value) addressInput.value = profile.address || "";
-        }
-
-        checkoutForm.hidden = false;
+        checkoutView.showForm(user, profile);
         updateCheckoutSummary();
-        checkoutForm.scrollIntoView({ behavior: "smooth", block: "start" });
         showCheckoutMessage("Vui lòng kiểm tra thông tin và xác nhận đơn hàng.");
     });
 }
@@ -269,7 +248,7 @@ if (checkoutForm) {
             return;
         }
 
-        submitOrderButton.disabled = true;
+        checkoutView.setSubmitting(true);
         showCheckoutMessage("Đang gửi đơn hàng lên hệ thống...");
 
         try {
@@ -287,8 +266,8 @@ if (checkoutForm) {
 
             customerCartService.clear();
             refreshCart();
-            checkoutForm.reset();
-            checkoutForm.hidden = true;
+            checkoutView.resetForm();
+            checkoutView.hideForm();
             updateCheckoutSummary();
             showCheckoutMessage("");
 
@@ -315,7 +294,7 @@ if (checkoutForm) {
             console.error("Lỗi đặt hàng ONCafe:", error);
             showCheckoutMessage(error.message || "Không thể tạo đơn hàng. Vui lòng thử lại.", true);
         } finally {
-            submitOrderButton.disabled = false;
+            checkoutView.setSubmitting(false);
         }
     });
 }
