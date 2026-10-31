@@ -50,7 +50,7 @@ Page entry point -> Controller -> Service -> Repository -> Supabase
                          +-> Validator / Utils
 ```
 
-Keep dependencies moving inward through explicit imports and constructor/function parameters. A view should receive callbacks or data; it should not instantiate repositories or connect to Supabase.
+Keep dependencies moving inward through explicit imports and constructor/function parameters. A view should receive callbacks or data; it should not instantiate repositories or connect to Supabase. Controllers should use services rather than querying Supabase tables directly. Authentication/session access is centralized in \`AuthService\`.
 
 ## Placement rules
 
