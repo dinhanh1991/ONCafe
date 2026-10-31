@@ -2,7 +2,9 @@ export function createAdminOverviewLoaders({
     dashboardPanel,
     popularPanel,
     orderService,
-    revenueReportService
+    revenueReportService,
+    productService,
+    employeeService
 }) {
     async function loadPopularDrinks() {
         const chart = popularPanel.querySelector("[data-popular-drinks]");
