@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="stylesheet" href="../../css/style.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f7f3ed">
@@ -35,6 +36,14 @@
     </style>
 </head>
 <body>
+<header class="site-header">
+    <a class="brand" href="./home.html">ONCafe</a>
+    <nav aria-label="Điều hướng chính">
+        <a href="./home.html">Trang chủ</a>
+        <a href="./menu.html">Thực đơn</a>
+        <a href="./my-orders.html">Đơn hàng của tôi</a>
+    </nav>
+</header>
 <main>
     <div class="brand">ONCafe</div>
     <p class="eyebrow">XÁC NHẬN THANH TOÁN</p>
@@ -144,5 +153,6 @@
         window.location.href = data.session ? "./my-orders.html" : "./login.html?redirect=my-orders";
     });
 </script>
+    <script type="module" src="../../js/views/shared/SiteFooterView.js"></script>
 </body>
 </html>
