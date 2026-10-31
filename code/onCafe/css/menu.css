@@ -490,7 +490,7 @@
 
 .checkout-form h3 {
     margin: 0;
-    color: #30251e;
+    color: #fff3e4;
 }
 
 .checkout-field {
@@ -500,7 +500,7 @@
 
 .checkout-field label {
     font-weight: 600;
-    color: #46382e;
+    color: #f5e4d1;
 }
 
 .checkout-field input,
@@ -516,11 +516,29 @@
     font: inherit;
 }
 
+.checkout-field input::placeholder,
+.checkout-field textarea::placeholder {
+    color: #76665d;
+    opacity: 1;
+}
+
+.checkout-form .field-error {
+    margin: 0;
+    color: #ffd0c9;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.checkout-form .is-invalid:focus {
+    outline: none;
+    box-shadow: none;
+}
+
 .checkout-field input:focus,
 .checkout-field textarea:focus,
 .checkout-field select:focus {
-    outline: 2px solid #9b7653;
-    outline-offset: 1px;
+    outline: 2px solid #e9bd85;
+    outline-offset: 2px;
 }
 
 .checkout-message {

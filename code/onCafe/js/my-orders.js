@@ -91,6 +91,68 @@ function showPaymentSuccessPopup(order) {
     closeButton.focus();
 }
 
+function showCancelOrderDialog() {
+    return new Promise((resolve) => {
+        const overlay = document.createElement("div");
+        overlay.className = "order-cancel-backdrop";
+
+        const dialog = document.createElement("section");
+        dialog.className = "order-cancel-dialog";
+        dialog.setAttribute("role", "alertdialog");
+        dialog.setAttribute("aria-modal", "true");
+        dialog.setAttribute("aria-labelledby", "cancelOrderTitle");
+        dialog.setAttribute("aria-describedby", "cancelOrderMessage");
+
+        const icon = document.createElement("div");
+        icon.className = "order-cancel-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = "!";
+
+        const title = document.createElement("h2");
+        title.id = "cancelOrderTitle";
+        title.textContent = "Hủy đơn hàng?";
+
+        const detail = document.createElement("p");
+        detail.id = "cancelOrderMessage";
+        detail.textContent = "Bạn có chắc muốn hủy đơn hàng này không? Số lượng sản phẩm đã giữ sẽ được hoàn lại kho.";
+
+        const actions = document.createElement("div");
+        actions.className = "order-cancel-actions";
+
+        const keepButton = document.createElement("button");
+        keepButton.type = "button";
+        keepButton.className = "order-cancel-keep";
+        keepButton.textContent = "Không, giữ đơn";
+
+        const cancelButton = document.createElement("button");
+        cancelButton.type = "button";
+        cancelButton.className = "order-cancel-confirm";
+        cancelButton.textContent = "Có, hủy đơn";
+
+        actions.append(keepButton, cancelButton);
+        dialog.append(icon, title, detail, actions);
+        overlay.append(dialog);
+        document.body.append(overlay);
+
+        const finish = (confirmed) => {
+            overlay.remove();
+            document.removeEventListener("keydown", handleKeydown);
+            resolve(confirmed);
+        };
+        const handleKeydown = (event) => {
+            if (event.key === "Escape") finish(false);
+        };
+
+        keepButton.addEventListener("click", () => finish(false));
+        cancelButton.addEventListener("click", () => finish(true));
+        overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) finish(false);
+        });
+        document.addEventListener("keydown", handleKeydown);
+        keepButton.focus();
+    });
+}
+
 async function loadOrders() {
     if (isLoadingOrders) return;
     isLoadingOrders = true;
@@ -237,7 +299,7 @@ list.addEventListener("click", async (event) => {
     if (!cancelButton) return;
     const orderId = Number(cancelButton.dataset.cancelOrder);
     if (!Number.isSafeInteger(orderId) || orderId <= 0) return;
-    if (!window.confirm("Bạn chắc chắn muốn hủy đơn hàng này? Số lượng sản phẩm đã giữ sẽ được hoàn lại kho.")) return;
+    if (!await showCancelOrderDialog()) return;
 
     cancelButton.disabled = true;
     cancelButton.textContent = "Đang hủy...";

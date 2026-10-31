@@ -59,3 +59,17 @@
 .payment-success-button:focus-visible{outline:3px solid #bd9367;outline-offset:3px}
 @keyframes payment-success-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.payment-success-dialog{animation:none}}
+
+.order-cancel-backdrop{position:fixed;inset:0;z-index:11010;display:grid;place-items:center;padding:20px;background:rgba(28,22,18,.58);backdrop-filter:blur(4px)}
+.order-cancel-dialog{width:min(100%,410px);padding:30px 26px;border:1px solid #eee5dc;border-radius:20px;background:#fff;text-align:center;box-shadow:0 22px 65px rgba(30,20,12,.25);animation:payment-success-in .22s ease-out}
+.order-cancel-icon{display:grid;width:58px;height:58px;place-items:center;margin:0 auto 15px;border-radius:50%;background:#fff4df;color:#9a641d;font-size:30px;font-weight:800}
+.order-cancel-dialog h2{margin:0 0 10px;color:#38251d;font-size:23px}
+.order-cancel-dialog p{margin:0;color:#65574d;line-height:1.7}
+.order-cancel-actions{display:flex;justify-content:center;gap:10px;margin-top:24px}
+.order-cancel-actions button{min-height:44px;padding:10px 16px;border:0;border-radius:8px;font:inherit;font-weight:700;cursor:pointer}
+.order-cancel-keep{background:#f2eee9;color:#5f5148}
+.order-cancel-confirm{background:#a33a32;color:#fff}
+.order-cancel-confirm:hover{background:#842d27}
+.order-cancel-actions button:focus-visible{outline:3px solid #bd9367;outline-offset:3px}
+@media(max-width:420px){.order-cancel-actions{flex-direction:column-reverse}.order-cancel-actions button{width:100%}}
+@media(prefers-reduced-motion:reduce){.order-cancel-dialog{animation:none}}
