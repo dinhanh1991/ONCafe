@@ -271,7 +271,7 @@ export function createAdminOverviewLoaders({
                 return;
             }
 
-            const maxQuantity = topProducts[0][1];
+            const maxQuantity = topProducts[0].quantity;
             for (const { name, quantity } of topProducts) {
                 const row = document.createElement("div");
                 row.className = "seller-sales-row";
