@@ -15,6 +15,8 @@ import { RevenueReportService } from "../../services/RevenueReportService.js";
 import { RevenueReportView } from "../../views/RevenueReportView.js";
 import { RevenueSummaryView } from "../../views/RevenueSummaryView.js";
 import { isSectionAllowed, getAdminPageUrl } from "../../utils/AdminNavigation.js";
+import { createNavButton } from "./ui/AdminNavigation.js";
+import { renderAccessMessage } from "./ui/AccessMessage.js";
 
 const authService = new AuthService();
 const productService = new ProductService(new ProductRepository());
@@ -26,30 +28,7 @@ const logoutButton = document.querySelector("#logoutButton");
 const dashboardHomeLink = document.querySelector("#dashboardHomeLink");
 
 function showMessage(message, isError = false) {
-    if (!app) return;
-    app.replaceChildren();
-    const section = document.createElement("section");
-    section.className = "app-access-message";
-    const paragraph = document.createElement("p");
-    paragraph.className = isError ? "app-error" : "";
-    paragraph.setAttribute("role", "status");
-    paragraph.textContent = message;
-    const linkParagraph = document.createElement("p");
-    const link = document.createElement("a");
-    link.href = window.location.pathname.includes("/pages/admin/") ? "../auth/login.html" : "./pages/auth/login.html";
-    link.textContent = "Đến trang đăng nhập";
-    linkParagraph.append(link);
-    section.append(paragraph, linkParagraph);
-    app.append(section);
-}
-
-function createNavButton(iconClass, label, value) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "admin-nav-item";
-    button.dataset.section = value;
-    button.innerHTML = `<span class="admin-nav-icon" aria-hidden="true"><i class="bi ${iconClass}"></i></span><span>${label}</span>`;
-    return button;
+    renderAccessMessage(app, message, isError);
 }
 
 async function startApp() {
