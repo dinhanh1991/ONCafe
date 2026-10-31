@@ -166,15 +166,14 @@ export class AdminOverviewView {
     renderPopularDrinks(statistics) {
         const chart = this.popularPanel.querySelector("[data-popular-drinks]");
         if (!chart) return;
-        this.setText([
-            "[data-popular-order-count]",
-            "[data-popular-units]",
-            "[data-popular-product-count]"
-        ], null, [
-            statistics.completedOrderCount,
-            statistics.totalUnits,
-            statistics.productCount
-        ]);
+        [
+            ["[data-popular-order-count]", statistics.completedOrderCount],
+            ["[data-popular-units]", statistics.totalUnits],
+            ["[data-popular-product-count]", statistics.productCount]
+        ].forEach(([selector, value]) => {
+            const element = this.popularPanel.querySelector(selector);
+            if (element) element.textContent = String(value);
+        });
         chart.replaceChildren();
 
         if (!statistics.products.length) {
