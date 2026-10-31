@@ -1,7 +1,9 @@
 import { CustomerOrderRepository } from "./repositories/CustomerOrderRepo.js";
 import { CustomerMyOrdersService } from "./services/CustomerMyOrdersService.js";
+import { CustomerQrPaymentService } from "./services/CustomerQrPaymentService.js";
 
 const customerMyOrdersService = new CustomerMyOrdersService(new CustomerOrderRepository());
+const customerQrPaymentService = new CustomerQrPaymentService();
 
 const list = document.querySelector("#ordersList");
 const message = document.querySelector("#ordersMessage");
@@ -250,17 +252,15 @@ async function createQr(orderId, button) {
     button.disabled = true;
     button.textContent = "Đang tạo mã QR...";
     try {
-        const data = await customerMyOrdersService.createQrPayment(Number(orderId));
-        const serverExpiry = new Date(data.expires_at).getTime();
-        if (!Number.isFinite(serverExpiry)) throw new Error("Hệ thống trả về thời hạn mã QR không hợp lệ.");
-        const expiresAt = Math.min(serverExpiry, Date.now() + 10 * 60 * 1000);
-
-        const url = new URL("./qr-confirm.html", window.location.href);
-        url.searchParams.set("token", data.token);
-        url.searchParams.set("expires", String(expiresAt));
-        const qrModule = await import("https://esm.sh/qrcode@1.5.4");
-        const QRCode = qrModule.default || qrModule;
-        const imageUrl = await QRCode.toDataURL(url.href, { width: 210, margin: 2 });
+        const paymentData = await customerMyOrdersService.createQrPayment(Number(orderId));
+        const qrInfo = await customerQrPaymentService.createQrInfo(
+            paymentData,
+            window.location.href,
+            210
+        );
+        const expiresAt = qrInfo.expiresAt;
+        const url = new URL(qrInfo.url);
+        const imageUrl = qrInfo.image;
         const card = button.closest(".my-order-card");
         const panel = card.querySelector("[data-qr-panel]");
         panel.hidden = false;
