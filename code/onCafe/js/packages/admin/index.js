@@ -15,7 +15,6 @@ import { RevenueReportService } from "../../services/RevenueReportService.js";
 import { RevenueReportView } from "../../views/RevenueReportView.js";
 import { RevenueSummaryView } from "../../views/RevenueSummaryView.js";
 import { isSectionAllowed, getAdminPageUrl } from "../../utils/AdminNavigation.js";
-import { createNavButton } from "./ui/AdminNavigation.js";
 import { renderAccessMessage } from "./ui/AccessMessage.js";
 import { createAdminWorkspace } from "./views/AdminWorkspaceView.js";
 import { createAdminOverviewLoaders } from "./controllers/AdminOverviewController.js";
@@ -72,6 +71,12 @@ async function startApp() {
 
         dashboardHomeLink.hidden = false;
     }
+
+    const canManageProducts = isAdmin || isSeller;
+    const canManageEmployees = isAdmin;
+    let productView = null;
+    let employeeView = null;
+    let employeeProfileView = null;
 
     const {
         panels, dashboardPanel, orderPanel, productPanel, counterPanel,

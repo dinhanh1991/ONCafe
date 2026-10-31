@@ -5,8 +5,6 @@ export function createAdminWorkspace(app, profile, {
     isAdmin,
     isSeller,
     isCashier,
-    canManageProducts,
-    canManageEmployees
 }) {
     app.replaceChildren();
     const workspace = document.createElement("div");
