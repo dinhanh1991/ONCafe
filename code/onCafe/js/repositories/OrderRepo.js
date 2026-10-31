@@ -1,8 +1,12 @@
 import { supabase } from "../config/supabase.js";
 
 export class OrderRepository {
+    constructor(supabaseClient = supabase) {
+        this.supabase = supabaseClient;
+    }
+
     async findAllForStaff() {
-        const { data, error } = await supabase.rpc("oncafe_staff_list_orders");
+        const { data, error } = await this.supabase.rpc("oncafe_staff_list_orders");
         if (error) throw error;
         if (!Array.isArray(data)) throw new Error("Dữ liệu đơn hàng trả về không đúng định dạng.");
         return data;
@@ -11,7 +15,7 @@ export class OrderRepository {
     async markDeliveryArrived(orderId) {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
-        const { data, error } = await supabase.rpc("oncafe_staff_mark_delivery_arrived", {
+        const { data, error } = await this.supabase.rpc("oncafe_staff_mark_delivery_arrived", {
             p_order_id: id
         });
         if (error) throw error;
@@ -21,7 +25,7 @@ export class OrderRepository {
     async updateStatus(orderId, status) {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
-        const { error } = await supabase.rpc("oncafe_staff_update_order_status", {
+        const { error } = await this.supabase.rpc("oncafe_staff_update_order_status", {
             p_order_id: id,
             p_status: status
         });
@@ -29,7 +33,7 @@ export class OrderRepository {
     }
 
     async createCounterOrder(order) {
-        const { data, error } = await supabase.rpc("oncafe_staff_create_order", {
+        const { data, error } = await this.supabase.rpc("oncafe_staff_create_order", {
             p_customer_name: order.customerName,
             p_customer_phone: order.customerPhone || "",
             p_customer_address: order.customerAddress || "",
@@ -53,7 +57,7 @@ export class OrderRepository {
     async createQrConfirmation(orderId) {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
-        const { data, error } = await supabase.functions.invoke("oncafe-qr-payment", {
+        const { data, error } = await this.supabase.functions.invoke("oncafe-qr-payment", {
             body: { action: "create", order_id: id }
         });
         if (error) throw error;
@@ -65,7 +69,7 @@ export class OrderRepository {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
         if (!["paid", "unpaid"].includes(paymentStatus)) throw new Error("Trạng thái thanh toán không hợp lệ.");
-        const { error } = await supabase.rpc("oncafe_staff_update_payment", {
+        const { error } = await this.supabase.rpc("oncafe_staff_update_payment", {
             p_order_id: id,
             p_payment_status: paymentStatus
         });
