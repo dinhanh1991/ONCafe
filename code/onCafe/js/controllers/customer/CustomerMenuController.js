@@ -3,6 +3,7 @@ import { CustomerOrderRepository } from "../../repositories/CustomerOrderRepo.js
 import { CustomerMenuService } from "../../services/CustomerMenuService.js";
 import { CustomerCheckoutService } from "../../services/CustomerCheckoutService.js";
 import { CustomerCartService } from "../../services/CustomerCartService.js";
+import { CustomerMenuView } from "../../views/customer/CustomerMenuView.js";
 import { ValidationUtils } from "../../validators/ValidationUtils.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
@@ -31,59 +32,20 @@ function refreshCart() {
     renderCart();
 }
 
+const customerMenuView = new CustomerMenuView({
+    menuGrid,
+    menuStatus,
+    cartItems,
+    cartTotal,
+    cartCount,
+    currencyFormatter,
+    onAddToCart: addToCart,
+    onChangeQuantity: changeQuantity,
+    onRemoveFromCart: removeFromCart
+});
+
 function showStatus(message, isError = false) {
-    if (!menuStatus) return;
-    menuStatus.textContent = message;
-    menuStatus.classList.toggle("menu-status-error", isError);
-    menuStatus.hidden = false;
-}
-
-function createMenuCard(product) {
-    const card = document.createElement("article");
-    card.className = "menu-card";
-
-    const imageFrame = document.createElement("div");
-    imageFrame.className = "menu-card-image";
-
-    const image = document.createElement("img");
-    image.src = product.image_url || "../assets/images/bac-xiu.jpg";
-    image.alt = product.name ? `Ảnh ${product.name}` : "Ảnh đồ uống";
-    image.loading = "lazy";
-    image.addEventListener("error", () => {
-        image.src = "../assets/images/bac-xiu.jpg";
-    }, { once: true });
-
-    const stock = document.createElement("span");
-    stock.className = `menu-card-stock${Number(product.quantity) > 0 ? "" : " menu-card-stock-empty"}`;
-    stock.textContent = Number(product.quantity) > 0
-        ? `Còn ${Number(product.quantity)} phần`
-        : "Tạm hết hàng";
-    imageFrame.append(image, stock);
-
-    const content = document.createElement("div");
-    content.className = "menu-card-content";
-
-    const category = document.createElement("p");
-    category.className = "menu-card-category";
-    category.textContent = product.categories?.name || "Đồ uống";
-
-    const name = document.createElement("h2");
-    name.textContent = product.name || "Sản phẩm";
-
-    const price = document.createElement("p");
-    price.className = "menu-card-price";
-    price.textContent = currencyFormatter.format(Number(product.price) || 0);
-
-    const addButton = document.createElement("button");
-    addButton.type = "button";
-    addButton.className = "menu-add-button";
-    addButton.textContent = Number(product.quantity) > 0 ? "Thêm vào giỏ" : "Tạm hết hàng";
-    addButton.disabled = Number(product.quantity) <= 0;
-    addButton.addEventListener("click", () => addToCart(product.id));
-
-    content.append(category, name, price, addButton);
-    card.append(imageFrame, content);
-    return card;
+    customerMenuView.showStatus(message, isError);
 }
 
 function addToCart(productId) {
@@ -115,68 +77,11 @@ function removeFromCart(productId) {
 }
 
 function renderCart() {
-    if (!cartItems || !cartTotal || !cartCount) return;
-
-    cartItems.replaceChildren();
-    const totalQuantity = customerCartService.getTotalQuantity();
-    const totalPrice = customerCartService.getSubtotal();
-    cartCount.textContent = String(totalQuantity);
-    cartTotal.textContent = currencyFormatter.format(totalPrice);
-
-    if (cart.length === 0) {
-        const emptyMessage = document.createElement("p");
-        emptyMessage.className = "cart-empty";
-        emptyMessage.textContent = "Giỏ hàng đang trống. Hãy chọn đồ uống bạn thích.";
-        cartItems.append(emptyMessage);
-        updateCheckoutSummary();
-        return;
-    }
-
-    cart.forEach((item) => {
-        const row = document.createElement("div");
-        row.className = "cart-item";
-
-        const details = document.createElement("div");
-        details.className = "cart-item-details";
-
-        const name = document.createElement("strong");
-        name.textContent = item.name;
-
-        const price = document.createElement("span");
-        price.textContent = currencyFormatter.format(item.price * item.quantity);
-        details.append(name, price);
-
-        const controls = document.createElement("div");
-        controls.className = "cart-item-controls";
-
-        const decreaseButton = document.createElement("button");
-        decreaseButton.type = "button";
-        decreaseButton.className = "cart-quantity-button";
-        decreaseButton.textContent = "−";
-        decreaseButton.setAttribute("aria-label", `Giảm số lượng ${item.name}`);
-        decreaseButton.addEventListener("click", () => changeQuantity(item.id, -1));
-
-        const quantity = document.createElement("span");
-        quantity.className = "cart-quantity";
-        quantity.textContent = String(item.quantity);
-
-        const increaseButton = document.createElement("button");
-        increaseButton.type = "button";
-        increaseButton.className = "cart-quantity-button";
-        increaseButton.textContent = "+";
-        increaseButton.setAttribute("aria-label", `Tăng số lượng ${item.name}`);
-        increaseButton.addEventListener("click", () => changeQuantity(item.id, 1));
-
-        const removeButton = document.createElement("button");
-        removeButton.type = "button";
-        removeButton.className = "cart-remove-button";
-        removeButton.textContent = "Bỏ";
-        removeButton.addEventListener("click", () => removeFromCart(item.id));
-
-        controls.append(decreaseButton, quantity, increaseButton, removeButton);
-        row.append(details, controls);
-        cartItems.append(row);
-    });
+    customerMenuView.renderCart(
+        cart,
+        customerCartService.getTotalQuantity(),
+        customerCartService.getSubtotal()
+    );
     updateCheckoutSummary();
 }
 
@@ -184,7 +89,7 @@ async function loadMenu() {
     if (!menuGrid) return;
 
     showStatus("Đang tải thực đơn...");
-    menuGrid.replaceChildren();
+    customerMenuView.clearMenu();
 
     try {
         availableProducts = await customerMenuService.getAvailableProducts();
@@ -200,8 +105,8 @@ async function loadMenu() {
     if (availableProducts.length === 0) {
         showStatus("Hiện chưa có đồ uống nào được mở bán.");
     } else {
-        menuGrid.append(...availableProducts.map(createMenuCard));
-        menuStatus.hidden = true;
+        customerMenuView.renderMenu(availableProducts);
+        customerMenuView.hideStatus();
     }
 
     renderCart();
