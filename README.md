@@ -42,7 +42,8 @@ Quyền truy cập được kiểm tra ở giao diện và được giới hạn
 - Chọn **nhận tại cửa hàng** hoặc **giao tận nhà**.
 - Phí giao hàng hiện được thiết lập cố định là **15.000 đồng**; nhận tại cửa hàng không tính phí giao hàng.
 - Với đơn giao tận nhà, khách phải nhập địa chỉ và chọn thanh toán QR/chuyển khoản trước; tùy chọn tiền mặt tại quầy không áp dụng cho hình thức giao hàng.
-- Trang “Đơn hàng của tôi” cho phép khách xem trạng thái, thông tin và chi tiết đơn hàng.
+- Trang “Đơn hàng của tôi” cho phép khách xem trạng thái, thông tin người nhận và chi tiết đơn hàng.
+- Thông tin người nhận (tên, số điện thoại, địa chỉ) được lưu thành snapshot trên từng đơn; thay đổi hồ sơ khách hàng ở lần đặt sau không làm thay đổi thông tin của đơn cũ.
 - Đơn online được đưa vào danh sách quản lý đơn của nhân viên, có thông tin nguồn đơn và hình thức nhận hàng.
 
 ### 3.2. Quản lý đồ uống
@@ -51,6 +52,7 @@ Quyền truy cập được kiểm tra ở giao diện và được giới hạn
 - Thêm, xem chi tiết, chỉnh sửa và xóa đồ uống.
 - Quản lý tên, danh mục, giá, số lượng tồn kho, trạng thái mở bán và hình ảnh.
 - Tìm kiếm và kiểm tra dữ liệu đầu vào.
+- Ảnh sản phẩm hỗ trợ JPG, PNG, WEBP và GIF; giới hạn dung lượng 5 MB mỗi ảnh ở bước validation frontend.
 - Tải ảnh từ máy tính lên Supabase Storage; dữ liệu sản phẩm lưu trong Supabase Database.
 - Định dạng giá theo tiền Việt Nam (VND).
 
@@ -77,7 +79,7 @@ Quyền truy cập được kiểm tra ở giao diện và được giới hạn
 ### 3.5. Thanh toán QR
 
 - Tạo mã xác nhận QR gắn với đơn hàng.
-- Mã xác nhận có thời hạn 15 phút và được kiểm tra ở phía máy chủ.
+- Mã xác nhận có thời hạn 10 phút và được kiểm tra ở phía máy chủ.
 - Mã được lưu dưới dạng giá trị băm ở phía máy chủ; thao tác xác nhận có kiểm tra tính hợp lệ và việc sử dụng mã.
 - Hỗ trợ luồng xác nhận thanh toán cho đơn online và đơn tại quầy theo quyền được cấp.
 
@@ -161,12 +163,14 @@ Dự án tổ chức mã nguồn JavaScript theo các nhóm trách nhiệm như 
 
 | Thành phần | Trách nhiệm |
 |---|---|
-| **Models** | Biểu diễn các đối tượng dữ liệu như sản phẩm, đơn hàng, nhân viên. |
-| **Repositories** | Giao tiếp với Supabase Database và Storage. |
-| **Services** | Kiểm tra điều kiện và điều phối nghiệp vụ trước khi gọi Repository. |
-| **Views** | Hiển thị dữ liệu, nhận thao tác và cập nhật giao diện. |
-| **Validators** | Kiểm tra dữ liệu nhập từ biểu mẫu. |
-| **Utils** | Chứa hàm dùng chung như định dạng tiền và điều hướng. |
+| **Controllers** | Điều phối sự kiện và luồng xử lý của từng trang/khu vực; kết nối View với Service. |
+| **Models** | Biểu diễn, chuẩn hóa dữ liệu như sản phẩm, đơn hàng và nhân viên. |
+| **Repositories** | Tập trung giao tiếp với Supabase Database và Storage. |
+| **Services** | Chứa quy tắc nghiệp vụ và điều phối thao tác qua Repository. |
+| **Views** | Render dữ liệu, quản lý phần hiển thị của từng màn hình. |
+| **UI** | Chứa các thành phần giao diện có thể tái sử dụng giữa nhiều màn hình. |
+| **Validators** | Kiểm tra dữ liệu đầu vào và phối hợp hiển thị phản hồi validation. |
+| **Utils** | Chứa hàm tiện ích độc lập, ví dụ định dạng tiền, tạo ID và điều hướng. |
 | **Supabase Functions** | Thực hiện tác vụ phía máy chủ cần xác thực hoặc quyền quản trị. |
 | **Supabase Migrations** | Lưu lịch sử thay đổi schema, chính sách và hàm nghiệp vụ của cơ sở dữ liệu. |
 
