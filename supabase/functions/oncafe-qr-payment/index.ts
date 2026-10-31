@@ -85,7 +85,7 @@ Deno.serve(async (req: Request) => {
     const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
     const token = hex(tokenBytes);
     const tokenHash = await hashToken(token);
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
     const { error: insertError } = await admin.from("order_payment_tokens").upsert({
       order_id: orderId,

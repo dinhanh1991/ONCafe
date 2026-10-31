@@ -57,11 +57,11 @@ function showPaymentSuccessPopup(order) {
 
     const title = document.createElement("h2");
     title.id = "paymentSuccessTitle";
-    title.textContent = "Thanh toán thành công!";
+    title.textContent = "Đặt hàng thành công!";
 
     const detail = document.createElement("p");
     detail.id = "paymentSuccessMessage";
-    detail.textContent = `Cảm ơn quý khách đã mua hàng tại ONCafe. Đơn ${order.order_code || ""} đã được xác nhận thanh toán.`;
+    detail.textContent = `Cảm ơn quý khách đã đặt hàng tại ONCafe. Đơn ${order.order_code || ""} đã được thanh toán thành công.`;
 
     const total = document.createElement("strong");
     total.className = "payment-success-total";
@@ -192,9 +192,13 @@ async function createQr(orderId, button) {
         });
         if (error) throw new Error(data?.error || error.message || "Không thể tạo mã QR.");
         if (!data?.token) throw new Error(data?.error || "Không nhận được mã QR.");
+        const serverExpiry = new Date(data.expires_at).getTime();
+        if (!Number.isFinite(serverExpiry)) throw new Error("Hệ thống trả về thời hạn mã QR không hợp lệ.");
+        const expiresAt = Math.min(serverExpiry, Date.now() + 10 * 60 * 1000);
 
         const url = new URL("./qr-confirm.html", window.location.href);
         url.searchParams.set("token", data.token);
+        url.searchParams.set("expires", String(expiresAt));
         const qrModule = await import("https://esm.sh/qrcode@1.5.4");
         const QRCode = qrModule.default || qrModule;
         const imageUrl = await QRCode.toDataURL(url.href, { width: 210, margin: 2 });
@@ -211,7 +215,7 @@ async function createQr(orderId, button) {
         link.rel = "noopener";
         link.textContent = "Mở trang xác nhận thanh toán";
         const note = document.createElement("p");
-        note.textContent = `Mã QR có hiệu lực đến ${new Date(data.expires_at).toLocaleTimeString("vi-VN")}.`;
+        note.textContent = `Mã QR có hiệu lực đến ${new Date(expiresAt).toLocaleTimeString("vi-VN")} (tối đa 10 phút).`;
         panel.append(image, link, note);
         button.textContent = "Tạo lại mã QR";
         button.disabled = false;

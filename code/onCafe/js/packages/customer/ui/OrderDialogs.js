@@ -1,4 +1,7 @@
+let activeQrOrderDialogClose = null;
+
 export function showPaymentConfirmedPopup(order, currencyFormatter) {
+    activeQrOrderDialogClose?.();
     if (document.querySelector(".payment-success-backdrop")) return;
 
     const overlay = document.createElement("div");
@@ -17,10 +20,10 @@ export function showPaymentConfirmedPopup(order, currencyFormatter) {
 
     const title = document.createElement("h2");
     title.id = "menuPaymentSuccessTitle";
-    title.textContent = "Thanh toán thành công!";
+    title.textContent = "Đặt hàng thành công!";
 
     const message = document.createElement("p");
-    message.textContent = "Cảm ơn quý khách đã mua hàng tại ONCafe. Đơn " + (order.order_code || "") + " đã được xác nhận thanh toán.";
+    message.textContent = "Cảm ơn quý khách đã đặt hàng tại ONCafe. Đơn " + (order.order_code || "") + " đã được thanh toán thành công.";
 
     const total = document.createElement("strong");
     total.className = "payment-success-total";
@@ -72,11 +75,11 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
     const icon = document.createElement("div");
     icon.className = "menu-order-dialog-icon";
     icon.setAttribute("aria-hidden", "true");
-    icon.textContent = "✓";
+    icon.textContent = qrInfo?.image ? "QR" : "✓";
 
     const title = document.createElement("h2");
     title.id = "menu-order-dialog-title";
-    title.textContent = "Đặt hàng thành công";
+    title.textContent = qrInfo?.image ? "Xác nhận thanh toán QR" : "Đơn hàng đã được tạo";
 
     const message = document.createElement("p");
     message.id = "menu-order-dialog-message";
@@ -84,7 +87,7 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
     const total = currencyFormatter.format(Number(order.total_amount) || 0);
     const deliveryFee = Number(order.delivery_fee) || (fulfillmentMethod === "delivery" ? 15000 : 0);
     const fulfillmentLabel = fulfillmentMethod === "delivery" ? "Giao tận nhà" : "Nhận tại cửa hàng";
-    message.textContent = `Đơn ${orderCode} đã được tạo. Hình thức nhận: ${fulfillmentLabel}. Phí giao hàng: ${currencyFormatter.format(deliveryFee)}. Tổng thanh toán: ${total}. Đơn đang chờ quán xác nhận.`;
+    message.textContent = `Đơn ${orderCode} đã được tạo. Hình thức nhận: ${fulfillmentLabel}. Phí giao hàng: ${currencyFormatter.format(deliveryFee)}. Tổng thanh toán: ${total}. Vui lòng quét mã QR và xác nhận thanh toán trong 10 phút.`;
 
     let qrPanel = null;
     if (paymentMethod === "qr") {
@@ -92,7 +95,7 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
         qrPanel.className = "customer-qr-panel";
         const note = document.createElement("p");
         note.textContent = qrInfo?.image
-            ? "Quét mã QR để tiếp tục xác nhận thanh toán."
+            ? "Quét mã QR để mở trang xác nhận thanh toán. Vui lòng xác nhận trong 10 phút."
             : `Chưa tạo được mã QR: ${qrInfo?.error || "Vui lòng vào Đơn hàng của tôi hoặc liên hệ cửa hàng để được hỗ trợ."}`;
         qrPanel.append(note);
         if (qrInfo?.image) {
@@ -107,7 +110,8 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
             link.rel = "noopener";
             link.textContent = "Mở trang xác nhận thanh toán";
             const expiry = document.createElement("small");
-            expiry.textContent = `Mã có hiệu lực đến ${new Date(qrInfo.expiresAt).toLocaleTimeString("vi-VN")} (15 phút).`;
+            expiry.dataset.qrExpiry = String(qrInfo.expiresAt);
+            expiry.textContent = `Mã có hiệu lực đến ${new Date(qrInfo.expiresAt).toLocaleTimeString("vi-VN")} (tối đa 10 phút).`;
             qrPanel.append(image, link, expiry);
         }
     }
@@ -128,10 +132,34 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
     overlay.append(dialog);
     document.body.append(overlay);
 
+    let expiryTimer = null;
+    if (paymentMethod === "qr" && qrInfo?.image) {
+        const expiresAt = Number(qrInfo.expiresAt);
+        const expiry = qrPanel.querySelector("[data-qr-expiry]");
+        const updateExpiry = () => {
+            const remainingSeconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            expiry.textContent = remainingSeconds
+                ? `Mã QR hết hạn sau ${minutes}:${String(seconds).padStart(2, "0")}.`
+                : "Mã QR đã hết hạn. Hãy tạo mã mới trong mục Đơn hàng của tôi.";
+            if (!remainingSeconds) {
+                qrPanel.querySelector("img")?.remove();
+                qrPanel.querySelector("a")?.remove();
+                window.clearInterval(expiryTimer);
+            }
+        };
+        updateExpiry();
+        expiryTimer = window.setInterval(updateExpiry, 1000);
+    }
+
     const close = () => {
         overlay.remove();
+        if (expiryTimer) window.clearInterval(expiryTimer);
         document.removeEventListener("keydown", handleKeydown);
+        if (activeQrOrderDialogClose === close) activeQrOrderDialogClose = null;
     };
+    activeQrOrderDialogClose = close;
     const handleKeydown = (event) => {
         if (event.key === "Escape") close();
     };

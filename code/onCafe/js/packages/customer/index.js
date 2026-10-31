@@ -250,17 +250,13 @@ function updateCheckoutSummary() {
     const deliveryFee = isDelivery ? 15000 : 0;
     checkoutTotalSummary.textContent = `Tạm tính: ${currencyFormatter.format(productTotal)} · Phí giao hàng: ${currencyFormatter.format(deliveryFee)} · Tổng: ${currencyFormatter.format(productTotal + deliveryFee)}`;
     if (addressInput) {
-        addressInput.required = isDelivery;
-        addressInput.minLength = isDelivery ? 20 : 0;
+        addressInput.required = true;
+        addressInput.minLength = isDelivery ? 20 : 1;
         addressInput.placeholder = isDelivery
             ? "Nhập đầy đủ số nhà, tên đường/thôn xóm, phường/xã, quận/huyện và tỉnh/thành phố"
-            : "Địa chỉ hoặc ghi chú (không bắt buộc khi nhận tại cửa hàng)";
+            : "Nhập địa chỉ hiện tại hoặc địa chỉ liên hệ";
     }
-    if (paymentSelect) {
-        const cashOption = paymentSelect.querySelector('option[value="cash"]');
-        if (cashOption) cashOption.hidden = isDelivery;
-        if (isDelivery) paymentSelect.value = "qr";
-    }
+    if (paymentSelect) paymentSelect.value = "qr";
 }
 
 fulfillmentSelect?.addEventListener("change", updateCheckoutSummary);
@@ -271,14 +267,18 @@ async function createCustomerQrInfo(orderId) {
     });
     if (error) throw new Error(data?.error || error.message || "Không tạo được mã QR.");
     if (!data?.token) throw new Error(data?.error || "Không nhận được mã QR.");
+    const serverExpiry = new Date(data.expires_at).getTime();
+    if (!Number.isFinite(serverExpiry)) throw new Error("Hệ thống trả về thời hạn mã QR không hợp lệ.");
+    const expiresAt = Math.min(serverExpiry, Date.now() + 10 * 60 * 1000);
     const confirmUrl = new URL("./qr-confirm.html", window.location.href);
     confirmUrl.searchParams.set("token", data.token);
+    confirmUrl.searchParams.set("expires", String(expiresAt));
     const qrModule = await import("https://esm.sh/qrcode@1.5.4");
     const QRCode = qrModule.default || qrModule;
     return {
         url: confirmUrl.href,
         image: await QRCode.toDataURL(confirmUrl.href, { width: 220, margin: 2 }),
-        expiresAt: data.expires_at
+        expiresAt
     };
 }
 
@@ -372,9 +372,7 @@ if (checkoutForm) {
 
         const formData = new FormData(checkoutForm);
         const fulfillmentMethod = String(formData.get("fulfillmentMethod") || "pickup");
-        const paymentMethod = fulfillmentMethod === "delivery"
-            ? "qr"
-            : String(formData.get("paymentMethod") || "cash");
+        const paymentMethod = "qr";
         const fullName = String(formData.get("fullName") || "").trim();
         const phone = ValidationUtils.normalizeVietnamPhone(formData.get("phone"));
         const address = String(formData.get("address") || "").trim();
@@ -383,10 +381,12 @@ if (checkoutForm) {
         if (fullName.length < 2) {
             fieldErrors.fullName = "Vui lòng nhập đầy đủ họ và tên người nhận.";
         }
-        if (!ValidationUtils.isValidVietnamPhone(phone)) {
+        if (!phone || !ValidationUtils.isValidVietnamPhone(phone)) {
             fieldErrors.phone = "Số điện thoại chưa hợp lệ. Hãy nhập số di động Việt Nam gồm 10 chữ số hoặc dạng +84.";
         }
-        if (fulfillmentMethod === "delivery" && address.length < 20) {
+        if (!address) {
+            fieldErrors.address = "Vui lòng nhập địa chỉ.";
+        } else if (fulfillmentMethod === "delivery" && address.length < 20) {
             fieldErrors.address = "Địa chỉ giao hàng chưa đầy đủ. Nhập số nhà/đường hoặc thôn xóm, phường/xã, quận/huyện và tỉnh/thành phố.";
         }
         if (Object.keys(fieldErrors).length) {
@@ -425,22 +425,30 @@ if (checkoutForm) {
                 throw new Error("Hệ thống chưa trả về mã đơn hàng. Vui lòng kiểm tra mục đơn hàng trước khi đặt lại.");
             }
 
-            let qrInfo = null;
-            if (paymentMethod === "qr") {
-                try {
-                    qrInfo = await createCustomerQrInfo(order.order_id);
-                } catch (qrError) {
-                    qrInfo = { error: qrError.message || "Không thể tạo mã QR." };
-                }
-            }
-
             cart = [];
             saveCart();
             checkoutForm.reset();
             checkoutForm.hidden = true;
             updateCheckoutSummary();
             showCheckoutMessage("");
-            showStatus(`Đã tạo đơn ${order.order_code}.`);
+
+            let qrInfo;
+            try {
+                qrInfo = await createCustomerQrInfo(order.order_id);
+            } catch (qrError) {
+                const message = `Đơn ${order.order_code} đã được tạo nhưng chưa tạo được mã QR. Không đặt lại đơn; vui lòng vào Đơn hàng của tôi để tạo lại mã. ${qrError.message || ""}`;
+                showStatus(message, true);
+                showOrderSuccessPopup(
+                    { ...order, delivery_fee: fulfillmentMethod === "delivery" ? 15000 : 0 },
+                    paymentMethod,
+                    fulfillmentMethod,
+                    { error: message },
+                    currencyFormatter
+                );
+                return;
+            }
+
+            showStatus(`Đã tạo đơn ${order.order_code}. Vui lòng thanh toán QR trong 10 phút.`);
             showOrderSuccessPopup({ ...order, delivery_fee: fulfillmentMethod === "delivery" ? 15000 : 0 }, paymentMethod, fulfillmentMethod, qrInfo, currencyFormatter);
             if (paymentMethod === "qr") watchQrPayment(order.order_id);
         } catch (error) {

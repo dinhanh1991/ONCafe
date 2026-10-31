@@ -39,16 +39,16 @@
     <div class="brand">ONCafe</div>
     <p class="eyebrow">XÁC NHẬN THANH TOÁN</p>
     <h1>Xác nhận đơn hàng</h1>
-    <p class="intro">Cảm ơn quý khách đã lựa chọn ONCafe. Vui lòng xác nhận sau khi đã thực hiện thanh toán theo hướng dẫn của cửa hàng.</p>
-    <button id="confirmButton" type="button">Tôi xác nhận đã thanh toán</button>
+    <p class="intro">Vui lòng xác nhận thanh toán để hoàn tất đơn hàng.</p>
+    <button id="confirmButton" type="button">Xác nhận thanh toán</button>
     <p id="feedback" role="status" aria-live="polite"></p>
 </main>
 
 <div id="successOverlay" class="success-overlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
     <section class="success-dialog">
         <div class="success-icon" aria-hidden="true">✓</div>
-        <h2 id="successTitle">Thanh toán thành công!</h2>
-        <p id="successMessage">Cảm ơn quý khách đã mua hàng tại ONCafe. Đơn hàng của quý khách đã được xác nhận thanh toán.</p>
+        <h2 id="successTitle">Đặt hàng thành công!</h2>
+        <p id="successMessage">Cảm ơn quý khách đã đặt hàng tại ONCafe. Đơn hàng của quý khách đã được xác nhận thanh toán.</p>
         <strong id="successOrder" class="success-order-code"></strong>
         <div class="success-actions">
             <button id="viewOrders" type="button">Theo dõi đơn hàng</button>
@@ -66,16 +66,51 @@
     const successOrder = document.querySelector("#successOrder");
     const closeSuccess = document.querySelector("#closeSuccess");
     const viewOrders = document.querySelector("#viewOrders");
-    const token = new URLSearchParams(window.location.search).get("token") || "";
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token") || "";
+    const expiresValue = params.get("expires");
+    const expiresAt = expiresValue ? Number(expiresValue) : null;
+
+    function expireQr() {
+        button.disabled = true;
+        feedback.textContent = "Mã QR đã hết hạn sau 10 phút. Vui lòng tạo mã mới trong mục Đơn hàng của tôi.";
+        feedback.className = "error";
+    }
 
     if (!/^[a-f0-9]{64}$/.test(token)) {
         button.disabled = true;
         feedback.textContent = "Liên kết QR không hợp lệ. Vui lòng yêu cầu tạo mã mới trong mục Đơn hàng của tôi.";
         feedback.className = "error";
+    } else if (expiresAt !== null && (!Number.isFinite(expiresAt) || expiresAt <= Date.now())) {
+        expireQr();
+    } else if (expiresAt !== null) {
+        let countdown = null;
+        const updateExpiry = () => {
+            const remainingSeconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            if (!remainingSeconds) {
+                expireQr();
+                window.clearInterval(countdown);
+                return;
+            }
+            feedback.textContent = `Mã QR còn hiệu lực ${minutes}:${String(seconds).padStart(2, "0")}.`;
+        };
+        countdown = window.setInterval(updateExpiry, 1000);
+        const timer = window.setTimeout(expireQr, expiresAt - Date.now());
+        updateExpiry();
+        window.addEventListener("pagehide", () => {
+            window.clearTimeout(timer);
+            window.clearInterval(countdown);
+        }, { once: true });
     }
 
     button.addEventListener("click", async () => {
         if (!token || button.disabled) return;
+        if (expiresAt !== null && expiresAt <= Date.now()) {
+            expireQr();
+            return;
+        }
         button.disabled = true;
         button.textContent = "Đang xác nhận...";
         feedback.textContent = "ONCafe đang kiểm tra xác nhận thanh toán...";
