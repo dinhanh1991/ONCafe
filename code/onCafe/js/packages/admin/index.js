@@ -186,7 +186,7 @@ async function startApp() {
         navigation, panels, pageTitle, pageDescription,
         counterOrderView, orderView, revenueSummaryView, revenueReportView,
         showMessage, loadProducts, loadEmployees, loadOrders,
-        loadSellerOverview, loadCashierOverview, loadPopularDrinks
+        loadAdminOverview, loadSellerOverview, loadCashierOverview, loadPopularDrinks
     });
 
     const requestedSection = document.body.dataset.adminSection || "overview";
