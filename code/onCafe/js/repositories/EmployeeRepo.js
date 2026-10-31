@@ -1,12 +1,16 @@
 import { supabase } from "../config/supabase.js";
 
 export class EmployeeRepository {
+    constructor(supabaseClient = supabase) {
+        this.supabase = supabaseClient;
+    }
+
     async getMyProfile() {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await this.supabase.auth.getUser();
         if (userError) throw userError;
         if (!user) throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
 
-        const { data, error } = await supabase
+        const { data, error } = await this.supabase
             .from("profiles")
             .select("id, full_name, phone, address, role")
             .eq("id", user.id)
@@ -17,7 +21,7 @@ export class EmployeeRepository {
     }
 
     async updateMyProfile({ fullName, phone, address }) {
-        const { data, error } = await supabase.rpc("oncafe_update_my_profile", {
+        const { data, error } = await this.supabase.rpc("oncafe_update_my_profile", {
             p_full_name: fullName,
             p_phone: phone,
             p_address: address
@@ -28,7 +32,7 @@ export class EmployeeRepository {
     }
 
     async changeMyPassword(password) {
-        const { error } = await supabase.auth.updateUser({ password });
+        const { error } = await this.supabase.auth.updateUser({ password });
         if (error) throw error;
     }
 }
