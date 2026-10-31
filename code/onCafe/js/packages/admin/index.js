@@ -172,11 +172,13 @@ async function startApp() {
         }
     }
 
-    const { loadPopularDrinks, loadCashierOverview, loadSellerOverview } = createAdminOverviewLoaders({
+    const { loadPopularDrinks, loadAdminOverview, loadCashierOverview, loadSellerOverview } = createAdminOverviewLoaders({
         dashboardPanel,
         popularPanel,
         orderService,
-        revenueReportService
+        revenueReportService,
+        productService,
+        employeeService
     });
 
     const sectionController = createAdminSectionController({

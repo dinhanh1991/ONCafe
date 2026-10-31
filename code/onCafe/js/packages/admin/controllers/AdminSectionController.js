@@ -19,6 +19,7 @@ export function createAdminSectionController({
     loadProducts,
     loadEmployees,
     loadOrders,
+    loadAdminOverview,
     loadSellerOverview,
     loadCashierOverview,
     loadPopularDrinks
@@ -81,6 +82,7 @@ export function createAdminSectionController({
         if (sectionName === "counter-order" && (isAdmin || isSeller)) void counterOrderView.render();
         if (sectionName === "revenue-summary" && (isAdmin || isCashier)) void revenueSummaryView.load();
         if (sectionName === "revenue" && (isAdmin || isCashier)) void revenueReportView.load();
+        if (sectionName === "overview" && isAdmin) loadAdminOverview();
         if (sectionName === "overview" && isSeller) loadSellerOverview();
         if (sectionName === "overview" && isCashier) loadCashierOverview();
         if (sectionName === "popular" && (isAdmin || isSeller)) loadPopularDrinks();

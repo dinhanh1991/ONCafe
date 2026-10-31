@@ -103,6 +103,100 @@ export function createAdminOverviewLoaders({
         }
     }
 
+    async function loadAdminOverview() {
+        const revenueElement = dashboardPanel.querySelector("[data-admin-today-revenue]");
+        const ordersElement = dashboardPanel.querySelector("[data-admin-today-orders]");
+        const productsElement = dashboardPanel.querySelector("[data-admin-active-products]");
+        const employeesElement = dashboardPanel.querySelector("[data-admin-employee-count]");
+        const refreshButton = dashboardPanel.querySelector("[data-admin-overview-refresh]");
+        if (!revenueElement || !ordersElement || !productsElement || !employeesElement) return;
+
+        const setLoading = () => {
+            for (const element of [revenueElement, ordersElement, productsElement, employeesElement]) {
+                element.textContent = "…";
+            }
+        };
+
+        const load = async () => {
+            setLoading();
+            if (refreshButton) refreshButton.disabled = true;
+            try {
+                const today = new Intl.DateTimeFormat("en-CA", {
+                    timeZone: "Asia/Ho_Chi_Minh",
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit"
+                }).format(new Date());
+                const [reportResult, ordersResult, productsResult, employeesResult] = await Promise.allSettled([
+                    revenueReportService.getReport("day", today),
+                    orderService.getStaffOrders(),
+                    productService.getAllProducts(),
+                    employeeService.listEmployees()
+                ]);
+
+                if (reportResult.status === "fulfilled") {
+                    const revenue = Number(reportResult.value?.summary?.net_revenue) || 0;
+                    revenueElement.textContent = new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                        maximumFractionDigits: 0
+                    }).format(revenue);
+                } else {
+                    revenueElement.textContent = "Không tải được";
+                    console.error("Không thể tải doanh thu tổng quan Admin:", reportResult.reason);
+                }
+
+                if (ordersResult.status === "fulfilled") {
+                    const todayOrders = ordersResult.value.filter((order) => order.created_at &&
+                        new Intl.DateTimeFormat("en-CA", {
+                            timeZone: "Asia/Ho_Chi_Minh",
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit"
+                        }).format(new Date(order.created_at)) === today);
+                    ordersElement.textContent = String(todayOrders.length);
+                } else {
+                    ordersElement.textContent = "—";
+                    console.error("Không thể tải số đơn hàng tổng quan Admin:", ordersResult.reason);
+                }
+
+                if (productsResult.status === "fulfilled") {
+                    productsElement.textContent = String(productsResult.value.filter((product) => product.status === "active").length);
+                } else {
+                    productsElement.textContent = "—";
+                    console.error("Không thể tải số sản phẩm tổng quan Admin:", productsResult.reason);
+                }
+
+                if (employeesResult.status === "fulfilled") {
+                    employeesElement.textContent = String(employeesResult.value.length);
+                } else {
+                    employeesElement.textContent = "—";
+                    console.error("Không thể tải số nhân viên tổng quan Admin:", employeesResult.reason);
+                }
+            } finally {
+                if (refreshButton) refreshButton.disabled = false;
+            }
+        };
+
+        if (refreshButton && !refreshButton.dataset.bound) {
+            refreshButton.dataset.bound = "true";
+            refreshButton.addEventListener("click", () => {
+                void load().catch((error) => console.error("Không thể làm mới tổng quan Admin:", error));
+            });
+        }
+
+        try {
+            await load();
+        } catch (error) {
+            console.error("Không thể tải tổng quan Admin:", error);
+            revenueElement.textContent = "—";
+            ordersElement.textContent = "—";
+            productsElement.textContent = "—";
+            employeesElement.textContent = "—";
+            if (refreshButton) refreshButton.disabled = false;
+        }
+    }
+
     async function loadCashierOverview() {
         const metricSelectors = [
             "[data-cashier-today-revenue]",
@@ -240,5 +334,5 @@ export function createAdminOverviewLoaders({
             chart.append(message);
         }
     }
-    return { loadPopularDrinks, loadCashierOverview, loadSellerOverview };
+    return { loadPopularDrinks, loadAdminOverview, loadCashierOverview, loadSellerOverview };
 }

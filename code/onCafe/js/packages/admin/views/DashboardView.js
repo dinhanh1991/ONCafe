@@ -66,25 +66,22 @@ export function createDashboardPanel(profile, {
         <section class="dashboard-welcome">
             <p class="eyebrow">TỔNG QUAN ONCAFE</p>
             <h2 data-dashboard-greeting></h2>
-            <p>Chọn một khu vực ở thanh điều hướng để quản lý hoạt động quán.</p>
+            <p>Theo dõi doanh thu và tình hình hoạt động của quán trong ngày.</p>
+            <button class="button button-primary" type="button" data-admin-overview-refresh>↻ Làm mới số liệu</button>
         </section>
         <section class="dashboard-metrics" aria-label="Các chỉ số kinh doanh">
-            <article class="dashboard-metric"><span>Doanh thu hôm nay</span><strong>—</strong><small>Đang chờ kết nối báo cáo</small></article>
-            <article class="dashboard-metric"><span>Đơn hàng hôm nay</span><strong>—</strong><small>Đang chờ kết nối báo cáo</small></article>
-            <article class="dashboard-metric"><span>Đồ uống đang bán</span><strong>—</strong><small>Xem tại mục Quản lý đồ uống</small></article>
-            ${isAdmin ? '<article class="dashboard-metric"><span>Nhân viên</span><strong>—</strong><small>Xem tại mục Quản lý nhân viên</small></article>' : ""}
+            <article class="dashboard-metric"><span>Doanh thu thuần hôm nay</span><strong data-admin-today-revenue>—</strong><small>Đã thu trừ tiền hoàn</small></article>
+            <article class="dashboard-metric"><span>Đơn hàng hôm nay</span><strong data-admin-today-orders>—</strong><small>Tất cả trạng thái</small></article>
+            <article class="dashboard-metric"><span>Đồ uống đang bán</span><strong data-admin-active-products>—</strong><small>Sản phẩm đang hoạt động</small></article>
+            ${isAdmin ? '<article class="dashboard-metric"><span>Nhân viên</span><strong data-admin-employee-count>—</strong><small>Tài khoản nhân viên</small></article>' : ""}
         </section>
-        ${!isSeller ? `<section class="dashboard-report-card">
+        <section class="dashboard-report-card">
             <div>
-                <p class="eyebrow">BÁO CÁO KINH DOANH</p>
-                <h3>Doanh thu theo thời gian</h3>
-                <p>Khu vực biểu đồ sẽ hiển thị doanh thu và xu hướng bán hàng khi hoàn thiện phần báo cáo.</p>
+                <p class="eyebrow">NGUYÊN TẮC GHI NHẬN</p>
+                <h3>Doanh thu trong ngày</h3>
+                <p>Doanh thu thuần được lấy từ báo cáo hệ thống: tổng tiền đã thu trừ tổng tiền hoàn. Dữ liệu được tải khi mở Tổng quan và có thể cập nhật bằng nút Làm mới số liệu.</p>
             </div>
-            <div class="dashboard-chart-placeholder" aria-hidden="true">
-                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                <div class="dashboard-chart-baseline"></div>
-            </div>
-        </section>` : ""}
+        </section>
         <section class="dashboard-shortcuts">
             <h3>Truy cập nhanh</h3>
             <div>
