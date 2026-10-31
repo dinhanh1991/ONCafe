@@ -43,7 +43,6 @@ export class CustomerCheckoutService {
     }
 
     async getOrderPaymentState(orderId) {
-        const orders = await this.orderRepository.getMyOrders();
-        return orders.find((order) => String(order.id) === String(orderId)) || null;
+        return this.orderRepository.getOrderPaymentState(orderId);
     }
 }
