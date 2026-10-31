@@ -1,4 +1,4 @@
-import { createNavButton } from "../../packages/admin/ui/AdminNavigation.js";
+import { createNavButton } from "../../ui/admin/AdminNavigation.js";
 import { createDashboardPanel } from "./DashboardView.js";
 
 export function createAdminWorkspace(app, profile, {

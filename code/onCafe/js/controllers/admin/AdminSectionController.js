@@ -1,4 +1,4 @@
-import { isSectionAllowed, getAdminPageUrl } from "../../../utils/AdminNavigation.js";
+import { isSectionAllowed, getAdminPageUrl } from "../../utils/admin/AdminNavigation.js";
 
 export function createAdminSectionController({
     role,

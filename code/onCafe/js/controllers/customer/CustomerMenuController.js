@@ -5,7 +5,7 @@ import { CustomerCheckoutService } from "../../services/CustomerCheckoutService.
 import { ValidationUtils } from "../../validators/ValidationUtils.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
-import { showPaymentConfirmedPopup, showOrderSuccessPopup } from "./ui/OrderDialogs.js";
+import { showPaymentConfirmedPopup, showOrderSuccessPopup } from "../../ui/customer/OrderDialogs.js";
 
 const customerMenuService = new CustomerMenuService(new CustomerMenuRepository());
 const customerCheckoutService = new CustomerCheckoutService(new CustomerOrderRepository());

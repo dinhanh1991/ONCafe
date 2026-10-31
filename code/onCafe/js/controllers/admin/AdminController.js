@@ -14,10 +14,10 @@ import { RevenueReportRepository } from "../../repositories/RevenueReportRepo.js
 import { RevenueReportService } from "../../services/RevenueReportService.js";
 import { RevenueReportView } from "../../views/admin/RevenueReportView.js";
 import { RevenueSummaryView } from "../../views/admin/RevenueSummaryView.js";
-import { renderAccessMessage } from "./ui/AccessMessage.js";
+import { renderAccessMessage } from "../../ui/admin/AccessMessage.js";
 import { createAdminWorkspace } from "../../views/admin/AdminWorkspaceView.js";
-import { createAdminOverviewLoaders } from "./controllers/AdminOverviewController.js";
-import { createAdminSectionController } from "./controllers/AdminSectionController.js";
+import { createAdminOverviewLoaders } from "./AdminOverviewController.js";
+import { createAdminSectionController } from "./AdminSectionController.js";
 
 const authService = new AuthService();
 const productService = new ProductService(new ProductRepository());

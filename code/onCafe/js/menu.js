@@ -1,2 +1,2 @@
-// Customer menu entry point. Implementation is organized in packages/customer.
-import "./packages/customer/index.js";
+// Customer menu entry point.
+import "./controllers/customer/CustomerMenuController.js";
