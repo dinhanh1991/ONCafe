@@ -122,7 +122,6 @@ const checkoutView = new CustomerCheckoutView({
     totalSummary: document.querySelector("#checkoutTotalSummary"),
     currencyFormatter
 });
-const submitOrderButton = document.querySelector("#submitOrderButton");
 ValidationUI.bind(checkoutForm);
 
 function updateCheckoutSummary() {
@@ -130,8 +129,6 @@ function updateCheckoutSummary() {
 }
 
 checkoutView.bindFulfillmentChange(updateCheckoutSummary);
-
-
 
 let paymentWatchTimer = null;
 let paymentWatchBusy = false;
