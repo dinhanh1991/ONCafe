@@ -36,8 +36,12 @@ function createUniqueId() {
 }
 
 export class ProductRepository {
+    constructor(supabaseClient = supabase) {
+        this.supabase = supabaseClient;
+    }
+
     async findAll() {
-        const { data, error } = await supabase
+        const { data, error } = await this.supabase
             .from("products")
             .select(PRODUCT_SELECT)
             .order("id", { ascending: true });
@@ -50,7 +54,7 @@ export class ProductRepository {
         const normalizedId = Number(id);
         if (!Number.isInteger(normalizedId) || normalizedId <= 0) return null;
 
-        const { data, error } = await supabase
+        const { data, error } = await this.supabase
             .from("products")
             .select(PRODUCT_SELECT)
             .eq("id", normalizedId)
@@ -62,7 +66,7 @@ export class ProductRepository {
 
     async save(product) {
         const categoryId = await this.getOrCreateCategory(product.category);
-        const { data, error } = await supabase
+        const { data, error } = await this.supabase
             .from("products")
             .insert({
                 name: product.name,
@@ -82,7 +86,7 @@ export class ProductRepository {
     async update(id, updatedData) {
         const normalizedId = Number(id);
         const categoryId = await this.getOrCreateCategory(updatedData.category);
-        const { data, error } = await supabase
+        const { data, error } = await this.supabase
             .from("products")
             .update({
                 name: updatedData.name,
@@ -102,7 +106,7 @@ export class ProductRepository {
 
     async delete(id) {
         const normalizedId = Number(id);
-        const { error } = await supabase
+        const { error } = await this.supabase
             .from("products")
             .delete()
             .eq("id", normalizedId);
@@ -135,7 +139,7 @@ export class ProductRepository {
         const extension = extensionByType[file.type];
         const filePath = `products/${Date.now()}-${createUniqueId()}.${extension}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await this.supabase.storage
             .from("product-images")
             .upload(filePath, file, {
                 cacheControl: "3600",
@@ -145,7 +149,7 @@ export class ProductRepository {
 
         throwIfError(uploadError);
 
-        const { data } = supabase.storage
+        const { data } = this.supabase.storage
             .from("product-images")
             .getPublicUrl(filePath);
 
@@ -158,7 +162,7 @@ export class ProductRepository {
             throw new Error("Vui lòng nhập danh mục sản phẩm.");
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await this.supabase
             .from("categories")
             .upsert({ name: normalizedName }, { onConflict: "name" })
             .select("id")
