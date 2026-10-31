@@ -64,10 +64,6 @@ export class CustomerCheckoutView {
         this.message.classList.toggle("checkout-message-error", isError);
     }
 
-    clearMessage() {
-        this.showMessage("");
-    }
-
     setSubmitting(isSubmitting) {
         const submitButton = this.form?.querySelector("#submitOrderButton");
         if (submitButton) submitButton.disabled = isSubmitting;
