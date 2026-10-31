@@ -22,7 +22,7 @@ if (nav) {
         const user = session.user;
         let displayName = user.user_metadata?.full_name?.trim();
 
-        const profile = await authService.getMyProfile(user.id);
+        const profile = await authService.getMyProfileIfExists(user.id);
 
         if (profile?.full_name?.trim()) {
             displayName = profile.full_name.trim();
