@@ -227,6 +227,8 @@ function renderOrders(orders) {
                 </header>
                 <div class="my-order-meta">
                     <p><span>Hình thức nhận</span><strong>${escapeHtml(FULFILLMENT[order.fulfillment_method] || "—")}</strong></p>
+                    <p><span>Người nhận</span><strong>${escapeHtml(order.customer_name || "—")}</strong></p>
+                    <p><span>Số điện thoại</span><strong>${escapeHtml(order.customer_phone || "—")}</strong></p>
                     <p><span>Thanh toán</span><strong class="payment-state ${paymentClass}">${escapeHtml(PAYMENT[order.payment_method] || "—")} · ${escapeHtml(PAYMENT_STATUS[order.payment_status] || "—")}</strong></p>
                     ${order.fulfillment_method === "delivery" ? `<p><span>Địa chỉ giao hàng</span><strong>${escapeHtml(order.customer_address || "—")}</strong></p>` : ""}
                 </div>
