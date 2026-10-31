@@ -1,4 +1,5 @@
 import { AdminOverviewService } from "../../services/AdminOverviewService.js";
+import { AdminOverviewView } from "../../views/admin/DashboardView.js";
 
 export function createAdminOverviewLoaders({
     dashboardPanel,
@@ -8,75 +9,40 @@ export function createAdminOverviewLoaders({
     productService,
     employeeService
 }) {
+    const overviewView = new AdminOverviewView({ dashboardPanel, popularPanel });
+
+    function getToday() {
+        return new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Ho_Chi_Minh",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit"
+        }).format(new Date());
+    }
+
+    function isToday(dateValue, today) {
+        return dateValue && new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Ho_Chi_Minh",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit"
+        }).format(new Date(dateValue)) === today;
+    }
+
     async function loadPopularDrinks() {
         const chart = popularPanel.querySelector("[data-popular-drinks]");
         if (!chart) return;
-
-        chart.replaceChildren();
-        const loading = document.createElement("p");
-        loading.setAttribute("role", "status");
-        loading.textContent = "Đang tải dữ liệu đồ uống bán chạy...";
-        chart.append(loading);
+        overviewView.setPopularDrinksLoading();
 
         try {
             const orders = await orderService.getStaffOrders();
-            const statistics = AdminOverviewService.getPopularDrinks(orders);
-
-            popularPanel.querySelector("[data-popular-order-count]").textContent = String(statistics.completedOrderCount);
-            popularPanel.querySelector("[data-popular-units]").textContent = String(statistics.totalUnits);
-            popularPanel.querySelector("[data-popular-product-count]").textContent = String(statistics.productCount);
-
-            const products = statistics.products;
-
-            chart.replaceChildren();
-            if (!products.length) {
-                const empty = document.createElement("p");
-                empty.className = "seller-sales-empty";
-                empty.textContent = "Chưa có đơn hàng hoàn tất có đồ uống để thống kê. Khi đơn hàng được chuyển sang Hoàn tất, dữ liệu sẽ xuất hiện tại đây.";
-                chart.append(empty);
-                return;
-            }
-
-            const maxQuantity = products[0][1].quantity;
-            const currencyFormatter = new Intl.NumberFormat("vi-VN", {
-                style: "currency",
-                currency: "VND",
-                maximumFractionDigits: 0
-            });
-
-            for (const [name, sales] of products) {
-                const row = document.createElement("div");
-                row.className = "seller-sales-row popular-drink-row";
-
-                const labelWrap = document.createElement("div");
-                labelWrap.className = "popular-drink-label";
-                const label = document.createElement("span");
-                label.className = "seller-sales-name";
-                label.textContent = name;
-                const revenue = document.createElement("small");
-                revenue.className = "popular-drink-revenue";
-                revenue.textContent = currencyFormatter.format(sales.revenue);
-                labelWrap.append(label, revenue);
-
-                const track = document.createElement("div");
-                track.className = "seller-sales-track";
-                const bar = document.createElement("span");
-                bar.style.width = `${Math.max(4, (sales.quantity / maxQuantity) * 100)}%`;
-                track.append(bar);
-
-                const value = document.createElement("strong");
-                value.textContent = `${sales.quantity} ly`;
-                row.append(labelWrap, track, value);
-                chart.append(row);
-            }
+            overviewView.renderPopularDrinks(AdminOverviewService.getPopularDrinks(orders));
         } catch (error) {
             console.error("Không thể tải đồ uống bán chạy:", error);
-            chart.replaceChildren();
-            const message = document.createElement("p");
-            message.className = "app-error";
-            message.setAttribute("role", "alert");
-            message.textContent = error.message || "Không thể tải dữ liệu đồ uống bán chạy.";
-            chart.append(message);
+            overviewView.renderChartError(
+                chart,
+                error.message || "Không thể tải dữ liệu đồ uống bán chạy."
+            );
         }
     }
 
@@ -88,22 +54,12 @@ export function createAdminOverviewLoaders({
         const refreshButton = dashboardPanel.querySelector("[data-admin-overview-refresh]");
         if (!revenueElement || !ordersElement || !productsElement || !employeesElement) return;
 
-        const setLoading = () => {
-            for (const element of [revenueElement, ordersElement, productsElement, employeesElement]) {
-                element.textContent = "…";
-            }
-        };
-
         const load = async () => {
-            setLoading();
+            overviewView.setAdminOverviewLoading();
             if (refreshButton) refreshButton.disabled = true;
+
             try {
-                const today = new Intl.DateTimeFormat("en-CA", {
-                    timeZone: "Asia/Ho_Chi_Minh",
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit"
-                }).format(new Date());
+                const today = getToday();
                 const [reportResult, ordersResult, productsResult, employeesResult] = await Promise.allSettled([
                     revenueReportService.getReport("day", today),
                     orderService.getStaffOrders(),
@@ -111,45 +67,41 @@ export function createAdminOverviewLoaders({
                     employeeService.listEmployees()
                 ]);
 
-                if (reportResult.status === "fulfilled") {
-                    const revenue = Number(reportResult.value?.summary?.net_revenue) || 0;
-                    revenueElement.textContent = new Intl.NumberFormat("vi-VN", {
+                const revenue = reportResult.status === "fulfilled"
+                    ? new Intl.NumberFormat("vi-VN", {
                         style: "currency",
                         currency: "VND",
                         maximumFractionDigits: 0
-                    }).format(revenue);
-                } else {
-                    revenueElement.textContent = "Không tải được";
+                    }).format(Number(reportResult.value?.summary?.net_revenue) || 0)
+                    : "Không tải được";
+
+                const orders = ordersResult.status === "fulfilled"
+                    ? ordersResult.value.filter((order) => isToday(order.created_at, today)).length
+                    : "—";
+                const products = productsResult.status === "fulfilled"
+                    ? productsResult.value.filter((product) => product.status === "active").length
+                    : "—";
+                const employees = employeesResult.status === "fulfilled"
+                    ? employeesResult.value.length
+                    : "—";
+
+                if (reportResult.status === "rejected") {
                     console.error("Không thể tải doanh thu tổng quan Admin:", reportResult.reason);
                 }
-
-                if (ordersResult.status === "fulfilled") {
-                    const todayOrders = ordersResult.value.filter((order) => order.created_at &&
-                        new Intl.DateTimeFormat("en-CA", {
-                            timeZone: "Asia/Ho_Chi_Minh",
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit"
-                        }).format(new Date(order.created_at)) === today);
-                    ordersElement.textContent = String(todayOrders.length);
-                } else {
-                    ordersElement.textContent = "—";
+                if (ordersResult.status === "rejected") {
                     console.error("Không thể tải số đơn hàng tổng quan Admin:", ordersResult.reason);
                 }
-
-                if (productsResult.status === "fulfilled") {
-                    productsElement.textContent = String(productsResult.value.filter((product) => product.status === "active").length);
-                } else {
-                    productsElement.textContent = "—";
+                if (productsResult.status === "rejected") {
                     console.error("Không thể tải số sản phẩm tổng quan Admin:", productsResult.reason);
                 }
-
-                if (employeesResult.status === "fulfilled") {
-                    employeesElement.textContent = String(employeesResult.value.length);
-                } else {
-                    employeesElement.textContent = "—";
+                if (employeesResult.status === "rejected") {
                     console.error("Không thể tải số nhân viên tổng quan Admin:", employeesResult.reason);
                 }
+
+                overviewView.renderAdminOverview({ revenue, orders, products, employees });
+            } catch (error) {
+                console.error("Không thể tải tổng quan Admin:", error);
+                overviewView.renderAdminOverviewError();
             } finally {
                 if (refreshButton) refreshButton.disabled = false;
             }
@@ -158,42 +110,18 @@ export function createAdminOverviewLoaders({
         if (refreshButton && !refreshButton.dataset.bound) {
             refreshButton.dataset.bound = "true";
             refreshButton.addEventListener("click", () => {
-                void load().catch((error) => console.error("Không thể làm mới tổng quan Admin:", error));
+                void load();
             });
         }
 
-        try {
-            await load();
-        } catch (error) {
-            console.error("Không thể tải tổng quan Admin:", error);
-            revenueElement.textContent = "—";
-            ordersElement.textContent = "—";
-            productsElement.textContent = "—";
-            employeesElement.textContent = "—";
-            if (refreshButton) refreshButton.disabled = false;
-        }
+        await load();
     }
 
     async function loadCashierOverview() {
-        const metricSelectors = [
-            "[data-cashier-today-revenue]",
-            "[data-cashier-paid-count]",
-            "[data-cashier-today-count]",
-            "[data-cashier-unpaid-count]",
-            "[data-cashier-completed-count]",
-            "[data-cashier-active-count]",
-            "[data-cashier-refunded-count]"
-        ];
-        const metrics = metricSelectors.map((selector) => dashboardPanel.querySelector(selector));
-        const comparison = dashboardPanel.querySelector("[data-cashier-revenue-comparison]");
-        if (metrics.some((element) => !element) || !comparison) return;
-        metrics.forEach((element) => { element.textContent = "…"; });
-        comparison.textContent = "Đang so sánh doanh thu với ngày hôm qua...";
+        overviewView.setCashierOverviewLoading();
 
         try {
-            const today = new Intl.DateTimeFormat("en-CA", {
-                timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit"
-            }).format(new Date());
+            const today = getToday();
             const yesterdayDate = new Date(Date.parse(today + "T00:00:00Z") - 86400000);
             const yesterday = yesterdayDate.toISOString().slice(0, 10);
             const [orders, todayReport, yesterdayReport] = await Promise.all([
@@ -201,10 +129,8 @@ export function createAdminOverviewLoaders({
                 revenueReportService.getReport("day", today),
                 revenueReportService.getReport("day", yesterday)
             ]);
-            const todayOrders = orders.filter((order) => order.created_at &&
-                new Intl.DateTimeFormat("en-CA", {
-                    timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit"
-                }).format(new Date(order.created_at)) === today);
+
+            const todayOrders = orders.filter((order) => isToday(order.created_at, today));
             const paidOrders = todayOrders.filter((order) => order.payment_status === "paid");
             const unpaidOrders = todayOrders.filter((order) =>
                 order.payment_status === "unpaid" && !["cancelled", "rejected"].includes(order.status)
@@ -215,88 +141,57 @@ export function createAdminOverviewLoaders({
             );
             const refundedOrders = todayOrders.filter((order) => order.payment_status === "refunded");
             const currencyFormatter = new Intl.NumberFormat("vi-VN", {
-                style: "currency", currency: "VND", maximumFractionDigits: 0
+                style: "currency",
+                currency: "VND",
+                maximumFractionDigits: 0
             });
             const currentRevenue = Number(todayReport?.summary?.net_revenue) || 0;
             const previousRevenue = Number(yesterdayReport?.summary?.net_revenue) || 0;
-            let comparisonText = "Doanh thu hôm nay bằng ngày hôm qua.";
+            let comparison = "Doanh thu hôm nay bằng ngày hôm qua.";
+
             if (previousRevenue === 0 && currentRevenue > 0) {
-                comparisonText = "Hôm nay đã phát sinh doanh thu, hôm qua chưa có doanh thu.";
+                comparison = "Hôm nay đã phát sinh doanh thu, hôm qua chưa có doanh thu.";
             } else if (previousRevenue === 0 && currentRevenue === 0) {
-                comparisonText = "Hôm nay và hôm qua chưa phát sinh doanh thu.";
+                comparison = "Hôm nay và hôm qua chưa phát sinh doanh thu.";
             } else {
                 const change = ((currentRevenue - previousRevenue) / previousRevenue) * 100;
-                comparisonText = `Doanh thu hôm nay ${change >= 0 ? "tăng" : "giảm"} ${Math.abs(change).toFixed(1)}% so với hôm qua (${currencyFormatter.format(previousRevenue)}).`;
+                comparison = `Doanh thu hôm nay ${change >= 0 ? "tăng" : "giảm"} ${Math.abs(change).toFixed(1)}% so với hôm qua (${currencyFormatter.format(previousRevenue)}).`;
             }
 
-            metrics[0].textContent = currencyFormatter.format(currentRevenue);
-            metrics[1].textContent = String(Number(todayReport?.summary?.paid_orders) || paidOrders.length);
-            metrics[2].textContent = String(todayOrders.length);
-            metrics[3].textContent = String(unpaidOrders.length);
-            metrics[4].textContent = String(completedOrders.length);
-            metrics[5].textContent = String(activeOrders.length);
-            metrics[6].textContent = String(refundedOrders.length);
-            comparison.textContent = comparisonText;
+            overviewView.renderCashierOverview({
+                revenue: currencyFormatter.format(currentRevenue),
+                paid: Number(todayReport?.summary?.paid_orders) || paidOrders.length,
+                today: todayOrders.length,
+                unpaid: unpaidOrders.length,
+                completed: completedOrders.length,
+                active: activeOrders.length,
+                refunded: refundedOrders.length,
+                comparison
+            });
         } catch (error) {
             console.error("Không thể tải tổng quan thu ngân:", error);
-            metrics.forEach((element) => { element.textContent = "—"; });
-            comparison.textContent = error.message || "Không thể tải số liệu so sánh doanh thu.";
-            comparison.classList.add("app-error");
+            overviewView.renderCashierOverviewError(
+                error.message || "Không thể tải số liệu so sánh doanh thu."
+            );
         }
     }
 
     async function loadSellerOverview() {
         const chart = dashboardPanel.querySelector("[data-seller-sales-chart]");
         if (!chart) return;
-        chart.replaceChildren();
-        const loading = document.createElement("p");
-        loading.setAttribute("role", "status");
-        loading.textContent = "Đang tải thống kê bán hàng...";
-        chart.append(loading);
+        overviewView.setSellerOverviewLoading();
 
         try {
             const orders = await orderService.getStaffOrders();
-            const statistics = AdminOverviewService.getSellerOverview(orders);
-            dashboardPanel.querySelector("[data-seller-order-count]").textContent = String(statistics.orderCount);
-            dashboardPanel.querySelector("[data-seller-completed-count]").textContent = String(statistics.completedOrderCount);
-            dashboardPanel.querySelector("[data-seller-units-sold]").textContent = String(statistics.totalUnitsSold);
-
-            const topProducts = statistics.topProducts;
-            chart.replaceChildren();
-            if (!topProducts.length) {
-                const empty = document.createElement("p");
-                empty.className = "seller-sales-empty";
-                empty.textContent = "Chưa có đồ uống nào được bán trong đơn hàng hoàn tất.";
-                chart.append(empty);
-                return;
-            }
-
-            const maxQuantity = topProducts[0].quantity;
-            for (const { name, quantity } of topProducts) {
-                const row = document.createElement("div");
-                row.className = "seller-sales-row";
-                const label = document.createElement("span");
-                label.className = "seller-sales-name";
-                label.textContent = name;
-                const track = document.createElement("div");
-                track.className = "seller-sales-track";
-                const bar = document.createElement("span");
-                bar.style.width = `${Math.max(4, (quantity / maxQuantity) * 100)}%`;
-                track.append(bar);
-                const value = document.createElement("strong");
-                value.textContent = String(quantity);
-                row.append(label, track, value);
-                chart.append(row);
-            }
+            overviewView.renderSellerOverview(AdminOverviewService.getSellerOverview(orders));
         } catch (error) {
             console.error("Không thể tải thống kê bán hàng:", error);
-            chart.replaceChildren();
-            const message = document.createElement("p");
-            message.className = "app-error";
-            message.setAttribute("role", "alert");
-            message.textContent = error.message || "Không thể tải thống kê bán hàng.";
-            chart.append(message);
+            overviewView.renderChartError(
+                chart,
+                error.message || "Không thể tải thống kê bán hàng."
+            );
         }
     }
+
     return { loadPopularDrinks, loadAdminOverview, loadCashierOverview, loadSellerOverview };
 }
