@@ -5,6 +5,8 @@ export function createAdminSectionController({
     isAdmin,
     isSeller,
     isCashier,
+    canManageProducts,
+    canManageEmployees,
     navigation,
     panels,
     pageTitle,

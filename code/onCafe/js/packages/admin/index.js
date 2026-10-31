@@ -180,7 +180,7 @@ async function startApp() {
     });
 
     const sectionController = createAdminSectionController({
-        role, isAdmin, isSeller, isCashier,
+        role, isAdmin, isSeller, isCashier, canManageProducts, canManageEmployees,
         navigation, panels, pageTitle, pageDescription,
         counterOrderView, orderView, revenueSummaryView, revenueReportView,
         showMessage, loadProducts, loadEmployees, loadOrders,
