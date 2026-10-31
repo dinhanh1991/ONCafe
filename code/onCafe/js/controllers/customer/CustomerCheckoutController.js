@@ -176,10 +176,6 @@ export class CustomerCheckoutController {
                 items
             });
 
-            if (!order?.order_code) {
-                throw new Error("Hệ thống chưa trả về mã đơn hàng. Vui lòng kiểm tra mục đơn hàng trước khi đặt lại.");
-            }
-
             this.cartService.clear();
             this.onCartChanged();
             this.checkoutView.resetForm();
