@@ -1,22 +1,16 @@
-import { supabase } from "../config/supabase.js";
+import { AuthRepository } from "../repositories/AuthRepo.js";
 
 export class AuthService {
-    constructor(supabaseClient = supabase) {
-        this.supabase = supabaseClient;
+    constructor(repository = new AuthRepository()) {
+        this.repository = repository;
     }
 
     async register({ fullName, email, password }) {
-        const { data, error } = await this.supabase.auth.signUp({
-            email: email.trim(),
-            password,
-            options: {
-                data: {
-                    full_name: fullName.trim()
-                }
-            }
+        const data = await this.repository.register({
+            fullName: String(fullName || "").trim(),
+            email: String(email || "").trim(),
+            password
         });
-
-        if (error) throw error;
 
         return {
             user: data.user,
@@ -25,68 +19,44 @@ export class AuthService {
     }
 
     async login({ email, password }) {
-        const { data, error } = await this.supabase.auth.signInWithPassword({
-            email: email.trim(),
+        return this.repository.login({
+            email: String(email || "").trim(),
             password
         });
-
-        if (error) throw error;
-        return data;
     }
 
     async sendPasswordResetEmail(email, redirectTo) {
-        const { error } = await this.supabase.auth.resetPasswordForEmail(email.trim(), {
+        return this.repository.sendPasswordResetEmail(
+            String(email || "").trim(),
             redirectTo
-        });
-
-        if (error) throw error;
+        );
     }
 
     async updatePassword(password) {
-        const { error } = await this.supabase.auth.updateUser({ password });
-        if (error) throw error;
+        return this.repository.updatePassword(password);
     }
 
     async getMyProfile(userId) {
-        const { data, error } = await this.supabase
-            .from("profiles")
-            .select("id, full_name, role")
-            .eq("id", userId)
-            .single();
-
-        if (error) throw error;
-        return data;
+        return this.repository.getMyProfile(userId);
     }
 
     async getMyProfileIfExists(userId) {
-        const { data, error } = await this.supabase
-            .from("profiles")
-            .select("id, full_name, role")
-            .eq("id", userId)
-            .maybeSingle();
-
-        if (error) throw error;
-        return data;
+        return this.repository.getMyProfileIfExists(userId);
     }
 
     async logout() {
-        const { error } = await this.supabase.auth.signOut();
-        if (error) throw error;
+        return this.repository.logout();
     }
 
     async getCurrentSession() {
-        const { data, error } = await this.supabase.auth.getSession();
-        if (error) throw error;
-        return data.session;
+        return this.repository.getCurrentSession();
     }
 
     onAuthStateChange(callback) {
-        return this.supabase.auth.onAuthStateChange(callback);
+        return this.repository.onAuthStateChange(callback);
     }
 
     async getCurrentUser() {
-        const { data, error } = await this.supabase.auth.getUser();
-        if (error) throw error;
-        return data.user;
+        return this.repository.getCurrentUser();
     }
 }
