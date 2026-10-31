@@ -27,7 +27,7 @@ export class EmployeeProfileView {
                     <p>Cập nhật thông tin liên hệ và mật khẩu đăng nhập.</p></div>
                 </header>
                 <p data-profile-feedback role="status" aria-live="polite"></p>
-                <form class="product-form" data-profile-form>
+                <form class="product-form" data-profile-form novalidate>
                     <h3>Thông tin tài khoản</h3>
                     <div class="product-form-grid">
                         <label>Họ và tên
@@ -48,7 +48,7 @@ export class EmployeeProfileView {
                     </div>
                     <div class="form-actions"><button class="button button-primary" type="submit">Lưu thông tin</button></div>
                 </form>
-                <form class="product-form" data-password-form>
+                <form class="product-form" data-password-form novalidate>
                     <h3>Đổi mật khẩu</h3>
                     <p class="image-help">Mật khẩu mới cần có ít nhất 8 ký tự.</p>
                     <div class="product-form-grid">
@@ -104,9 +104,14 @@ export class EmployeeProfileView {
         try {
             if (form.matches("[data-profile-form]")) {
                 const validation = CustomerValidator.validate({ phone: form.elements.phone.value });
+                const errors = { ...validation.errors };
+                const fullName = form.elements.fullName.value.trim();
+                if (fullName.length < 2) {
+                    errors.fullName = "Vui lòng nhập họ tên (ít nhất 2 ký tự).";
+                }
                 ValidationUI.bind(form);
-                if (!validation.isValid) {
-                    ValidationUI.showErrors(form, validation.errors);
+                if (Object.keys(errors).length > 0) {
+                    ValidationUI.showErrors(form, errors);
                     return;
                 }
                 ValidationUI.clearErrors(form);
@@ -120,8 +125,16 @@ export class EmployeeProfileView {
                 const password = form.elements.password.value;
                 const confirmPassword = form.elements.confirmPassword.value;
                 ValidationUI.bind(form);
+                if (!password) {
+                    ValidationUI.showErrors(form, { password: "Vui lòng nhập mật khẩu mới." });
+                    return;
+                }
                 if (password.length < 8) {
                     ValidationUI.showErrors(form, { password: "Mật khẩu mới cần có ít nhất 8 ký tự." });
+                    return;
+                }
+                if (!confirmPassword) {
+                    ValidationUI.showErrors(form, { confirmPassword: "Vui lòng xác nhận mật khẩu mới." });
                     return;
                 }
                 if (password !== confirmPassword) {
