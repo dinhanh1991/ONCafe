@@ -3,6 +3,7 @@ import { CustomerValidator } from "../../validators/CustomerValidator.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUtils } from "../../validators/ValidationUtils.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
+import { CounterOrderPaymentMonitor } from "../../controllers/admin/CounterOrderPaymentMonitor.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -16,7 +17,10 @@ export class CounterOrderView {
         this.onCreateQrConfirmation = onCreateQrConfirmation;
         this.onCheckQrPayment = onCheckQrPayment;
         this.onQrPaymentConfirmed = onQrPaymentConfirmed;
-        this.qrPaymentTimer = null;
+        this.paymentMonitor = new CounterOrderPaymentMonitor({
+            getOrder: (orderId) => this.onCheckQrPayment(orderId),
+            onPaid: (order) => this.handleQrPaymentConfirmed(order)
+        });
         this.pendingQrOrder = null;
         this.reviewOrder = null;
         this.products = [];
@@ -408,29 +412,20 @@ export class CounterOrderView {
         }
     }
     watchQrPayment(order) {
-        this.stopWatchingQrPayment();
-        if (!order?.id || typeof this.onCheckQrPayment !== "function") return;
+        this.paymentMonitor.start(order);
+    }
 
-        this.qrPaymentTimer = window.setInterval(async () => {
-            try {
-                const latestOrder = await this.onCheckQrPayment(order.id);
-                if (latestOrder?.payment_status !== "paid") return;
-
-                this.stopWatchingQrPayment();
-                const message = `Khách đã xác nhận thanh toán thành công cho đơn ${order.order_code || "#" + order.id}.`;
-                this.setFeedback(message);
-                const feedback = this.container.querySelector("[data-qr-demo-feedback]");
-                if (feedback) {
-                    feedback.textContent = "✓ ĐÃ XÁC NHẬN THANH TOÁN THÀNH CÔNG";
-                    feedback.className = "app-success";
-                }
-                const panel = this.container.querySelector("[data-qr-demo-panel]");
-                if (panel) panel.classList.add("qr-payment-confirmed");
-                this.showQrPaymentSuccess(order);
-            } catch (error) {
-                console.error("Không thể kiểm tra xác nhận QR:", error);
-            }
-        }, 3000);
+    handleQrPaymentConfirmed(order) {
+        const message = `Khách đã xác nhận thanh toán thành công cho đơn ${order.order_code || "#" + order.id}.`;
+        this.setFeedback(message);
+        const feedback = this.container.querySelector("[data-qr-demo-feedback]");
+        if (feedback) {
+            feedback.textContent = "✓ ĐÃ XÁC NHẬN THANH TOÁN THÀNH CÔNG";
+            feedback.className = "app-success";
+        }
+        const panel = this.container.querySelector("[data-qr-demo-panel]");
+        if (panel) panel.classList.add("qr-payment-confirmed");
+        this.showQrPaymentSuccess(order);
     }
 
     showQrPaymentSuccess(order) {
@@ -457,10 +452,7 @@ export class CounterOrderView {
     }
 
     stopWatchingQrPayment() {
-        if (this.qrPaymentTimer) {
-            window.clearInterval(this.qrPaymentTimer);
-            this.qrPaymentTimer = null;
-        }
+        this.paymentMonitor.stop();
     }
 
     setFeedback(message, isError = false) {
