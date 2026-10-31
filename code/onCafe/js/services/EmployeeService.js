@@ -2,8 +2,9 @@ import { supabase } from "../config/supabase.js";
 import { EmployeeRepository } from "../repositories/EmployeeRepo.js";
 
 export class EmployeeService {
-    constructor(repository = new EmployeeRepository()) {
+    constructor(repository = new EmployeeRepository(), supabaseClient = supabase) {
         this.repository = repository;
+        this.supabase = supabaseClient;
     }
 
     async getMyProfile() {
@@ -49,7 +50,7 @@ export class EmployeeService {
     }
 
     async invoke(body) {
-        const { data, error } = await supabase.functions.invoke("admin-manage-employees", {
+        const { data, error } = await this.supabase.functions.invoke("admin-manage-employees", {
             body
         });
 
