@@ -19,6 +19,8 @@ js/
 │   └── customer/
 ├── utils/
 │   └── admin/
+│       ├── AdminNavigation.js
+│       └── RevenueReportUtils.js
 ├── validators/
 └── views/
     ├── admin/
@@ -50,7 +52,7 @@ Page entry point -> Controller -> Service -> Repository -> Supabase
                          +-> Validator / Utils
 ```
 
-Keep dependencies moving inward through explicit imports and constructor/function parameters. A view should receive callbacks or data; it should not instantiate repositories or connect to Supabase. Controllers should use services rather than querying Supabase tables directly. Authentication/session access is centralized in \`AuthService\`.
+Keep dependencies moving inward through explicit imports and constructor/function parameters. A view should receive callbacks or data; it should not instantiate repositories or connect to Supabase. Controllers should use services rather than querying Supabase tables directly. Authentication/session access is centralized in `AuthService`.
 
 ## Placement rules
 
@@ -60,6 +62,7 @@ Keep dependencies moving inward through explicit imports and constructor/functio
 - `utils/` contains pure helpers. Put helpers in a subfolder such as `utils/admin/` only when their use is genuinely limited to that area.
 - `validators/` contains input rules. `ValidationUI.js` may render validation feedback, but should remain separate from domain validation rules.
 - Use names that describe the responsibility. For example, `ui/admin/AdminNavButton.js` creates a navigation button, while `utils/admin/AdminNavigation.js` contains navigation rules and URL mapping.
+- Shared revenue date, period and comparison helpers belong in `utils/admin/RevenueReportUtils.js`.
 - Keep page entry files small: they should import the relevant controller or page module, not contain business logic.
 
 ## Current page entry points
