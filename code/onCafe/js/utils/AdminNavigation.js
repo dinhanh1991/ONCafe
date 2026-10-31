@@ -14,17 +14,18 @@ export function isSectionAllowed(role, sectionName) {
     const isAdmin = role === "admin";
     const isSeller = role === "seller";
     const isCashier = role === "cashier";
+    const isStaff = isAdmin || isSeller || isCashier;
 
     const permissions = {
-        overview: true,
+        overview: isStaff,
         drinks: isAdmin || isSeller,
         employees: isAdmin,
         "counter-order": isAdmin || isSeller,
-        orders: true,
+        orders: isStaff,
         "revenue-summary": isAdmin || isCashier,
         revenue: isAdmin || isCashier,
         popular: isAdmin || isSeller,
-        "my-profile": true
+        "my-profile": isStaff
     };
 
     return permissions[sectionName] === true;
