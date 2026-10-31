@@ -7,12 +7,10 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 export class CounterOrderView {
-    constructor(container, { onLoadProducts, onCreateOrder, onCreated, onCreateQrConfirmation, onCheckQrPayment, onQrPaymentConfirmed }) {
+    constructor(container, { onLoadProducts, orderController, onCheckQrPayment, onQrPaymentConfirmed }) {
         this.container = container;
         this.onLoadProducts = onLoadProducts;
-        this.onCreateOrder = onCreateOrder;
-        this.onCreated = onCreated;
-        this.onCreateQrConfirmation = onCreateQrConfirmation;
+        this.orderController = orderController;
         this.onCheckQrPayment = onCheckQrPayment;
         this.onQrPaymentConfirmed = onQrPaymentConfirmed;
         this.paymentMonitor = new CounterOrderPaymentMonitor({
@@ -164,7 +162,8 @@ export class CounterOrderView {
             const button = this.container.querySelector("[data-qr-retry]");
             if (button) button.disabled = true;
             try {
-                await this.createQrForOrder(order);
+                const confirmation = await this.orderController.retryQrConfirmation(order);
+                await this.createQrForOrder(order, confirmation);
                 this.watchQrPayment(order);
                 this.setFeedback(`Đã tạo lại mã QR cho đơn ${order.order_code || "#" + order.id}.`);
             } catch (error) {
@@ -221,25 +220,11 @@ export class CounterOrderView {
         try {
             const order = this.reviewOrder;
             let result;
-            try {
-                result = await this.onCreateOrder(order);
-            } catch (error) {
-                if (!error.orderCreated) {
-                    this.setFeedback(error.message || "Không thể tạo đơn hàng.", true);
-                    return;
-                }
 
-                this.cart.clear();
-                this.clearOrderReview(form);
-                form.reset();
-                await this.loadProducts();
-                this.setFeedback(error.message, true);
-                this.showOrderCreated(error.orderCreated, true);
-                try {
-                    await this.onCreated();
-                } catch (refreshError) {
-                    console.error("Không thể tải lại danh sách đơn hàng:", refreshError);
-                }
+            try {
+                result = await this.orderController.createOrder(order);
+            } catch (error) {
+                this.setFeedback(error.message || "Không thể tạo đơn hàng.", true);
                 return;
             }
 
@@ -247,29 +232,46 @@ export class CounterOrderView {
             this.clearOrderReview(form);
             form.reset();
             await this.loadProducts();
-            try {
-                await this.onCreated();
-            } catch (error) {
-                console.error("Không thể tải lại danh sách đơn hàng:", error);
-                this.setFeedback(`Đã tạo đơn ${result.order_code || "#" + result.id} nhưng không thể tải lại danh sách đơn hàng.`, true);
+
+            if (result.status === "payment-pending") {
+                this.setFeedback(result.error.message, true);
+                this.showOrderCreated(result.order, true);
+                return;
             }
+
+            if (result.refreshError) {
+                this.setFeedback(
+                    `Đã tạo đơn ${result.order.order_code || "#" + result.order.id} nhưng không thể tải lại danh sách đơn hàng.`,
+                    true
+                );
+            }
+
             if (order.paymentMethod === "qr") {
-                this.pendingQrOrder = result;
-                this.renderQrSimulation(result);
+                this.pendingQrOrder = result.order;
+                this.renderQrSimulation(result.order);
+
+                if (result.status === "qr-failed") {
+                    this.setFeedback(
+                        `Đơn ${result.order.order_code || "#" + result.order.id} đã được tạo nhưng chưa tạo được mã QR. Không tạo đơn mới; hãy thử tạo lại mã QR bên dưới. ${result.error.message || ""}`,
+                        true
+                    );
+                    return;
+                }
+
                 try {
-                    await this.createQrForOrder(result);
-                    this.watchQrPayment(result);
+                    await this.createQrForOrder(result.order, result.qrConfirmation);
+                    this.watchQrPayment(result.order);
                 } catch (error) {
                     this.setFeedback(
-                        `Đơn ${result.order_code || "#" + result.id} đã được tạo nhưng chưa tạo được mã QR. Không tạo đơn mới; hãy thử tạo lại mã QR bên dưới. ${error.message || ""}`,
+                        `Đơn ${result.order.order_code || "#" + result.order.id} đã được tạo nhưng chưa hiển thị được mã QR. Không tạo đơn mới; hãy thử tạo lại mã QR bên dưới. ${error.message || ""}`,
                         true
                     );
                 }
             } else {
                 this.pendingQrOrder = null;
                 this.removeQrSimulation();
-                this.setFeedback(`Đã tạo đơn ${result.order_code} — ${formatCurrency(result.total_amount)}. Đơn đã được ghi nhận thanh toán tiền mặt.`);
-                this.showOrderCreated(result);
+                this.setFeedback(`Đã tạo đơn ${result.order.order_code} — ${formatCurrency(result.order.total_amount)}. Đơn đã được ghi nhận thanh toán tiền mặt.`);
+                this.showOrderCreated(result.order);
             }
         } finally {
             this.busy = false;
@@ -373,10 +375,9 @@ export class CounterOrderView {
         this.container.querySelector("[data-qr-demo-panel]")?.remove();
     }
 
-    async createQrForOrder(order) {
+    async createQrForOrder(order, result) {
         const feedback = this.container.querySelector('[data-qr-demo-feedback]');
         try {
-            const result = await this.onCreateQrConfirmation(order.id);
             const confirmPage = window.location.pathname.includes("/pages/admin/")
                 ? "../customer/qr-confirm.html"
                 : "./pages/customer/qr-confirm.html";
