@@ -1,7 +1,5 @@
 import { formatCurrency } from "../../utils/FormatUtils.js";
-import { CustomerValidator } from "../../validators/CustomerValidator.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
-import { ValidationUtils } from "../../validators/ValidationUtils.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 import { CounterOrderPaymentMonitor } from "../../controllers/admin/CounterOrderPaymentMonitor.js";
 
@@ -188,32 +186,24 @@ export class CounterOrderView {
         const button = form.querySelector('button[type="submit"]');
         if (!this.reviewOrder) {
             const items = [...this.cart.entries()].map(([id, quantity]) => ({ id: Number(id), quantity }));
-            const itemValidation = OrderValidator.validateItems(items);
-            if (!itemValidation.isValid) {
-                const quantityErrors = {};
-                for (const item of items) {
-                    if (!ValidationUtils.isPositiveInteger(item.quantity)) {
-                        quantityErrors[`quantity_${item.id}`] = "Số lượng phải là số nguyên lớn hơn 0.";
-                    }
-                }
-                if (Object.keys(quantityErrors).length) {
-                    ValidationUI.showErrors(form, quantityErrors);
-                    this.setFeedback("", false);
-                } else {
-                    this.setFeedback(itemValidation.errors.items, true);
-                }
-                return;
-            }
-
-            ValidationUI.clearErrors(form);
-            const phoneValidation = CustomerValidator.validate({ phone: form.elements.customerPhone.value });
             ValidationUI.bind(form);
-            if (!phoneValidation.isValid) {
-                ValidationUI.showErrors(form, { customerPhone: phoneValidation.errors.phone });
-                this.setFeedback("", false);
+            ValidationUI.clearErrors(form);
+            const validation = OrderValidator.validateCounterOrder({
+                items,
+                customerPhone: form.elements.customerPhone.value
+            });
+            if (!validation.isValid) {
+                if (validation.errors.items) {
+                    this.setFeedback(validation.errors.items, true);
+                }
+
+                const fieldErrors = { ...validation.errors };
+                delete fieldErrors.items;
+                if (Object.keys(fieldErrors).length) {
+                    ValidationUI.showErrors(form, fieldErrors);
+                }
                 return;
             }
-            ValidationUI.clearErrors(form);
             this.reviewOrder = {
                 customerName: form.elements.customerName.value.trim(),
                 customerPhone: form.elements.customerPhone.value.trim(),
