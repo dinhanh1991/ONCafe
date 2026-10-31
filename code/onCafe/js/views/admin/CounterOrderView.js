@@ -1,8 +1,8 @@
-import { formatCurrency } from "../utils/FormatUtils.js";
-import { CustomerValidator } from "../validators/CustomerValidator.js";
-import { OrderValidator } from "../validators/OrderValidator.js";
-import { ValidationUtils } from "../validators/ValidationUtils.js";
-import { ValidationUI } from "../validators/ValidationUI.js";
+import { formatCurrency } from "../../utils/FormatUtils.js";
+import { CustomerValidator } from "../../validators/CustomerValidator.js";
+import { OrderValidator } from "../../validators/OrderValidator.js";
+import { ValidationUtils } from "../../validators/ValidationUtils.js";
+import { ValidationUI } from "../../validators/ValidationUI.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

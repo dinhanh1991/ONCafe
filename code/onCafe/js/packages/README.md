@@ -9,11 +9,12 @@ js/
 ├── packages/
 │   ├── admin/
 │   │   ├── index.js               # Điều phối khu vực nhân viên
+│   │   ├── controllers/
+│   │   │   ├── AdminOverviewController.js
+│   │   │   └── AdminSectionController.js
 │   │   ├── ui/
 │   │   │   ├── AccessMessage.js   # Giao diện thông báo truy cập
 │   │   │   └── AdminNavigation.js # Tạo nút điều hướng
-│   │   └── views/
-│   │       └── DashboardView.js   # Giao diện tổng quan theo vai trò
 │   └── customer/
 │       ├── index.js               # Thực đơn, giỏ hàng và checkout
 │       └── ui/
@@ -21,16 +22,19 @@ js/
 ├── services/
 ├── repositories/
 ├── views/
+│   ├── admin/                     # Các màn hình quản trị và bán hàng
+│   ├── auth/                      # Các màn hình xác thực
+│   └── customer/                  # Các thành phần giao diện khách hàng
 ├── validators/
 └── config/
 ```
 
 ## Quy ước
 
-- `packages/admin`: giao diện và điều phối luồng làm việc của Admin, Seller, Cashier.
-- `packages/customer`: trải nghiệm khách hàng gồm thực đơn, giỏ hàng, đặt hàng và QR.
+- `packages/admin`: điều phối luồng làm việc và UI dùng riêng cho Admin, Seller, Cashier.
+- `packages/customer`: xử lý thực đơn, giỏ hàng, đặt hàng và QR.
 - `services` và `repositories`: giữ các lớp nghiệp vụ và truy cập dữ liệu dùng chung.
-- `views`: các màn hình quản lý hiện có; chỉ chuyển vào package khi đã xác định rõ phạm vi sử dụng.
+- `views/admin`, `views/customer` và `views/auth`: nhóm màn hình theo nghiệp vụ, dùng chung một thư mục gốc.
 - `app.js` và `menu.js` là entry point tương thích ngược để không phải sửa đường dẫn trong HTML hiện tại.
 
-Việc tách package được thực hiện từng bước. Không di chuyển hàng loạt hoặc thay đổi tên RPC, selector HTML, quyền truy cập và quy tắc nghiệp vụ trong cùng một lần refactor.
+Các màn hình quản trị được giữ cùng một nhóm để tránh chia đôi giữa `views` và `packages/admin/views`. Khi tổ chức lại thư mục, cần cập nhật cả import JavaScript và đường dẫn module trong HTML.

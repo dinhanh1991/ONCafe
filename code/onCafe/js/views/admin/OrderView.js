@@ -1,4 +1,4 @@
-import { formatCurrency } from "../utils/FormatUtils.js";
+import { formatCurrency } from "../../utils/FormatUtils.js";
 
 const STATUS = {
     pending: "Chờ xác nhận", confirmed: "Đã xác nhận", preparing: "Đang pha chế",

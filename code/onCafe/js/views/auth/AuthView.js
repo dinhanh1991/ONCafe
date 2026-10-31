@@ -1,6 +1,6 @@
-import { AuthService } from "../services/AuthService.js";
-import { ValidationUtils } from "../validators/ValidationUtils.js";
-import { ValidationUI } from "../validators/ValidationUI.js";
+import { AuthService } from "../../services/AuthService.js";
+import { ValidationUtils } from "../../validators/ValidationUtils.js";
+import { ValidationUI } from "../../validators/ValidationUI.js";
 
 const authService = new AuthService();
 

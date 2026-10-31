@@ -1,5 +1,5 @@
-import { CustomerValidator } from "../validators/CustomerValidator.js";
-import { ValidationUI } from "../validators/ValidationUI.js";
+import { CustomerValidator } from "../../validators/CustomerValidator.js";
+import { ValidationUI } from "../../validators/ValidationUI.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"

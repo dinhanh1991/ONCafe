@@ -1,6 +1,6 @@
-import { formatCurrency } from "../utils/FormatUtils.js";
-import { ProductValidator } from "../validators/ProductValidator.js";
-import { ValidationUI } from "../validators/ValidationUI.js";
+import { formatCurrency } from "../../utils/FormatUtils.js";
+import { ProductValidator } from "../../validators/ProductValidator.js";
+import { ValidationUI } from "../../validators/ValidationUI.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
