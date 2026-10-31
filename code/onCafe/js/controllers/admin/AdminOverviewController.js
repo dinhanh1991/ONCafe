@@ -1,3 +1,5 @@
+import { AdminOverviewService } from "../../services/AdminOverviewService.js";
+
 export function createAdminOverviewLoaders({
     dashboardPanel,
     popularPanel,
@@ -18,40 +20,13 @@ export function createAdminOverviewLoaders({
 
         try {
             const orders = await orderService.getStaffOrders();
-            const completedOrders = orders.filter((order) => order.status === "completed");
-            const salesByProduct = new Map();
+            const statistics = AdminOverviewService.getPopularDrinks(orders);
 
-            for (const order of completedOrders) {
-                for (const item of Array.isArray(order.items) ? order.items : []) {
-                    const name = String(item.product_name || "Đồ uống không tên").trim();
-                    const quantity = Number(item.quantity);
-                    if (!name || !Number.isFinite(quantity) || quantity <= 0) continue;
+            popularPanel.querySelector("[data-popular-order-count]").textContent = String(statistics.completedOrderCount);
+            popularPanel.querySelector("[data-popular-units]").textContent = String(statistics.totalUnits);
+            popularPanel.querySelector("[data-popular-product-count]").textContent = String(statistics.productCount);
 
-                    const unitPrice = Number(item.unit_price) || 0;
-                    const subtotal = Number(item.subtotal);
-                    const revenue = Number.isFinite(subtotal) && subtotal >= 0
-                        ? subtotal
-                        : unitPrice * quantity;
-                    const current = salesByProduct.get(name) || { quantity: 0, revenue: 0 };
-                    current.quantity += quantity;
-                    current.revenue += revenue;
-                    salesByProduct.set(name, current);
-                }
-            }
-
-            const products = [...salesByProduct.entries()]
-                .sort((first, second) =>
-                    second[1].quantity - first[1].quantity ||
-                    second[1].revenue - first[1].revenue ||
-                    first[0].localeCompare(second[0], "vi")
-                )
-                .slice(0, 10);
-            const totalUnits = [...salesByProduct.values()]
-                .reduce((total, product) => total + product.quantity, 0);
-
-            popularPanel.querySelector("[data-popular-order-count]").textContent = String(completedOrders.length);
-            popularPanel.querySelector("[data-popular-units]").textContent = String(totalUnits);
-            popularPanel.querySelector("[data-popular-product-count]").textContent = String(salesByProduct.size);
+            const products = statistics.products;
 
             chart.replaceChildren();
             if (!products.length) {
@@ -281,25 +256,12 @@ export function createAdminOverviewLoaders({
 
         try {
             const orders = await orderService.getStaffOrders();
-            const completedOrders = orders.filter((order) => order.status === "completed");
-            const salesByProduct = new Map();
-            for (const order of completedOrders) {
-                for (const item of Array.isArray(order.items) ? order.items : []) {
-                    const name = String(item.product_name || "Đồ uống không tên");
-                    const quantity = Number(item.quantity);
-                    if (!Number.isFinite(quantity) || quantity <= 0) continue;
-                    salesByProduct.set(name, (salesByProduct.get(name) || 0) + quantity);
-                }
-            }
+            const statistics = AdminOverviewService.getSellerOverview(orders);
+            dashboardPanel.querySelector("[data-seller-order-count]").textContent = String(statistics.orderCount);
+            dashboardPanel.querySelector("[data-seller-completed-count]").textContent = String(statistics.completedOrderCount);
+            dashboardPanel.querySelector("[data-seller-units-sold]").textContent = String(statistics.totalUnitsSold);
 
-            const totalUnitsSold = [...salesByProduct.values()].reduce((total, quantity) => total + quantity, 0);
-            dashboardPanel.querySelector("[data-seller-order-count]").textContent = String(orders.length);
-            dashboardPanel.querySelector("[data-seller-completed-count]").textContent = String(completedOrders.length);
-            dashboardPanel.querySelector("[data-seller-units-sold]").textContent = String(totalUnitsSold);
-
-            const topProducts = [...salesByProduct.entries()]
-                .sort((first, second) => second[1] - first[1] || first[0].localeCompare(second[0], "vi"))
-                .slice(0, 5);
+            const topProducts = statistics.topProducts;
             chart.replaceChildren();
             if (!topProducts.length) {
                 const empty = document.createElement("p");
@@ -310,7 +272,7 @@ export function createAdminOverviewLoaders({
             }
 
             const maxQuantity = topProducts[0][1];
-            for (const [name, quantity] of topProducts) {
+            for (const { name, quantity } of topProducts) {
                 const row = document.createElement("div");
                 row.className = "seller-sales-row";
                 const label = document.createElement("span");
