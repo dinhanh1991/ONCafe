@@ -1,3 +1,5 @@
+document.body.id = document.body.id || "top";
+
 const footer = document.createElement("footer");
 footer.className = "site-footer";
 footer.innerHTML = `
