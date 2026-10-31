@@ -7,6 +7,7 @@ import { EmployeeView } from "../../views/admin/EmployeeView.js";
 import { EmployeeProfileView } from "../../views/admin/EmployeeProfileView.js";
 import { OrderRepository } from "../../repositories/OrderRepo.js";
 import { OrderService } from "../../services/OrderService.js";
+import { CounterOrderController } from "./CounterOrderController.js";
 import { OrderView } from "../../views/admin/OrderView.js";
 import { CounterOrderView } from "../../views/admin/CounterOrderView.js";
 import { RevenueReportRepository } from "../../repositories/RevenueReportRepo.js";
@@ -119,11 +120,15 @@ async function startApp() {
         onLoad: (period, date) => revenueReportService.getReport(period, date)
     });
 
+    const counterOrderController = new CounterOrderController({
+        createOrder: (order) => orderService.createCounterOrder(order),
+        refreshOrders: () => orderView.refresh(),
+        createQrConfirmation: (id) => orderService.createQrConfirmation(id)
+    });
+
     const counterOrderView = new CounterOrderView(counterPanel, {
         onLoadProducts: () => productService.getAllProducts(),
-        onCreateOrder: (order) => orderService.createCounterOrder(order),
-        onCreated: () => orderView.refresh(),
-        onCreateQrConfirmation: (id) => orderService.createQrConfirmation(id),
+        orderController: counterOrderController,
         onCheckQrPayment: async (id) => {
             const orders = await orderService.getStaffOrders();
             return orders.find((order) => String(order.id) === String(id)) || null;
