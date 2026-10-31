@@ -58,6 +58,17 @@ export class AuthService {
         return data;
     }
 
+    async getMyProfileIfExists(userId) {
+        const { data, error } = await this.supabase
+            .from("profiles")
+            .select("id, full_name, role")
+            .eq("id", userId)
+            .maybeSingle();
+
+        if (error) throw error;
+        return data;
+    }
+
     async logout() {
         const { error } = await this.supabase.auth.signOut();
         if (error) throw error;
