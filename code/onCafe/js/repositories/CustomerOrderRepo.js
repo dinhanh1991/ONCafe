@@ -18,7 +18,8 @@ export class CustomerOrderRepository {
             .eq("id", userId)
             .maybeSingle();
 
-        if (error) throw error;
+        // Giữ hành vi cũ: không có hồ sơ thì vẫn cho khách tiếp tục tự nhập thông tin.
+        if (error) return null;
         return data;
     }
 
