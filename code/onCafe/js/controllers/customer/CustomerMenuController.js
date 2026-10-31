@@ -2,6 +2,7 @@ import { CustomerMenuRepository } from "../../repositories/CustomerMenuRepo.js";
 import { CustomerOrderRepository } from "../../repositories/CustomerOrderRepo.js";
 import { CustomerMenuService } from "../../services/CustomerMenuService.js";
 import { CustomerCheckoutService } from "../../services/CustomerCheckoutService.js";
+import { CustomerCartService } from "../../services/CustomerCartService.js";
 import { ValidationUtils } from "../../validators/ValidationUtils.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
@@ -22,19 +23,11 @@ const currencyFormatter = new Intl.NumberFormat("vi-VN", {
 });
 
 let availableProducts = [];
-let cart = loadCart();
+const customerCartService = new CustomerCartService();
+let cart = customerCartService.getItems();
 
-function loadCart() {
-    try {
-        const savedCart = JSON.parse(localStorage.getItem("oncafe-cart") || "[]");
-        return Array.isArray(savedCart) ? savedCart : [];
-    } catch {
-        return [];
-    }
-}
-
-function saveCart() {
-    localStorage.setItem("oncafe-cart", JSON.stringify(cart));
+function refreshCart() {
+    cart = customerCartService.getItems();
     renderCart();
 }
 
@@ -97,55 +90,36 @@ function addToCart(productId) {
     const product = availableProducts.find((item) => item.id === productId);
     if (!product) return;
 
-    const existingItem = cart.find((item) => item.id === productId);
-    if (existingItem) {
-        if (existingItem.quantity >= Number(product.quantity)) {
-            showStatus(`Số lượng ${product.name} trong giỏ đã đạt tồn kho hiện tại.`, true);
-            return;
-        }
-        existingItem.quantity += 1;
-    } else {
-        if (Number(product.quantity) < 1) return;
-        cart.push({
-            id: product.id,
-            name: product.name,
-            price: Number(product.price),
-            image_url: product.image_url || "",
-            quantity: 1
-        });
+    try {
+        customerCartService.addProduct(product);
+        refreshCart();
+    } catch (error) {
+        showStatus(error.message, true);
     }
-
-    saveCart();
 }
 
 function changeQuantity(productId, amount) {
-    const item = cart.find((cartItem) => cartItem.id === productId);
-    if (!item) return;
-    const product = availableProducts.find((available) => available.id === productId);
-    if (amount > 0 && product && item.quantity >= Number(product.quantity)) {
-        showStatus(`Số lượng ${product.name} đã đạt tồn kho hiện tại.`, true);
-        return;
-    }
+    const product = availableProducts.find((item) => item.id === productId);
 
-    item.quantity += amount;
-    if (item.quantity <= 0) {
-        cart = cart.filter((cartItem) => cartItem.id !== productId);
+    try {
+        customerCartService.changeQuantity(productId, amount, product);
+        refreshCart();
+    } catch (error) {
+        showStatus(error.message, true);
     }
-
-    saveCart();
 }
 
 function removeFromCart(productId) {
-    cart = cart.filter((item) => item.id !== productId);
-    saveCart();
+    customerCartService.removeProduct(productId);
+    refreshCart();
 }
 
 function renderCart() {
     if (!cartItems || !cartTotal || !cartCount) return;
 
     cartItems.replaceChildren();
-    const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const totalQuantity = customerCartService.getTotalQuantity();
+    const totalPrice = customerCartService.getSubtotal();
     cartCount.textContent = String(totalQuantity);
     cartTotal.textContent = currencyFormatter.format(totalPrice);
 
@@ -245,7 +219,7 @@ ValidationUI.bind(checkoutForm);
 
 function updateCheckoutSummary() {
     if (!checkoutTotalSummary) return;
-    const productTotal = cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
+    const productTotal = customerCartService.getSubtotal();
     const isDelivery = fulfillmentSelect?.value === "delivery";
     const deliveryFee = isDelivery ? 15000 : 0;
     checkoutTotalSummary.textContent = `Tạm tính: ${currencyFormatter.format(productTotal)} · Phí giao hàng: ${currencyFormatter.format(deliveryFee)} · Tổng: ${currencyFormatter.format(productTotal + deliveryFee)}`;
@@ -406,8 +380,8 @@ if (checkoutForm) {
                 throw new Error("Hệ thống chưa trả về mã đơn hàng. Vui lòng kiểm tra mục đơn hàng trước khi đặt lại.");
             }
 
-            cart = [];
-            saveCart();
+            customerCartService.clear();
+            refreshCart();
             checkoutForm.reset();
             checkoutForm.hidden = true;
             updateCheckoutSummary();
