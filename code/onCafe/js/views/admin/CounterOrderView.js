@@ -42,7 +42,7 @@ export class CounterOrderView {
                 <header class="product-heading"><div><p class="eyebrow">BÁN HÀNG TẠI QUẦY</p><h2>Tạo đơn hàng</h2><p>Chọn đồ uống, kiểm tra tồn kho và tạo đơn.</p></div>
                 <button class="button" type="button" data-counter-refresh><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Tải lại đồ uống</button></header>
                 <p data-counter-feedback role="status" aria-live="polite"></p>
-                <form data-counter-form class="product-form">
+                <form data-counter-form class="product-form" novalidate>
                     <div class="product-form-grid">
                         <label>Tên khách hàng<input name="customerName" maxlength="100" value="Khách lẻ" required></label>
                         <label>Số điện thoại<input name="customerPhone" type="tel" maxlength="25" placeholder="Không bắt buộc"></label>
@@ -65,6 +65,7 @@ export class CounterOrderView {
                     <div class="form-actions"><button class="button button-primary" type="submit"><i class="bi bi-cart-check me-1" aria-hidden="true"></i>Tạo đơn hàng</button></div>
                 </form>
             </section>`;
+        ValidationUI.bind(this.container.querySelector("[data-counter-form]"));
         await this.loadProducts();
     }
 

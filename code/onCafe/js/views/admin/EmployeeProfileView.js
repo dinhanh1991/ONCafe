@@ -62,6 +62,7 @@ export class EmployeeProfileView {
                     <div class="form-actions"><button class="button button-primary" type="submit">Đổi mật khẩu</button></div>
                 </form>
             </section>`;
+        this.container.querySelectorAll("form").forEach((form) => ValidationUI.bind(form));
         await this.load();
     }
 

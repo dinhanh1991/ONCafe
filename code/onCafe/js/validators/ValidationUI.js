@@ -5,6 +5,42 @@ const formIds = new WeakMap();
 let nextFormId = 0;
 
 export class ValidationUI {
+    static getNativeErrors(form) {
+        const errors = {};
+        for (const field of form.elements) {
+            if (!field.name || !field.willValidate || field.validity.valid) continue;
+
+            const validity = field.validity;
+            let message = "Giá trị chưa hợp lệ. Vui lòng kiểm tra lại.";
+            if (validity.valueMissing) {
+                message = field.tagName === "SELECT"
+                    ? "Vui lòng chọn một giá trị."
+                    : "Vui lòng điền vào trường này.";
+            } else if (validity.typeMismatch && field.type === "email") {
+                message = "Vui lòng nhập địa chỉ email hợp lệ.";
+            } else if (validity.typeMismatch && field.type === "url") {
+                message = "Vui lòng nhập đường dẫn hợp lệ.";
+            } else if (validity.tooShort) {
+                message = `Vui lòng nhập ít nhất ${field.minLength} ký tự.`;
+            } else if (validity.tooLong) {
+                message = `Vui lòng nhập không quá ${field.maxLength} ký tự.`;
+            } else if (validity.rangeUnderflow) {
+                message = `Giá trị không được nhỏ hơn ${field.min}.`;
+            } else if (validity.rangeOverflow) {
+                message = `Giá trị không được lớn hơn ${field.max}.`;
+            } else if (validity.stepMismatch) {
+                message = `Vui lòng nhập giá trị theo bước ${field.step}.`;
+            } else if (validity.patternMismatch) {
+                message = "Giá trị chưa đúng định dạng yêu cầu.";
+            } else if (validity.badInput) {
+                message = "Vui lòng nhập giá trị hợp lệ.";
+            }
+
+            errors[field.name] = message;
+        }
+        return errors;
+    }
+
     static showErrors(form, errors = {}) {
         this.clearErrors(form);
         let formId = formIds.get(form);
@@ -33,7 +69,8 @@ export class ValidationUI {
             );
             descriptions.add(error.id);
             field.setAttribute("aria-describedby", [...descriptions].join(" "));
-            field.insertAdjacentElement("afterend", error);
+            const anchor = field.closest(".password-field") || field;
+            anchor.insertAdjacentElement("afterend", error);
             firstInvalid ||= field;
         }
 
@@ -45,11 +82,11 @@ export class ValidationUI {
         if (!field) return;
         field.classList.remove("is-invalid");
         field.removeAttribute("aria-invalid");
-        const next = field.nextElementSibling;
-        if (next?.matches("[data-validation-error]")) {
-            this.removeDescription(field, next.id);
-            next.remove();
-        }
+        const error = [...(field.form?.querySelectorAll("[data-validation-error]") || [])]
+            .find((item) => item.dataset.validationError === (field.name || field.id));
+        if (!error) return;
+        this.removeDescription(field, error.id);
+        error.remove();
     }
 
     static clearErrors(form) {
@@ -79,7 +116,15 @@ export class ValidationUI {
     static bind(form) {
         if (!form || form.dataset.validationBound === "true") return;
         form.dataset.validationBound = "true";
+        form.noValidate = true;
         form.addEventListener("input", (event) => this.clearField(event.target));
         form.addEventListener("change", (event) => this.clearField(event.target));
+        form.addEventListener("submit", (event) => {
+            const errors = this.getNativeErrors(form);
+            if (Object.keys(errors).length === 0) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            this.showErrors(form, errors);
+        }, true);
     }
 }

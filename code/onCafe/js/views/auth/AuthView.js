@@ -76,7 +76,10 @@ if (loginForm) {
     forgotPassword.addEventListener("click", async () => {
         const email = loginForm.elements.email.value.trim();
         if (!ValidationUtils.isValidEmail(email)) {
-            showMessage(message, "Vui lòng nhập email hợp lệ trước khi đặt lại mật khẩu.", true);
+            ValidationUI.showErrors(loginForm, {
+                email: "Vui lòng nhập email hợp lệ trước khi đặt lại mật khẩu."
+            });
+            showMessage(message, "");
             loginForm.elements.email.focus();
             return;
         }
@@ -104,6 +107,7 @@ if (loginForm) {
 
 const resetPasswordForm = document.querySelector("#resetPasswordForm");
 if (resetPasswordForm) {
+    ValidationUI.bind(resetPasswordForm);
     const message = document.querySelector("#resetPasswordMessage");
     const submitButton = resetPasswordForm.querySelector('button[type="submit"]');
 

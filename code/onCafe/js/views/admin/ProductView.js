@@ -109,7 +109,7 @@ export class ProductView {
                         </div>
                         <button class="button" type="button" data-action="cancel"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Danh sách đồ uống</button>
                     </header>
-                    <form class="product-form" data-product-form>
+                    <form class="product-form" data-product-form novalidate>
                         <div class="product-form-grid">
                             <label>Tên đồ uống<input name="name" required maxlength="120"></label>
                             <label>Danh mục<input name="category" required maxlength="80"></label>
@@ -149,6 +149,7 @@ export class ProductView {
         this.categoryFilter = categoryFilter.value;
         this.container.querySelector("[data-product-status-filter]").value = this.statusFilter;
         this.container.querySelector("[data-product-sort]").value = this.sortBy;
+        ValidationUI.bind(this.container.querySelector("[data-product-form]"));
         this.renderList();
         return this;
     }

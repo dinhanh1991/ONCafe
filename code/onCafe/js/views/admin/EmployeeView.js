@@ -150,6 +150,7 @@ export class EmployeeView {
         this.container.querySelector("[data-employee-search]").value = this.searchTerm;
         this.container.querySelector("[data-employee-role-filter]").value = this.roleFilter;
         this.container.querySelector("[data-employee-sort]").value = this.sortBy;
+        ValidationUI.bind(this.container.querySelector("[data-employee-form]"));
         this.renderList();
         return this;
     }
@@ -303,11 +304,8 @@ export class EmployeeView {
         if (this.busy) return;
 
         const form = event.target;
-        const nativeErrors = Object.fromEntries(
-            [...form.elements]
-                .filter((field) => field.name && field.willValidate && !field.checkValidity())
-                .map((field) => [field.name, field.validationMessage])
-        );
+        ValidationUI.bind(form);
+        const nativeErrors = ValidationUI.getNativeErrors(form);
 
         const formData = new FormData(form);
         const employee = {
@@ -318,7 +316,6 @@ export class EmployeeView {
         };
         const validation = EmployeeValidator.validate(employee);
         const errors = { ...nativeErrors, ...validation.errors };
-        ValidationUI.bind(form);
         if (Object.keys(errors).length) {
             ValidationUI.showErrors(form, errors);
             form.querySelector("[data-employee-form-error]").textContent = "";
