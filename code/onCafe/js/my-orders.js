@@ -1,4 +1,7 @@
-import { supabase } from "./config/supabase.js";
+import { CustomerOrderRepository } from "./repositories/CustomerOrderRepo.js";
+import { CustomerMyOrdersService } from "./services/CustomerMyOrdersService.js";
+
+const customerMyOrdersService = new CustomerMyOrdersService(new CustomerOrderRepository());
 
 const list = document.querySelector("#ordersList");
 const message = document.querySelector("#ordersMessage");
@@ -160,16 +163,14 @@ async function loadOrders() {
     if (!hasLoadedOrders) setMessage("Đang tải đơn hàng...");
 
     try {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userError || !userData.user) {
+        const user = await customerMyOrdersService.getCurrentUser();
+        if (!user) {
             setMessage("Bạn cần đăng nhập để xem đơn hàng của mình.", true);
             list.innerHTML = '<a class="orders-login-link" href="../auth/login.html?redirect=my-orders">Đăng nhập</a>';
             return;
         }
 
-        const { data, error } = await supabase.rpc("oncafe_my_orders");
-        if (error) throw error;
-        const orders = Array.isArray(data) ? data : [];
+        const orders = await customerMyOrdersService.getMyOrders();
 
         if (hasLoadedOrders) {
             for (const order of orders) {
@@ -249,11 +250,7 @@ async function createQr(orderId, button) {
     button.disabled = true;
     button.textContent = "Đang tạo mã QR...";
     try {
-        const { data, error } = await supabase.functions.invoke("oncafe-qr-payment", {
-            body: { action: "create", order_id: Number(orderId) }
-        });
-        if (error) throw new Error(data?.error || error.message || "Không thể tạo mã QR.");
-        if (!data?.token) throw new Error(data?.error || "Không nhận được mã QR.");
+        const data = await customerMyOrdersService.createQrPayment(Number(orderId));
         const serverExpiry = new Date(data.expires_at).getTime();
         if (!Number.isFinite(serverExpiry)) throw new Error("Hệ thống trả về thời hạn mã QR không hợp lệ.");
         const expiresAt = Math.min(serverExpiry, Date.now() + 10 * 60 * 1000);
@@ -304,8 +301,7 @@ list.addEventListener("click", async (event) => {
     cancelButton.disabled = true;
     cancelButton.textContent = "Đang hủy...";
     try {
-        const { error } = await supabase.rpc("oncafe_cancel_my_order", { p_order_id: orderId });
-        if (error) throw error;
+        await customerMyOrdersService.cancelMyOrder(orderId);
         setMessage("Đã hủy đơn hàng và hoàn lại số lượng tồn kho.");
         await loadOrders();
     } catch (error) {
