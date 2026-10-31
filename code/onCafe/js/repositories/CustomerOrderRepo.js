@@ -53,6 +53,15 @@ export class CustomerOrderRepository {
         return Array.isArray(data) ? data : [];
     }
 
+    async getOrderPaymentState(orderId) {
+        const { data, error } = await this.supabase.rpc("oncafe_my_order_payment_state", {
+            p_order_id: orderId
+        });
+
+        if (error) throw error;
+        return data || null;
+    }
+
     async cancelMyOrder(orderId) {
         const { error } = await this.supabase.rpc("oncafe_cancel_my_order", {
             p_order_id: orderId
