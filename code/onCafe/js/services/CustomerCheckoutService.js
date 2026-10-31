@@ -1,7 +1,10 @@
+import { CustomerQrPaymentService } from "./CustomerQrPaymentService.js";
+
 export class CustomerCheckoutService {
-    constructor(orderRepository) {
+    constructor(orderRepository, qrPaymentService = new CustomerQrPaymentService()) {
         if (!orderRepository) throw new Error("CustomerCheckoutService cần CustomerOrderRepository.");
         this.orderRepository = orderRepository;
+        this.qrPaymentService = qrPaymentService;
     }
 
     async getCurrentUser() {
@@ -21,25 +24,8 @@ export class CustomerCheckoutService {
     }
 
     async createQrInfo(orderId, currentPageUrl) {
-        const data = await this.orderRepository.createQrPayment(orderId);
-        const serverExpiry = new Date(data.expires_at).getTime();
-        if (!Number.isFinite(serverExpiry)) {
-            throw new Error("Hệ thống trả về thời hạn mã QR không hợp lệ.");
-        }
-
-        const expiresAt = Math.min(serverExpiry, Date.now() + 10 * 60 * 1000);
-        const confirmUrl = new URL("./qr-confirm.html", currentPageUrl);
-        confirmUrl.searchParams.set("token", data.token);
-        confirmUrl.searchParams.set("expires", String(expiresAt));
-
-        const qrModule = await import("https://esm.sh/qrcode@1.5.4");
-        const QRCode = qrModule.default || qrModule;
-
-        return {
-            url: confirmUrl.href,
-            image: await QRCode.toDataURL(confirmUrl.href, { width: 220, margin: 2 }),
-            expiresAt
-        };
+        const paymentData = await this.orderRepository.createQrPayment(orderId);
+        return this.qrPaymentService.createQrInfo(paymentData, currentPageUrl, 220);
     }
 
     async getOrderPaymentState(orderId) {
