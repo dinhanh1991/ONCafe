@@ -1,8 +1,14 @@
-import { supabase } from "../../config/supabase.js";
+import { CustomerMenuRepository } from "../../repositories/CustomerMenuRepo.js";
+import { CustomerOrderRepository } from "../../repositories/CustomerOrderRepo.js";
+import { CustomerMenuService } from "../../services/CustomerMenuService.js";
+import { CustomerCheckoutService } from "../../services/CustomerCheckoutService.js";
 import { ValidationUtils } from "../../validators/ValidationUtils.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 import { showPaymentConfirmedPopup, showOrderSuccessPopup } from "./ui/OrderDialogs.js";
+
+const customerMenuService = new CustomerMenuService(new CustomerMenuRepository());
+const customerCheckoutService = new CustomerCheckoutService(new CustomerOrderRepository());
 
 const menuGrid = document.querySelector("#menuGrid");
 const menuStatus = document.querySelector("#menuStatus");
@@ -206,13 +212,9 @@ async function loadMenu() {
     showStatus("Đang tải thực đơn...");
     menuGrid.replaceChildren();
 
-    const { data, error } = await supabase
-        .from("products")
-        .select("id, name, price, image_url, is_available, quantity, categories(name)")
-        .eq("is_available", true)
-        .order("name", { ascending: true });
-
-    if (error) {
+    try {
+        availableProducts = await customerMenuService.getAvailableProducts();
+    } catch (error) {
         console.error("Không thể tải thực đơn ONCafe:", error);
         showStatus(
             "Chưa tải được thực đơn. Vui lòng thử tải lại trang. Nếu lỗi vẫn còn, cần kiểm tra quyền đọc bảng products trong Supabase (RLS).",
@@ -221,8 +223,6 @@ async function loadMenu() {
         renderCart();
         return;
     }
-
-    availableProducts = data || [];
     if (availableProducts.length === 0) {
         showStatus("Hiện chưa có đồ uống nào được mở bán.");
     } else {
@@ -261,26 +261,7 @@ function updateCheckoutSummary() {
 
 fulfillmentSelect?.addEventListener("change", updateCheckoutSummary);
 
-async function createCustomerQrInfo(orderId) {
-    const { data, error } = await supabase.functions.invoke("oncafe-qr-payment", {
-        body: { action: "create", order_id: orderId }
-    });
-    if (error) throw new Error(data?.error || error.message || "Không tạo được mã QR.");
-    if (!data?.token) throw new Error(data?.error || "Không nhận được mã QR.");
-    const serverExpiry = new Date(data.expires_at).getTime();
-    if (!Number.isFinite(serverExpiry)) throw new Error("Hệ thống trả về thời hạn mã QR không hợp lệ.");
-    const expiresAt = Math.min(serverExpiry, Date.now() + 10 * 60 * 1000);
-    const confirmUrl = new URL("./qr-confirm.html", window.location.href);
-    confirmUrl.searchParams.set("token", data.token);
-    confirmUrl.searchParams.set("expires", String(expiresAt));
-    const qrModule = await import("https://esm.sh/qrcode@1.5.4");
-    const QRCode = qrModule.default || qrModule;
-    return {
-        url: confirmUrl.href,
-        image: await QRCode.toDataURL(confirmUrl.href, { width: 220, margin: 2 }),
-        expiresAt
-    };
-}
+
 
 let paymentWatchTimer = null;
 let paymentWatchBusy = false;
@@ -293,11 +274,7 @@ function watchQrPayment(orderId) {
         paymentWatchBusy = true;
 
         try {
-            const { data, error } = await supabase.rpc("oncafe_my_orders");
-            if (error) throw error;
-
-            const orders = Array.isArray(data) ? data : [];
-            const order = orders.find((item) => String(item.id) === String(orderId));
+            const order = await customerCheckoutService.getOrderPaymentState(orderId);
 
             if (order?.payment_status === "paid") {
                 window.clearInterval(paymentWatchTimer);
@@ -329,18 +306,21 @@ if (checkoutButton && checkoutForm) {
             return;
         }
 
-        const { data, error } = await supabase.auth.getUser();
-        if (error || !data.user) {
+        let user;
+        try {
+            user = await customerCheckoutService.getCurrentUser();
+        } catch {
+            user = null;
+        }
+        if (!user) {
             showStatus("Bạn cần đăng nhập trước khi đặt hàng. Hãy đăng nhập rồi quay lại thực đơn.", true);
             window.location.href = "../auth/login.html?redirect=menu";
             return;
         }
 
-        const user = data.user;
         const fullNameInput = checkoutForm.querySelector('[name="fullName"]');
         if (!fullNameInput.value.trim()) fullNameInput.value = user.user_metadata?.full_name || "";
-        const { data: profile } = await supabase.from("profiles")
-            .select("full_name, phone, address").eq("id", user.id).maybeSingle();
+        const profile = await customerCheckoutService.getCustomerProfile(user.id);
         if (profile) {
             if (!fullNameInput.value.trim()) fullNameInput.value = profile.full_name || "";
             const phoneInput = checkoutForm.querySelector('[name="phone"]');
@@ -364,8 +344,13 @@ if (checkoutForm) {
             return;
         }
 
-        const { data: authData, error: authError } = await supabase.auth.getUser();
-        if (authError || !authData.user) {
+        let currentUser;
+        try {
+            currentUser = await customerCheckoutService.getCurrentUser();
+        } catch {
+            currentUser = null;
+        }
+        if (!currentUser) {
             showCheckoutMessage("Phiên đăng nhập không còn hiệu lực. Vui lòng đăng nhập lại.", true);
             return;
         }
@@ -409,18 +394,14 @@ if (checkoutForm) {
         showCheckoutMessage("Đang gửi đơn hàng lên hệ thống...");
 
         try {
-            const { data, error } = await supabase.rpc("oncafe_create_order", {
-                p_full_name: fullName,
-                p_phone: phone,
-                p_address: address,
-                p_payment_method: paymentMethod,
-                p_fulfillment_method: fulfillmentMethod,
-                p_items: items
+            const order = await customerCheckoutService.createOrder({
+                fullName,
+                phone,
+                address,
+                paymentMethod,
+                fulfillmentMethod,
+                items
             });
-
-            if (error) throw error;
-
-            const order = Array.isArray(data) ? data[0] : data;
             if (!order?.order_code) {
                 throw new Error("Hệ thống chưa trả về mã đơn hàng. Vui lòng kiểm tra mục đơn hàng trước khi đặt lại.");
             }
@@ -434,7 +415,7 @@ if (checkoutForm) {
 
             let qrInfo;
             try {
-                qrInfo = await createCustomerQrInfo(order.order_id);
+                qrInfo = await customerCheckoutService.createQrInfo(order.order_id, window.location.href);
             } catch (qrError) {
                 const message = `Đơn ${order.order_code} đã được tạo nhưng chưa tạo được mã QR. Không đặt lại đơn; vui lòng vào Đơn hàng của tôi để tạo lại mã. ${qrError.message || ""}`;
                 showStatus(message, true);
