@@ -149,6 +149,7 @@ export function createAdminWorkspace(app, profile, {
         adminMain.append(contentHeading, panels);
         workspace.append(sidebar, adminMain);
     }
+    app.append(workspace);
     return {
         panels, dashboardPanel, orderPanel, productPanel, counterPanel,
         employeePanel, profilePanel, revenuePanel, revenueSummaryPanel,
