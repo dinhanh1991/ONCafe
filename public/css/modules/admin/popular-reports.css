@@ -1,0 +1,38 @@
+/* Popular drinks report */
+.seller-popular-page {
+    display: grid;
+    gap: 22px;
+}
+
+.popular-drink-row {
+    grid-template-columns: minmax(120px, 0.9fr) minmax(90px, 2fr) 58px;
+}
+
+.popular-drink-label {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+}
+
+.popular-drink-revenue {
+    color: #8a7668;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+    .popular-drink-row {
+        grid-template-columns: minmax(90px, 1fr) minmax(55px, 1.2fr) 48px;
+        gap: 8px;
+    }
+
+    .popular-drink-row .seller-sales-name {
+        font-size: 11px;
+    }
+
+    .popular-drink-revenue {
+        font-size: 10px;
+    }
+}
+
+

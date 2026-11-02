@@ -1,0 +1,17 @@
+/* Tập hợp các module giao diện quản trị ONCafe.
+ * Giữ thứ tự import để bảo toàn thứ tự cascade hiện tại.
+ * Mỗi module chỉ quản lý một nhóm giao diện/chức năng.
+ */
+@import url("./modules/admin/base.css");
+@import url("./modules/admin/product-upload.css");
+@import url("./modules/shared/dialogs.css");
+@import url("./modules/admin/orders.css");
+@import url("./modules/admin/theme.css");
+@import url("./modules/admin/dashboard.css");
+@import url("./modules/admin/profile.css");
+@import url("./modules/admin/pagination.css");
+@import url("./modules/admin/order-dialog.css");
+@import url("./modules/admin/staff-layout.css");
+@import url("./modules/admin/counter-sales.css");
+@import url("./modules/admin/qr-payment.css");
+@import url("./modules/admin/popular-reports.css");

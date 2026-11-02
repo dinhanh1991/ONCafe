@@ -1,0 +1,27 @@
+/* Hồ sơ cá nhân nhân viên */
+.employee-profile {
+    max-width: 900px;
+    margin: 0 auto;
+}
+.employee-profile [data-profile-feedback] {
+    min-height: 1.4em;
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 13px;
+}
+.employee-profile input[readonly],
+.employee-profile input:disabled {
+    background: #f1ece6;
+    color: #766b64;
+    cursor: not-allowed;
+}
+.employee-profile .profile-address {
+    grid-column: span 2;
+}
+@media (max-width: 760px) {
+    .employee-profile .profile-address {
+        grid-column: auto;
+    }
+}
+
+

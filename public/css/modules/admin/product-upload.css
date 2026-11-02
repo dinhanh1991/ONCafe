@@ -1,0 +1,13 @@
+/* Product image upload */
+.product-form input[type="file"] {
+    min-height: 44px;
+    padding: 8px;
+    background: #fff;
+}
+.image-help {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+

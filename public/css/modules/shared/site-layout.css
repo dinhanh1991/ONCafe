@@ -1,0 +1,220 @@
+/* Shared ONCafe header and footer */
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    min-height: 76px;
+    padding: 14px max(5%, calc((100% - 1240px) / 2));
+    border-bottom: 1px solid rgba(233, 189, 133, 0.14);
+    background: rgba(47, 33, 27, 0.97);
+    box-shadow: 0 8px 24px rgba(32, 22, 16, 0.12);
+    backdrop-filter: blur(14px);
+}
+
+.site-header .brand {
+    flex: 0 0 auto;
+    color: var(--brand-accent);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.site-header > span:not(.nav-user-name) {
+    margin-left: auto;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.site-header nav {
+    gap: clamp(14px, 2vw, 26px);
+}
+
+.site-header nav a {
+    padding: 9px 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 160ms ease;
+}
+
+.site-header nav a:hover,
+.site-header nav a[aria-current="page"] {
+    color: var(--brand-accent);
+}
+
+.site-header nav a:focus-visible,
+.site-header .brand:focus-visible,
+.site-header button:focus-visible,
+.site-header > a:focus-visible {
+    outline: 2px solid var(--brand-accent);
+    outline-offset: 4px;
+    border-radius: 5px;
+}
+
+.site-header .nav-logout-button,
+.site-header .header-button {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border: 1px solid rgba(233, 189, 133, 0.65);
+    border-radius: 8px;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 650;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.site-header .nav-logout-button:hover,
+.site-header .header-button:hover {
+    background: rgba(233, 189, 133, 0.13);
+}
+
+.site-footer {
+    margin-top: auto;
+    padding: 42px max(5%, calc((100% - 1160px) / 2)) 18px;
+    background: #2f211b;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.site-footer-main {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px 30px;
+    padding-bottom: 28px;
+}
+
+.site-footer-brand {
+    width: fit-content;
+    color: #f0c58e;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 29px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+}
+
+.site-footer-brand span {
+    color: #b87945;
+}
+
+.site-footer-tagline {
+    grid-column: 1;
+    margin: -8px 0 0;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 13px;
+}
+
+.site-footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 12px 24px;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+}
+
+.site-footer-links a,
+.site-footer-bottom a {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 13px;
+    text-decoration: none;
+    transition: color 160ms ease;
+}
+
+.site-footer-links a:hover,
+.site-footer-bottom a:hover {
+    color: #f0c58e;
+}
+
+.site-footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 17px;
+    border-top: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.site-footer-bottom p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 12px;
+}
+
+.site-footer a:focus-visible {
+    outline: 2px solid #f0c58e;
+    outline-offset: 4px;
+    border-radius: 3px;
+}
+
+@media (max-width: 700px) {
+    .site-header {
+        min-height: 68px;
+        padding: 13px 20px;
+        flex-wrap: wrap;
+        gap: 12px 18px;
+    }
+
+    .site-header .brand {
+        font-size: 26px;
+    }
+
+    .site-header > span:not(.nav-user-name) {
+        margin-left: auto;
+        font-size: 12px;
+    }
+
+    .site-header nav {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+    }
+
+    .site-header nav a {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .site-footer {
+        padding: 32px 22px 16px;
+    }
+
+    .site-footer-main {
+        grid-template-columns: 1fr;
+    }
+
+    .site-footer-tagline {
+        grid-column: 1;
+    }
+
+    .site-footer-links {
+        justify-content: flex-start;
+        grid-column: 1;
+        grid-row: auto;
+        margin-top: 8px;
+    }
+
+    .site-footer-bottom {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .site-header nav a,
+    .site-footer-links a,
+    .site-footer-bottom a {
+        transition: none;
+    }
+}
