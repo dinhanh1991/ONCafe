@@ -129,12 +129,22 @@ export class CustomerProfileView {
 
         ValidationUI.clearErrors(form);
         feedback.classList.remove("is-error");
-        if (!window.confirm("Bạn có muốn lưu các thay đổi thông tin cá nhân không?")) {
+        const confirmed = await this.showDialog({
+            title: "Xác nhận lưu thông tin",
+            message: "Bạn có muốn lưu các thay đổi thông tin cá nhân không?",
+            confirmText: "Lưu thay đổi",
+            cancelText: "Hủy"
+        });
+        if (!confirmed) {
             form.elements.fullName.value = this.savedProfile.fullName;
             form.elements.phone.value = this.savedProfile.phone;
             form.elements.address.value = this.savedProfile.address;
             feedback.textContent = "Đã hủy quá trình lưu. Thông tin cũ được giữ nguyên.";
-            window.alert("Đã bỏ thay đổi. Thông tin cũ được giữ nguyên.");
+            await this.showDialog({
+                title: "Đã hủy thay đổi",
+                message: "Thông tin cũ được giữ nguyên.",
+                confirmText: "Đóng"
+            });
             return;
         }
 
@@ -150,7 +160,11 @@ export class CustomerProfileView {
             form.elements.phone.value = phone;
             form.elements.address.value = address;
             feedback.textContent = "Đã lưu thay đổi thông tin cá nhân thành công.";
-            window.alert("Lưu thay đổi thông tin cá nhân thành công.");
+            await this.showDialog({
+                title: "Lưu thành công",
+                message: "Thông tin cá nhân của bạn đã được cập nhật.",
+                confirmText: "Đóng"
+            });
         } catch (error) {
             console.error("Không thể lưu hồ sơ khách hàng:", error);
             feedback.textContent = error.message || "Không thể lưu thông tin cá nhân.";
@@ -159,6 +173,45 @@ export class CustomerProfileView {
             this.isSaving = false;
             button.disabled = false;
         }
+    }
+
+    showDialog({ title, message, confirmText, cancelText }) {
+        return new Promise((resolve) => {
+            const dialog = document.createElement("dialog");
+            dialog.className = "customer-profile-dialog";
+
+            const heading = document.createElement("h2");
+            heading.textContent = title;
+            const description = document.createElement("p");
+            description.textContent = message;
+            const actions = document.createElement("div");
+            actions.className = "customer-profile-dialog-actions";
+
+            if (cancelText) {
+                const cancelButton = document.createElement("button");
+                cancelButton.type = "button";
+                cancelButton.className = "customer-profile-dialog-cancel";
+                cancelButton.textContent = cancelText;
+                cancelButton.addEventListener("click", () => dialog.close("cancel"));
+                actions.append(cancelButton);
+            }
+
+            const confirmButton = document.createElement("button");
+            confirmButton.type = "button";
+            confirmButton.className = "customer-profile-save";
+            confirmButton.textContent = confirmText;
+            confirmButton.addEventListener("click", () => dialog.close("confirm"));
+            actions.append(confirmButton);
+            dialog.append(heading, description, actions);
+            dialog.addEventListener("close", () => {
+                dialog.remove();
+                resolve(dialog.returnValue === "confirm");
+            }, { once: true });
+
+            document.body.append(dialog);
+            dialog.showModal();
+            (cancelText ? actions.firstElementChild : confirmButton).focus();
+        });
     }
 
     async handlePasswordSubmit(form) {
