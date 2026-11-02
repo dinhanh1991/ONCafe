@@ -241,11 +241,15 @@ Không chia sẻ giá trị thực tế của các khóa này trong README, mã 
 
 ## 8. Triển khai GitLab Pages
 
-Repository hiện được quản lý trên GitHub. Tệp .gitlab-ci.yml đã có cấu hình sao chép nội dung code/onCafe/ vào thư mục public/ để triển khai frontend tĩnh bằng GitLab Pages khi repository được đưa lên GitLab và CI/CD được bật.
+Tệp `.gitlab-ci.yml` triển khai frontend tĩnh từ `public/onCafe/` lên thư mục gốc của GitLab Pages. Trong quá trình tạo artifact, các file PDF bị loại khỏi bản public để tránh vô tình công khai hóa đơn/tài liệu.
 
-GitLab Pages chỉ phục vụ frontend tĩnh. Cơ sở dữ liệu, xác thực, Storage và Edge Functions vẫn sử dụng dự án Supabase đã cấu hình.
+1. Đẩy repository lên GitLab (hoặc import repository vào GitLab).
+2. Trong **Settings → CI/CD → General pipelines**, bảo đảm GitLab Runner được bật.
+3. Đặt nhánh cần deploy làm **default branch**. Pipeline Pages chỉ chạy trên nhánh mặc định.
+4. Push commit lên nhánh mặc định và kiểm tra job `pages` trong **Build → Pipelines**.
+5. Khi job thành công, mở địa chỉ trong **Deploy → Pages**.
 
-Sau khi pipeline thành công, địa chỉ website được hiển thị trong mục **Deploy → Pages** của dự án GitLab.
+GitLab Pages chỉ phục vụ frontend tĩnh. Cơ sở dữ liệu, xác thực, Storage và Edge Functions vẫn sử dụng dự án Supabase đã cấu hình. Trước khi deploy, kiểm tra URL chuyển hướng Authentication trong Supabase để thêm domain GitLab Pages. `SUPABASE_URL` và publishable key hiện được cấu hình trong `public/onCafe/js/config/supabase.js`; không đưa Service Role Key vào frontend hoặc CI variables dùng cho frontend.
 
 ## 9. Kiểm thử
 
