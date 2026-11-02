@@ -37,7 +37,7 @@ Hệ thống sử dụng các vai trò lưu trong bảng hồ sơ người dùng
 | **Admin – Quản trị viên** | Truy cập tổng quan; quản lý đồ uống; quản lý tài khoản nhân viên; tạo đơn tại quầy; quản lý đơn hàng; xem tổng hợp và báo cáo doanh thu; xem đồ uống bán chạy; quản lý thông tin cá nhân. |
 | **Seller – Nhân viên bán hàng** | Xem tổng quan bán hàng; quản lý đồ uống; tạo đơn tại quầy; theo dõi và cập nhật trạng thái đơn hàng; xem đồ uống bán chạy; quản lý thông tin cá nhân. |
 | **Cashier – Thu ngân** | Xem tổng quan thu ngân; tra cứu đơn hàng ở chế độ chỉ xem; xem tổng hợp và báo cáo doanh thu; quản lý thông tin cá nhân. |
-| **Customer – Khách hàng** | Đăng ký, đăng nhập; xem thực đơn; thêm đồ uống vào giỏ; đặt hàng; theo dõi và xem chi tiết đơn hàng của mình; hủy đơn đang chờ theo điều kiện hệ thống. |
+| **Customer – Khách hàng** | Đăng ký, đăng nhập; xem/cập nhật thông tin cá nhân; xem thực đơn; thêm đồ uống vào giỏ; đặt hàng; theo dõi và xem chi tiết đơn hàng của mình; hủy đơn đang chờ theo điều kiện hệ thống. |
 
 Quyền truy cập được kiểm tra ở giao diện và được giới hạn thêm bằng chính sách cơ sở dữ liệu/RPC hoặc Edge Function phía Supabase. Không nên xem việc ẩn một mục menu ở frontend là cơ chế bảo mật duy nhất.
 
@@ -50,6 +50,7 @@ Quyền truy cập được kiểm tra ở giao diện và được giới hạn
 - Tìm và chọn đồ uống, thêm vào giỏ hàng, điều chỉnh số lượng.
 - Lưu giỏ hàng trên trình duyệt bằng Local Storage.
 - Đăng ký, đăng nhập và yêu cầu đặt lại mật khẩu qua Supabase Auth.
+- Xem và cập nhật họ tên, số điện thoại, địa chỉ trên trang thông tin cá nhân; email đăng nhập không thể đổi tại đây.
 - Yêu cầu đăng nhập trước khi gửi đơn hàng.
 - Nhập họ tên, số điện thoại, hình thức nhận hàng và phương thức thanh toán.
 - Chọn **nhận tại cửa hàng** hoặc **giao tận nhà**.
@@ -164,6 +165,10 @@ Dự án tổ chức mã nguồn JavaScript theo các nhóm trách nhiệm như 
     │           ├── admin/
     │           ├── auth/
     │           └── customer/
+    │               ├── home.html
+    │               ├── menu.html
+    │               ├── profile.html
+    │               └── my-orders.html
     ├── report/                             # Tài liệu báo cáo và ảnh README
     └── supabase/
         ├── functions/                      # Supabase Edge Functions

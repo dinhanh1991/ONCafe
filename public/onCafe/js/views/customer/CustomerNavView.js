@@ -10,6 +10,7 @@ if (nav) {
     async function updateNavigation(session) {
         nav.querySelector(".nav-user-name")?.remove();
         nav.querySelector(".nav-orders-link")?.remove();
+        nav.querySelector(".nav-profile-link")?.remove();
         nav.querySelector(".nav-logout-button")?.remove();
 
         if (!session?.user) {
@@ -37,10 +38,22 @@ if (nav) {
         name.textContent = "Xin chào, " + displayName;
         nav.appendChild(name);
 
+        const profileLink = document.createElement("a");
+        profileLink.className = "nav-profile-link";
+        profileLink.href = "./profile.html";
+        profileLink.textContent = "Thông tin cá nhân";
+        if (window.location.pathname.endsWith("/profile.html")) {
+            profileLink.setAttribute("aria-current", "page");
+        }
+        nav.appendChild(profileLink);
+
         const ordersLink = document.createElement("a");
         ordersLink.className = "nav-orders-link";
         ordersLink.href = "./my-orders.html";
         ordersLink.textContent = "Đơn hàng của tôi";
+        if (window.location.pathname.endsWith("/my-orders.html")) {
+            ordersLink.setAttribute("aria-current", "page");
+        }
         nav.appendChild(ordersLink);
 
         const logoutButton = document.createElement("button");
