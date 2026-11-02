@@ -1,0 +1,454 @@
+import { formatCurrency } from "../../utils/FormatUtils.js";
+import { OrderValidator } from "../../validators/OrderValidator.js";
+import { ValidationUI } from "../../validators/ValidationUI.js";
+import { CounterOrderPaymentMonitor } from "../../controllers/admin/CounterOrderPaymentMonitor.js";
+
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+export class CounterOrderView {
+    constructor(container, { onLoadProducts, orderController, onCheckQrPayment, onQrPaymentConfirmed }) {
+        this.container = container;
+        this.onLoadProducts = onLoadProducts;
+        this.orderController = orderController;
+        this.onCheckQrPayment = onCheckQrPayment;
+        this.onQrPaymentConfirmed = onQrPaymentConfirmed;
+        this.paymentMonitor = new CounterOrderPaymentMonitor({
+            getOrder: (orderId) => this.onCheckQrPayment(orderId),
+            onPaid: (order) => this.handleQrPaymentConfirmed(order)
+        });
+        this.pendingQrOrder = null;
+        this.reviewOrder = null;
+        this.products = [];
+        this.cart = new Map();
+        this.busy = false;
+        this.container.addEventListener("submit", (event) => void this.handleSubmit(event));
+        this.container.addEventListener("focusin", (event) => {
+            const form = event.target.closest("[data-counter-form]");
+            if (form) ValidationUI.bind(form);
+        });
+        this.container.addEventListener("input", (event) => {
+            if (event.target.matches("[data-counter-search]")) this.renderProducts();
+        });
+        this.container.addEventListener("change", (event) => this.handleChange(event));
+        this.container.addEventListener("click", (event) => this.handleClick(event));
+    }
+
+    async render() {
+        this.stopWatchingQrPayment();
+        this.reviewOrder = null;
+        this.container.innerHTML = `
+            <section class="product-manager counter-order">
+                <header class="product-heading"><div><p class="eyebrow">BÁN HÀNG TẠI QUẦY</p><h2>Tạo đơn hàng</h2><p>Chọn đồ uống, kiểm tra tồn kho và tạo đơn.</p></div>
+                <button class="button" type="button" data-counter-refresh><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Tải lại đồ uống</button></header>
+                <p data-counter-feedback role="status" aria-live="polite"></p>
+                <form data-counter-form class="product-form" novalidate>
+                    <div class="product-form-grid">
+                        <label>Tên khách hàng<input name="customerName" maxlength="100" value="Khách lẻ" required></label>
+                        <label>Số điện thoại<input name="customerPhone" type="tel" maxlength="25" placeholder="Không bắt buộc"></label>
+                        <label>Địa chỉ / ghi chú<input name="customerAddress" maxlength="250" placeholder="Không bắt buộc"></label>
+                        <label>Thanh toán<select name="paymentMethod"><option value="cash">Tiền mặt</option><option value="qr">Chuyển khoản QR</option></select></label>
+                    </div>
+                    <h3>Chọn đồ uống</h3>
+                    <div class="counter-product-tools">
+                        <label for="counter-product-search">Tìm đồ uống</label>
+                        <input id="counter-product-search" data-counter-search type="search" placeholder="Nhập tên đồ uống...">
+                        <label for="counter-product-category">Danh mục</label>
+                        <select id="counter-product-category" data-counter-category>
+                            <option value="">Tất cả danh mục</option>
+                        </select>
+                    </div>
+                    <div class="table-scroll"><table class="product-table"><thead><tr><th>Đồ uống</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Số lượng</th></tr></thead><tbody data-counter-products><tr><td colspan="5">Đang tải...</td></tr></tbody></table></div>
+                    <h3>Giỏ hàng</h3><div data-counter-cart></div>
+                    <p class="counter-total">Tổng tiền: <strong data-counter-total>0 ₫</strong></p>
+                    <div data-counter-review hidden></div>
+                    <div class="form-actions"><button class="button button-primary" type="submit"><i class="bi bi-cart-check me-1" aria-hidden="true"></i>Tạo đơn hàng</button></div>
+                </form>
+            </section>`;
+        ValidationUI.bind(this.container.querySelector("[data-counter-form]"));
+        await this.loadProducts();
+    }
+
+    async loadProducts() {
+        const feedback = this.container.querySelector("[data-counter-feedback]");
+        feedback.textContent = "Đang tải đồ uống...";
+        try {
+            this.products = (await this.onLoadProducts()).filter((p) => p.status !== "inactive" && Number(p.quantity) > 0);
+            for (const [id, quantity] of this.cart.entries()) {
+                const product = this.products.find((item) => String(item.id) === id);
+                if (!product) this.cart.delete(id);
+                else if (quantity > Number(product.quantity)) this.cart.set(id, Number(product.quantity));
+            }
+            this.renderProducts();
+            feedback.textContent = "";
+        } catch (error) {
+            feedback.textContent = error.message || "Không thể tải đồ uống.";
+            feedback.className = "app-error";
+        }
+    }
+
+    renderProducts() {
+        const body = this.container.querySelector("[data-counter-products]");
+        const categorySelect = this.container.querySelector("[data-counter-category]");
+        const selectedCategory = categorySelect?.value || "";
+        const categories = [...new Set(this.products.map((product) => String(product.category || "").trim()).filter(Boolean))]
+            .sort((first, second) => first.localeCompare(second, "vi"));
+        if (categorySelect) {
+            categorySelect.innerHTML = '<option value="">Tất cả danh mục</option>' +
+                categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
+            categorySelect.value = categories.includes(selectedCategory) ? selectedCategory : "";
+        }
+        const searchTerm = (this.container.querySelector("[data-counter-search]")?.value || "").trim().toLocaleLowerCase("vi");
+        const visibleProducts = this.products.filter((product) => {
+            const name = String(product.name || "").toLocaleLowerCase("vi");
+            const category = String(product.category || "");
+            return (!searchTerm || name.includes(searchTerm)) &&
+                (!categorySelect?.value || category === categorySelect.value);
+        });
+        body.innerHTML = visibleProducts.map((p) => `<tr>
+            <td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.category || "Khác")}</td>
+            <td>${formatCurrency(p.price)}</td><td>${p.quantity}</td>
+            <td><input name="quantity_${p.id}" aria-label="Số lượng ${escapeHtml(p.name)}" type="number" min="0" max="${p.quantity}" step="1" value="${this.cart.get(String(p.id)) || 0}" data-counter-quantity="${p.id}"></td>
+        </tr>`).join("") || '<tr><td colspan="5">Không tìm thấy đồ uống phù hợp hoặc đã hết hàng.</td></tr>';
+        this.renderCart();
+    }
+
+    renderCart() {
+        const cart = this.container.querySelector("[data-counter-cart]");
+        const items = this.products.filter((p) => (this.cart.get(String(p.id)) || 0) > 0);
+        cart.innerHTML = items.length ? items.map((p) => {
+            const quantity = this.cart.get(String(p.id));
+            return `<p>${escapeHtml(p.name)} × ${quantity} — ${formatCurrency(p.price * quantity)}</p>`;
+        }).join("") : "<p>Chưa chọn đồ uống.</p>";
+        const total = items.reduce((sum, p) => sum + p.price * this.cart.get(String(p.id)), 0);
+        this.container.querySelector("[data-counter-total]").textContent = formatCurrency(total);
+    }
+
+    handleChange(event) {
+        if (event.target.matches("[data-counter-category]")) {
+            this.renderProducts();
+            return;
+        }
+        const input = event.target.closest("[data-counter-quantity]");
+        if (!input) return;
+        const id = String(input.dataset.counterQuantity);
+        const product = this.products.find((p) => String(p.id) === id);
+        const quantity = Number(input.value);
+        if (!product || !Number.isInteger(quantity) || quantity < 0 || quantity > product.quantity || quantity > 99) {
+            input.value = String(this.cart.get(id) || 0);
+            return;
+        }
+        if (quantity === 0) this.cart.delete(id);
+        else this.cart.set(id, quantity);
+        this.renderCart();
+    }
+
+    async handleClick(event) {
+        if (event.target.closest("[data-counter-edit-order]")) {
+            const form = this.container.querySelector("[data-counter-form]");
+            if (form) this.clearOrderReview(form);
+            return;
+        }
+
+        if (event.target.closest("[data-counter-refresh]")) {
+            await this.loadProducts();
+            return;
+        }
+
+        if (event.target.closest("[data-qr-retry]")) {
+            const order = this.pendingQrOrder;
+            if (!order || this.busy) return;
+
+            const button = this.container.querySelector("[data-qr-retry]");
+            if (button) button.disabled = true;
+            try {
+                const confirmation = await this.orderController.retryQrConfirmation(order);
+                await this.createQrForOrder(order, confirmation);
+                this.watchQrPayment(order);
+                this.setFeedback(`Đã tạo lại mã QR cho đơn ${order.order_code || "#" + order.id}.`);
+            } catch (error) {
+                this.setFeedback(
+                    `Đơn ${order.order_code || "#" + order.id} đã được tạo nhưng chưa có mã QR. ${error.message || "Vui lòng thử tạo lại mã QR."}`,
+                    true
+                );
+            } finally {
+                if (button?.isConnected) button.disabled = false;
+            }
+        }
+    }
+
+    async handleSubmit(event) {
+        if (!event.target.matches("[data-counter-form]")) return;
+        event.preventDefault();
+        if (this.busy) return;
+        const form = event.target;
+        const button = form.querySelector('button[type="submit"]');
+        if (!this.reviewOrder) {
+            const items = [...this.cart.entries()].map(([id, quantity]) => ({ id: Number(id), quantity }));
+            ValidationUI.bind(form);
+            ValidationUI.clearErrors(form);
+            const validation = OrderValidator.validateCounterOrder({
+                items,
+                customerPhone: form.elements.customerPhone.value
+            });
+            if (!validation.isValid) {
+                if (validation.errors.items) {
+                    this.setFeedback(validation.errors.items, true);
+                }
+
+                const fieldErrors = { ...validation.errors };
+                delete fieldErrors.items;
+                if (Object.keys(fieldErrors).length) {
+                    ValidationUI.showErrors(form, fieldErrors);
+                }
+                return;
+            }
+            this.reviewOrder = {
+                customerName: form.elements.customerName.value.trim(),
+                customerPhone: form.elements.customerPhone.value.trim(),
+                customerAddress: form.elements.customerAddress.value.trim(),
+                paymentMethod: form.elements.paymentMethod.value,
+                items
+            };
+            this.showOrderReview(form);
+            return;
+        }
+
+        this.busy = true;
+        button.disabled = true;
+        this.setFeedback("Đang tạo đơn và cập nhật tồn kho...");
+        try {
+            const order = this.reviewOrder;
+            let result;
+
+            try {
+                result = await this.orderController.createOrder(order);
+            } catch (error) {
+                this.setFeedback(error.message || "Không thể tạo đơn hàng.", true);
+                return;
+            }
+
+            this.cart.clear();
+            this.clearOrderReview(form);
+            form.reset();
+            await this.loadProducts();
+
+            if (result.status === "payment-pending") {
+                this.setFeedback(result.error.message, true);
+                this.showOrderCreated(result.order, true);
+                return;
+            }
+
+            if (result.refreshError) {
+                this.setFeedback(
+                    `Đã tạo đơn ${result.order.order_code || "#" + result.order.id} nhưng không thể tải lại danh sách đơn hàng.`,
+                    true
+                );
+            }
+
+            if (order.paymentMethod === "qr") {
+                this.pendingQrOrder = result.order;
+                this.renderQrSimulation(result.order);
+
+                if (result.status === "qr-failed") {
+                    this.setFeedback(
+                        `Đơn ${result.order.order_code || "#" + result.order.id} đã được tạo nhưng chưa tạo được mã QR. Không tạo đơn mới; hãy thử tạo lại mã QR bên dưới. ${result.error.message || ""}`,
+                        true
+                    );
+                    return;
+                }
+
+                try {
+                    await this.createQrForOrder(result.order, result.qrConfirmation);
+                    this.watchQrPayment(result.order);
+                } catch (error) {
+                    this.setFeedback(
+                        `Đơn ${result.order.order_code || "#" + result.order.id} đã được tạo nhưng chưa hiển thị được mã QR. Không tạo đơn mới; hãy thử tạo lại mã QR bên dưới. ${error.message || ""}`,
+                        true
+                    );
+                }
+            } else {
+                this.pendingQrOrder = null;
+                this.removeQrSimulation();
+                this.setFeedback(`Đã tạo đơn ${result.order.order_code} — ${formatCurrency(result.order.total_amount)}. Đơn đã được ghi nhận thanh toán tiền mặt.`);
+                this.showOrderCreated(result.order);
+            }
+        } finally {
+            this.busy = false;
+            button.disabled = false;
+        }
+    }
+
+    showOrderReview(form) {
+        const review = this.container.querySelector("[data-counter-review]");
+        const button = form.querySelector('button[type="submit"]');
+        const items = this.reviewOrder.items.map(({ id, quantity }) => {
+            const product = this.products.find((item) => Number(item.id) === id);
+            return `<li>${escapeHtml(product?.name || "Đồ uống")} × ${quantity} — ${formatCurrency(Number(product?.price || 0) * quantity)}</li>`;
+        }).join("");
+        const total = this.reviewOrder.items.reduce((sum, { id, quantity }) => {
+            const product = this.products.find((item) => Number(item.id) === id);
+            return sum + Number(product?.price || 0) * quantity;
+        }, 0);
+
+        review.innerHTML = `<section class="counter-order-review" aria-labelledby="counter-review-heading">
+            <h3 id="counter-review-heading">Kiểm tra đơn hàng</h3>
+            <ul>${items}</ul>
+            <p>Tổng tiền: <strong>${formatCurrency(total)}</strong></p>
+            <button class="button" type="button" data-counter-edit-order>Chỉnh sửa đơn</button>
+        </section>`;
+        review.hidden = false;
+        this.container.querySelector("[data-counter-refresh]").disabled = true;
+        for (const control of form.elements) {
+            if (control !== button && !control.matches("[data-counter-edit-order]")) {
+                control.disabled = true;
+            }
+        }
+        button.textContent = this.reviewOrder.paymentMethod === "cash"
+            ? "Xác nhận thanh toán"
+            : "Xác nhận tạo đơn QR";
+        this.setFeedback(this.reviewOrder.paymentMethod === "cash"
+            ? "Kiểm tra món và tổng tiền, sau đó xác nhận đã thu tiền mặt."
+            : "Kiểm tra món và tổng tiền, sau đó xác nhận tạo đơn QR.");
+    }
+
+    clearOrderReview(form) {
+        this.reviewOrder = null;
+        const review = this.container.querySelector("[data-counter-review]");
+        review.hidden = true;
+        review.replaceChildren();
+        const button = form.querySelector('button[type="submit"]');
+        this.container.querySelector("[data-counter-refresh]").disabled = false;
+        for (const control of form.elements) {
+            if (control !== button) control.disabled = false;
+        }
+        button.innerHTML = '<i class="bi bi-cart-check me-1" aria-hidden="true"></i>Tạo đơn hàng';
+    }
+
+    showOrderCreated(order, paymentPending = false) {
+        const overlay = document.createElement("div");
+        overlay.className = "oncafe-dialog-backdrop";
+        overlay.innerHTML = `
+            <section class="oncafe-dialog" role="dialog" aria-modal="true" aria-labelledby="counter-order-created-title">
+                <div class="oncafe-dialog-icon" aria-hidden="true">${paymentPending ? "!" : "✓"}</div>
+                <h3 id="counter-order-created-title">Đơn hàng đã được tạo</h3>
+                <p>${escapeHtml(order.order_code || "#" + order.id)} — ${formatCurrency(order.total_amount)}</p>
+                <p>${paymentPending
+                    ? "Đơn đã tạo nhưng trạng thái thanh toán chưa cập nhật được. Vui lòng kiểm tra trong Quản lý đơn hàng; không tạo lại đơn."
+                    : "Thanh toán tiền mặt đã được ghi nhận."}</p>
+                <div class="oncafe-dialog-actions">
+                    <button type="button" class="button button-primary" data-counter-order-created-ok>Đóng</button>
+                </div>
+            </section>`;
+        document.body.append(overlay);
+        const closeButton = overlay.querySelector("[data-counter-order-created-ok]");
+        closeButton.addEventListener("click", () => overlay.remove());
+        closeButton.focus();
+    }
+
+
+    renderQrSimulation(order) {
+        this.removeQrSimulation();
+        const panel = document.createElement("section");
+        panel.className = "qr-demo-panel";
+        panel.dataset.qrDemoPanel = "";
+        panel.innerHTML = `
+            <div class="qr-demo-copy">
+                <p class="eyebrow">THANH TOÁN QR</p>
+                <h3>Đơn ${escapeHtml(order.order_code || "#" + order.id)}</h3>
+                <p>Tổng tiền cần thanh toán</p>
+                <strong class="qr-demo-amount">${formatCurrency(order.total_amount)}</strong>
+                <p class="qr-demo-warning">Đây là xác nhận nội bộ, chưa kiểm tra giao dịch ngân hàng thực tế. Khách quét mã và xác nhận trên iPhone.</p>
+                <p data-qr-demo-feedback role="status" aria-live="polite">Đang tạo liên kết xác nhận...</p>
+                <button class="button button-primary" type="button" data-qr-retry hidden><i class="bi bi-qr-code me-1" aria-hidden="true"></i>Tạo lại mã QR</button>
+            </div>
+            <div class="qr-demo-code">
+                <img class="qr-demo-image" data-qr-image alt="Mã QR mở trang xác nhận thanh toán trên điện thoại" />
+                <small>QUÉT QR ĐỂ XÁC NHẬN</small>
+                <p><a data-qr-open target="_blank" rel="noopener">Mở trang xác nhận</a></p>
+                <small data-qr-expiry></small>
+            </div>`;
+        this.container.querySelector(".counter-order").append(panel);
+    }
+
+    removeQrSimulation() {
+        this.container.querySelector("[data-qr-demo-panel]")?.remove();
+    }
+
+    async createQrForOrder(order, result) {
+        const feedback = this.container.querySelector('[data-qr-demo-feedback]');
+        try {
+            const confirmPage = window.location.pathname.includes("/pages/admin/")
+                ? "../customer/qr-confirm.html"
+                : "./pages/customer/qr-confirm.html";
+            const confirmUrl = new URL(confirmPage, window.location.href);
+            confirmUrl.searchParams.set('token', result.token);
+            const qrModule = await import('https://esm.sh/qrcode@1.5.4');
+            const QRCode = qrModule.default || qrModule;
+            this.container.querySelector('[data-qr-image]').src = await QRCode.toDataURL(confirmUrl.href, { width: 220, margin: 2 });
+            const openLink = this.container.querySelector('[data-qr-open]');
+            openLink.href = confirmUrl.href;
+            this.container.querySelector('[data-qr-expiry]').textContent = 'Mã có hiệu lực đến ' + new Date(result.expires_at).toLocaleTimeString('vi-VN');
+            if (feedback) feedback.textContent = 'Khách quét mã bằng iPhone để mở trang xác nhận.';
+            const retryButton = this.container.querySelector("[data-qr-retry]");
+            if (retryButton) retryButton.hidden = true;
+        } catch (error) {
+            const retryButton = this.container.querySelector("[data-qr-retry]");
+            if (retryButton) retryButton.hidden = false;
+            if (feedback) {
+                feedback.textContent = error.message || "Không thể tạo mã QR.";
+                feedback.className = "app-error";
+            }
+            throw error;
+        }
+    }
+    watchQrPayment(order) {
+        this.paymentMonitor.start(order);
+    }
+
+    handleQrPaymentConfirmed(order) {
+        const message = `Khách đã xác nhận thanh toán thành công cho đơn ${order.order_code || "#" + order.id}.`;
+        this.setFeedback(message);
+        const feedback = this.container.querySelector("[data-qr-demo-feedback]");
+        if (feedback) {
+            feedback.textContent = "✓ ĐÃ XÁC NHẬN THANH TOÁN THÀNH CÔNG";
+            feedback.className = "app-success";
+        }
+        const panel = this.container.querySelector("[data-qr-demo-panel]");
+        if (panel) panel.classList.add("qr-payment-confirmed");
+        this.showQrPaymentSuccess(order);
+    }
+
+    showQrPaymentSuccess(order) {
+        const overlay = document.createElement("div");
+        overlay.className = "oncafe-dialog-backdrop";
+        overlay.innerHTML = `
+            <section class="oncafe-dialog" role="dialog" aria-modal="true" aria-labelledby="qr-payment-success-title">
+                <div class="oncafe-dialog-icon" aria-hidden="true">✓</div>
+                <h3 id="qr-payment-success-title">Thanh toán đã được xác nhận</h3>
+                <p>Đơn ${escapeHtml(order.order_code || "#" + order.id)} đã được khách xác nhận.</p>
+                <div class="oncafe-dialog-actions">
+                    <button type="button" class="button button-primary" data-qr-success-ok>OK</button>
+                </div>
+            </section>`;
+        document.body.append(overlay);
+        const okButton = overlay.querySelector("[data-qr-success-ok]");
+        okButton.addEventListener("click", () => {
+            overlay.remove();
+            if (typeof this.onQrPaymentConfirmed === "function") {
+                this.onQrPaymentConfirmed();
+            }
+        });
+        okButton.focus();
+    }
+
+    stopWatchingQrPayment() {
+        this.paymentMonitor.stop();
+    }
+
+    setFeedback(message, isError = false) {
+        const node = this.container.querySelector("[data-counter-feedback]");
+        node.textContent = message;
+        node.className = isError ? "app-error" : "";
+    }
+}

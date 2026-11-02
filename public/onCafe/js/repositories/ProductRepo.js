@@ -1,0 +1,144 @@
+import { supabase } from "../config/supabase.js";
+import { createUniqueId } from "../utils/IdUtils.js";
+
+const PRODUCT_SELECT = "id, name, price, quantity, image_url, is_available, category_id, categories(name)";
+
+function mapProduct(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        price: Number(row.price),
+        category: row.categories?.name ?? "",
+        quantity: Number(row.quantity ?? 0),
+        imageUrl: row.image_url ?? "",
+        status: row.is_available ? "active" : "inactive"
+    };
+}
+
+function throwIfError(error) {
+    if (error) throw error;
+}
+
+export class ProductRepository {
+    constructor(supabaseClient = supabase) {
+        this.supabase = supabaseClient;
+    }
+
+    async findAll() {
+        const { data, error } = await this.supabase
+            .from("products")
+            .select(PRODUCT_SELECT)
+            .order("id", { ascending: true });
+
+        throwIfError(error);
+        return (data ?? []).map(mapProduct);
+    }
+
+    async findById(id) {
+        const normalizedId = Number(id);
+        if (!Number.isInteger(normalizedId) || normalizedId <= 0) return null;
+
+        const { data, error } = await this.supabase
+            .from("products")
+            .select(PRODUCT_SELECT)
+            .eq("id", normalizedId)
+            .maybeSingle();
+
+        throwIfError(error);
+        return data ? mapProduct(data) : null;
+    }
+
+    async save(product) {
+        const categoryId = await this.getOrCreateCategory(product.category);
+        const { data, error } = await this.supabase
+            .from("products")
+            .insert({
+                name: product.name,
+                price: Number(product.price),
+                category_id: categoryId,
+                quantity: Number(product.quantity),
+                image_url: product.imageUrl || null,
+                is_available: product.status !== "inactive"
+            })
+            .select(PRODUCT_SELECT)
+            .single();
+
+        throwIfError(error);
+        return mapProduct(data);
+    }
+
+    async update(id, updatedData) {
+        const normalizedId = Number(id);
+        const categoryId = await this.getOrCreateCategory(updatedData.category);
+        const { data, error } = await this.supabase
+            .from("products")
+            .update({
+                name: updatedData.name,
+                price: Number(updatedData.price),
+                category_id: categoryId,
+                quantity: Number(updatedData.quantity),
+                image_url: updatedData.imageUrl || null,
+                is_available: updatedData.status !== "inactive"
+            })
+            .eq("id", normalizedId)
+            .select(PRODUCT_SELECT)
+            .single();
+
+        throwIfError(error);
+        return mapProduct(data);
+    }
+
+    async delete(id) {
+        const normalizedId = Number(id);
+        const { error } = await this.supabase
+            .from("products")
+            .delete()
+            .eq("id", normalizedId);
+
+        throwIfError(error);
+        return true;
+    }
+
+    async uploadImage(file) {
+        const extensionByType = {
+            "image/jpeg": "jpg",
+            "image/png": "png",
+            "image/webp": "webp",
+            "image/gif": "gif"
+        };
+        const extension = extensionByType[file.type];
+        const filePath = `products/${Date.now()}-${createUniqueId()}.${extension}`;
+
+        const { error: uploadError } = await this.supabase.storage
+            .from("product-images")
+            .upload(filePath, file, {
+                cacheControl: "3600",
+                upsert: false,
+                contentType: file.type
+            });
+
+        throwIfError(uploadError);
+
+        const { data } = this.supabase.storage
+            .from("product-images")
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
+    }
+
+    async getOrCreateCategory(name) {
+        const normalizedName = String(name ?? "").trim();
+        if (!normalizedName) {
+            throw new Error("Vui lòng nhập danh mục sản phẩm.");
+        }
+
+        const { data, error } = await this.supabase
+            .from("categories")
+            .upsert({ name: normalizedName }, { onConflict: "name" })
+            .select("id")
+            .single();
+
+        throwIfError(error);
+        return data.id;
+    }
+}
