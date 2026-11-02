@@ -184,6 +184,10 @@ textarea {
     white-space: nowrap;
 }
 
+.site-header #customerNav [data-auth-link][hidden] {
+    display: none;
+}
+
 .site-header #customerNav .nav-user-name {
     max-width: 210px;
     overflow: hidden;
