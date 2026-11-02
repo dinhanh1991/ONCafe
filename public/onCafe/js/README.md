@@ -11,9 +11,14 @@ js/
 ├── controllers/
 │   ├── admin/
 │   └── customer/
+│       ├── CustomerCheckoutController.js
+│       ├── CustomerMenuController.js
+│       └── CustomerProfileController.js
 ├── models/
 ├── repositories/
+│   └── CustomerProfileRepo.js
 ├── services/
+│   └── CustomerProfileService.js
 ├── ui/
 │   ├── admin/
 │   └── customer/
@@ -26,6 +31,7 @@ js/
     ├── admin/
     ├── auth/
     └── customer/
+        └── CustomerProfileView.js
 ```
 
 ## Responsibilities and dependency direction
@@ -70,6 +76,7 @@ Keep dependencies moving inward through explicit imports and constructor/functio
 - `app.js` starts the admin workspace through `controllers/admin/AdminController.js`.
 - `menu.js` starts the customer menu through `controllers/customer/CustomerMenuController.js`.
 - `my-orders.js` starts the customer order-history page.
+- `pages/customer/profile.html` displays and updates a signed-in customer's contact details through `CustomerProfileController`, `CustomerProfileService` and `CustomerProfileRepo`.
 - Authentication and customer navigation are currently initialized by modules under `views/auth/` and `views/customer/`. Treat these as legacy page bootstraps; move them to dedicated controllers only when their page flow is refactored and all HTML script paths can be updated together.
 
 ## Change checklist

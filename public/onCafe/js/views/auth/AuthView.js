@@ -51,7 +51,7 @@ if (loginForm) {
 
             showMessage(message, "Đăng nhập thành công. Đang chuyển trang...");
             const requestedRedirect = new URLSearchParams(window.location.search).get("redirect");
-            const customerRedirect = ["menu", "my-orders"].includes(requestedRedirect) ? requestedRedirect : "home";
+            const customerRedirect = ["menu", "my-orders", "profile"].includes(requestedRedirect) ? requestedRedirect : "home";
 
             // Admin và thu ngân đều dùng màn hình quản lý nhân viên.
             // Chỉ tài khoản khách hàng mới được chuyển sang khu vực mua hàng.
@@ -59,7 +59,8 @@ if (loginForm) {
                 window.location.href = "../../index.html";
             } else {
                 window.location.href = customerRedirect === "my-orders" ? "../customer/my-orders.html"
-                    : customerRedirect === "menu" ? "../customer/menu.html" : "../customer/home.html";
+                    : customerRedirect === "menu" ? "../customer/menu.html"
+                        : customerRedirect === "profile" ? "../customer/profile.html" : "../customer/home.html";
             }
         } catch (error) {
             showMessage(
