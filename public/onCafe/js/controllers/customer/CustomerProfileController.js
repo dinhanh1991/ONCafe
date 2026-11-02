@@ -20,7 +20,8 @@ const profileView = new CustomerProfileView(app, {
         const profile = await profileService.getMyProfile(session.user.id);
         return { profile, email: session.user.email };
     },
-    onSave: (profile) => profileService.updateMyProfile(profile)
+    onSave: (profile) => profileService.updateMyProfile(profile),
+    onChangePassword: (password) => authService.updatePassword(password)
 });
 
 void profileView.render();

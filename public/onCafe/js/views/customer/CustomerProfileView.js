@@ -2,10 +2,11 @@ import { CustomerValidator } from "../../validators/CustomerValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 
 export class CustomerProfileView {
-    constructor(container, { onLoad, onSave }) {
+    constructor(container, { onLoad, onSave, onChangePassword }) {
         this.container = container;
         this.onLoad = onLoad;
         this.onSave = onSave;
+        this.onChangePassword = onChangePassword;
         this.isSaving = false;
         this.savedProfile = null;
         this.container.addEventListener("submit", (event) => void this.handleSubmit(event));
@@ -17,7 +18,7 @@ export class CustomerProfileView {
                 <header class="customer-profile-heading">
                     <p class="eyebrow">TÀI KHOẢN ONCAFE</p>
                     <h1>Thông tin cá nhân</h1>
-                    <p>Xem và cập nhật thông tin liên hệ dùng cho các đơn hàng của bạn.</p>
+                    <p>Cập nhật thông tin liên hệ dùng cho đơn hàng và mật khẩu đăng nhập.</p>
                 </header>
                 <p class="customer-profile-feedback" data-profile-feedback role="status" aria-live="polite"></p>
                 <form class="customer-profile-form" data-profile-form novalidate>
@@ -32,20 +33,34 @@ export class CustomerProfileView {
                     </label>
                     <label>
                         Số điện thoại
-                        <input name="phone" type="tel" maxlength="25" autocomplete="tel" placeholder="Ví dụ: 0912345678" required disabled>
+                        <input name="phone" type="tel" maxlength="25" autocomplete="tel" placeholder="Ví dụ: 0912345678" data-required-message="Vui lòng nhập số điện thoại." required disabled>
                     </label>
                     <label class="customer-profile-address">
                         Địa chỉ
-                        <textarea name="address" maxlength="250" rows="3" autocomplete="street-address" placeholder="Địa chỉ liên hệ hoặc địa chỉ nhận hàng" required disabled></textarea>
+                        <textarea name="address" maxlength="250" rows="3" autocomplete="street-address" placeholder="Địa chỉ liên hệ hoặc địa chỉ nhận hàng" data-required-message="Vui lòng nhập địa chỉ." required disabled></textarea>
                     </label>
                     <div class="customer-profile-actions">
                         <button class="customer-profile-save" type="submit" disabled>Lưu thông tin</button>
                     </div>
                 </form>
+                <form class="customer-profile-form customer-profile-password-form" data-password-form novalidate>
+                    <h2>Đổi mật khẩu</h2>
+                    <p class="customer-profile-password-help">Mật khẩu mới cần có ít nhất 8 ký tự.</p>
+                    <label>
+                        Mật khẩu mới
+                        <input name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" data-required-message="Vui lòng nhập mật khẩu mới." required>
+                    </label>
+                    <label>
+                        Xác nhận mật khẩu mới
+                        <input name="confirmPassword" type="password" minlength="8" maxlength="72" autocomplete="new-password" data-required-message="Vui lòng xác nhận mật khẩu mới." required>
+                    </label>
+                    <div class="customer-profile-actions">
+                        <button class="customer-profile-save" type="submit">Đổi mật khẩu</button>
+                    </div>
+                </form>
             </section>`;
 
-        const form = this.container.querySelector("[data-profile-form]");
-        ValidationUI.bind(form);
+        this.container.querySelectorAll("form").forEach((form) => ValidationUI.bind(form));
         await this.load();
     }
 
@@ -81,9 +96,14 @@ export class CustomerProfileView {
 
     async handleSubmit(event) {
         const form = event.target;
-        if (!form.matches("[data-profile-form]")) return;
+        if (!form.matches("[data-profile-form], [data-password-form]")) return;
         event.preventDefault();
         if (this.isSaving) return;
+
+        if (form.matches("[data-password-form]")) {
+            await this.handlePasswordSubmit(form);
+            return;
+        }
 
         const feedback = this.container.querySelector("[data-profile-feedback]");
         const fullName = form.elements.fullName.value.trim();
@@ -114,6 +134,7 @@ export class CustomerProfileView {
             form.elements.phone.value = this.savedProfile.phone;
             form.elements.address.value = this.savedProfile.address;
             feedback.textContent = "Đã hủy quá trình lưu. Thông tin cũ được giữ nguyên.";
+            window.alert("Đã bỏ thay đổi. Thông tin cũ được giữ nguyên.");
             return;
         }
 
@@ -129,9 +150,55 @@ export class CustomerProfileView {
             form.elements.phone.value = phone;
             form.elements.address.value = address;
             feedback.textContent = "Đã lưu thay đổi thông tin cá nhân thành công.";
+            window.alert("Lưu thay đổi thông tin cá nhân thành công.");
         } catch (error) {
             console.error("Không thể lưu hồ sơ khách hàng:", error);
             feedback.textContent = error.message || "Không thể lưu thông tin cá nhân.";
+            feedback.classList.add("is-error");
+        } finally {
+            this.isSaving = false;
+            button.disabled = false;
+        }
+    }
+
+    async handlePasswordSubmit(form) {
+        const password = form.elements.password.value;
+        const confirmPassword = form.elements.confirmPassword.value;
+        const errors = {};
+
+        if (!password) {
+            errors.password = "Vui lòng nhập mật khẩu mới.";
+        } else if (password.length < 8) {
+            errors.password = "Mật khẩu mới cần có ít nhất 8 ký tự.";
+        } else if (password.length > 72) {
+            errors.password = "Mật khẩu mới không được vượt quá 72 ký tự.";
+        }
+        if (!confirmPassword) {
+            errors.confirmPassword = "Vui lòng xác nhận mật khẩu mới.";
+        } else if (password !== confirmPassword) {
+            errors.confirmPassword = "Mật khẩu xác nhận không khớp.";
+        }
+
+        if (Object.keys(errors).length) {
+            ValidationUI.showErrors(form, errors);
+            return;
+        }
+
+        ValidationUI.clearErrors(form);
+        const feedback = this.container.querySelector("[data-profile-feedback]");
+        const button = form.querySelector('button[type="submit"]');
+        feedback.classList.remove("is-error");
+        feedback.textContent = "Đang đổi mật khẩu...";
+        this.isSaving = true;
+        button.disabled = true;
+
+        try {
+            await this.onChangePassword(password);
+            form.reset();
+            feedback.textContent = "Đã đổi mật khẩu thành công.";
+        } catch (error) {
+            console.error("Không thể đổi mật khẩu khách hàng:", error);
+            feedback.textContent = error.message || "Không thể đổi mật khẩu.";
             feedback.classList.add("is-error");
         } finally {
             this.isSaving = false;

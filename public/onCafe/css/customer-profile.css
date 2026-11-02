@@ -55,6 +55,28 @@
     gap: 20px;
 }
 
+.customer-profile-password-form {
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+}
+
+.customer-profile-password-form h2 {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--ink);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.customer-profile-password-help {
+    grid-column: 1 / -1;
+    margin: -10px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
 .customer-profile-form label {
     display: grid;
     align-content: start;
