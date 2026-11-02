@@ -1,0 +1,3 @@
+#registerMessage:not(:empty) {
+    margin-top: 16px;
+}

@@ -1,0 +1,163 @@
+
+@import url("./modules/shared/validation.css");
+@import url("./modules/shared/site-layout.css");
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap");
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
+
+* {
+    box-sizing: border-box;
+}
+
+
+:root {
+    color-scheme: light;
+    --ink: #38251d;
+    --muted: #76665d;
+    --line: #e5ddd5;
+    --paper: #fffdfa;
+    --canvas: #f7f3ed;
+    --brand-primary: #38251d;
+    --brand-dark: #2f211b;
+    --brand-hover: #624333;
+    --brand-accent: #e9bd85;
+    --brand-link: #87552f;
+    --success: #176b52;
+    --success-dark: #10513f;
+    --success-soft: #e8f5ec;
+    --red: #a33a32;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
+    background: var(--canvas);
+    color: var(--ink);
+}
+
+.site-header {
+    min-height: 68px;
+    padding: 18px 7%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    background-color: var(--brand-dark);
+    color: #ffffff;
+}
+
+.site-header .brand {
+    color: var(--brand-accent);
+    font-size: 28px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.site-header nav {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.site-header nav a {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 15px;
+}
+
+.site-header nav a:hover {
+    color: var(--brand-accent);
+}
+
+.button,
+input {
+    font: inherit;
+}
+
+@media (max-width: 600px) {
+    .site-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .site-header nav {
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+}
+
+/* Navigation state for signed-in users */
+.nav-user-name {
+    color: var(--brand-accent);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.nav-logout-button {
+    padding: 7px 12px;
+    border: 1px solid var(--brand-accent);
+    border-radius: 7px;
+    background: transparent;
+    color: #ffffff;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.nav-logout-button:hover {
+    background: var(--brand-hover);
+}
+
+.nav-logout-button:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+
+
+.site-header nav a[aria-current="page"]{color:var(--brand-accent);font-weight:700}
+.site-header nav a:focus-visible,.nav-logout-button:focus-visible{outline:3px solid var(--brand-accent);outline-offset:4px;border-radius:4px}
+.nav-user-name{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:600px){
+    .site-header nav{width:100%;align-items:center}
+    .site-header nav a,.site-header nav button{min-height:36px;display:inline-flex;align-items:center}
+}
+
+
+/* Typography and Bootstrap Icons */
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+.bi {
+    display: inline-block;
+    line-height: 1;
+    vertical-align: -0.08em;
+}
+
+.admin-nav-icon .bi {
+    font-size: 17px;
+}
+
+.admin-nav-item,
+.dashboard-shortcut,
+.button,
+.header-button,
+.nav-logout-button,
+.auth-button {
+    transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.admin-nav-item .admin-nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bi.me-1 {
+    margin-right: 0.25rem;
+}
