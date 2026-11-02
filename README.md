@@ -8,11 +8,16 @@ Dự án được xây dựng bằng HTML, CSS và JavaScript ES Modules. Fronte
 
 ## Giao diện
 
-Ảnh chụp trang chủ khách hàng ở kích thước desktop:
+Một số ảnh chụp giao diện khách hàng:
 
 ![Trang chủ ONCafe](./report/screenshots/customer-home.png)
 
-Ảnh minh họa giao diện; các chức năng cần dữ liệu như thực đơn và đơn hàng cần kết nối Supabase đã cấu hình.
+<p align="center">
+  <img src="./report/screenshots/menu.png" alt="Trang thực đơn ONCafe" width="48%">
+  <img src="./report/screenshots/login.png" alt="Trang đăng nhập ONCafe" width="48%">
+</p>
+
+Các ảnh được chụp từ giao diện đang chạy; thực đơn hiển thị dữ liệu của môi trường Supabase được kết nối khi chụp. Dashboard nhân viên yêu cầu tài khoản có quyền phù hợp nên chưa đưa ảnh vào README.
 
 ## 1. Mục tiêu
 
