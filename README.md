@@ -2,9 +2,17 @@
 
 ONCafe là ứng dụng web hỗ trợ quản lý hoạt động của một quán cà phê/đồ uống. Hệ thống có hai khu vực chính: khu vực khách hàng để xem thực đơn và đặt hàng; khu vực nhân viên để quản lý đồ uống, đơn hàng, bán hàng tại quầy và theo dõi doanh thu.
 
-Dự án được xây dựng theo hướng frontend tĩnh bằng HTML, CSS và JavaScript ES Modules; các dịch vụ dữ liệu, xác thực và xử lý nghiệp vụ phía máy chủ sử dụng Supabase.
+Dự án được xây dựng bằng HTML, CSS và JavaScript ES Modules. Frontend tĩnh nằm trong `public/onCafe/`; dữ liệu, xác thực và các nghiệp vụ phía máy chủ sử dụng Supabase.
 
-> **Trạng thái dự án:** Các luồng chính gồm xác thực tài khoản, quản lý sản phẩm, đặt hàng online, quản lý đơn hàng, bán hàng tại quầy, phân quyền nhân viên và báo cáo doanh thu đã có mã nguồn triển khai. Việc vận hành đầy đủ cần cấu hình Supabase, áp dụng các migration và triển khai Edge Functions tương ứng.
+> **Trạng thái dự án:** Mã nguồn frontend và các migration/Edge Functions của Supabase được lưu trong repository. Để vận hành ứng dụng cần cấu hình dự án Supabase, áp dụng migration và triển khai các Edge Functions tương ứng.
+
+## Giao diện
+
+Ảnh chụp trang chủ khách hàng ở kích thước desktop:
+
+![Trang chủ ONCafe](./report/screenshots/customer-home.png)
+
+Ảnh minh họa giao diện; các chức năng cần dữ liệu như thực đơn và đơn hàng cần kết nối Supabase đã cấu hình.
 
 ## 1. Mục tiêu
 
@@ -122,7 +130,7 @@ Quyền truy cập được kiểm tra ở giao diện và được giới hạn
 ### Công cụ phát triển và quản lý mã nguồn
 - Visual Studio Code.
 - Live Server để chạy thử ứng dụng frontend.
-- Git và GitHub để quản lý phiên bản.
+- Git và GitLab để quản lý phiên bản và triển khai GitLab Pages.
 - Supabase CLI để triển khai migration và Edge Functions khi cần.
 
 ## 5. Kiến trúc và cấu trúc thư mục
@@ -130,34 +138,31 @@ Quyền truy cập được kiểm tra ở giao diện và được giới hạn
 Dự án tổ chức mã nguồn JavaScript theo các nhóm trách nhiệm như Model, Repository, Service, View và Validator. Cách tổ chức này giúp tách giao diện khỏi xử lý nghiệp vụ và truy cập dữ liệu.
 
     ONCafe/
-    ├── README.md
     ├── .gitlab-ci.yml
-    ├── code/
-    │   └── onCafe/
-    │       ├── index.html                 # Điểm vào khu vực nhân viên
-    │       ├── assets/
-    │       │   └── images/                # Hình ảnh giao diện và đồ uống
-    │       ├── pages/
-    │       │   ├── admin/                 # Các trang chức năng nhân viên
-    │       │   ├── auth/                  # Đăng nhập, đăng ký, đặt lại mật khẩu
-    │       │   └── customer/              # Trang chủ, thực đơn, đơn hàng, QR
-    │       ├── css/
-    │       │   ├── modules/
-    │       │   │   ├── admin/
-    │       │   │   └── shared/
-    │       │   └── *.css
-    │       └── js/
-    │           ├── config/                # Cấu hình Supabase
-    │           ├── import-export/         # Nhập và xuất dữ liệu sản phẩm
-    │           ├── models/                # Mô hình dữ liệu
-    │           ├── repositories/          # Truy cập dữ liệu
-    │           ├── services/               # Xử lý nghiệp vụ
-    │           ├── utils/                  # Hàm tiện ích và điều hướng
-    │           ├── validators/             # Kiểm tra dữ liệu đầu vào
-    │           └── views/                  # Giao diện và sự kiện người dùng
+    ├── README.md
+    ├── public/
+    │   └── onCafe/                         # Frontend tĩnh được GitLab Pages triển khai
+    │       ├── index.html                  # Điểm vào khu vực nhân viên
+    │       ├── assets/images/              # Hình ảnh sản phẩm
+    │       ├── css/                        # CSS chung và CSS theo màn hình
+    │       ├── js/
+    │       │   ├── config/                 # Cấu hình Supabase
+    │       │   ├── controllers/            # Điều phối luồng ứng dụng
+    │       │   ├── models/
+    │       │   ├── repositories/           # Truy cập dữ liệu
+    │       │   ├── services/               # Quy tắc nghiệp vụ
+    │       │   ├── ui/                     # Thành phần giao diện dùng lại
+    │       │   ├── utils/
+    │       │   ├── validators/
+    │       │   └── views/                  # Khởi tạo và hiển thị màn hình
+    │       └── pages/
+    │           ├── admin/
+    │           ├── auth/
+    │           └── customer/
+    ├── report/                             # Tài liệu báo cáo và ảnh README
     └── supabase/
         ├── functions/                      # Supabase Edge Functions
-        └── migrations/                     # Các thay đổi cấu trúc và nghiệp vụ DB
+        └── migrations/                     # Schema, RLS và nghiệp vụ database
 
 ### Trách nhiệm của các thành phần chính
 
@@ -188,11 +193,11 @@ Thư mục cũng có **admin-create-employee**; đây là function riêng trong 
 
 Thông tin kết nối Supabase được khai báo trong:
 
-    code/onCafe/js/config/supabase.js
+    public/onCafe/js/config/supabase.js
 
 Cần sử dụng Project URL và Publishable Key (hoặc anon key phù hợp) của dự án Supabase tương ứng. Publishable/anon key có thể xuất hiện ở frontend; quyền truy cập dữ liệu phải được bảo vệ bằng RLS và kiểm tra quyền ở phía máy chủ.
 
-**Không bao giờ đưa SUPABASE_SERVICE_ROLE_KEY vào frontend hoặc commit khóa bí mật lên GitHub.**
+**Không bao giờ đưa `SUPABASE_SERVICE_ROLE_KEY` vào frontend hoặc commit khóa bí mật vào Git.**
 
 ### Biến môi trường cho Edge Functions
 
@@ -216,19 +221,19 @@ Không chia sẻ giá trị thực tế của các khóa này trong README, mã 
 
 1. Clone repository:
 
-       git clone https://github.com/dinhanh1991/ONCafe.git
+       git clone https://git-dnu.onschool.edu.vn/fit4010-d/project.ver1.0/project.ver1.0-anhld150291
 
-2. Mở thư mục ONCafe bằng Visual Studio Code.
-3. Mở file code/onCafe/index.html bằng Live Server để chạy khu vực nhân viên.
-4. Để chạy giao diện khách hàng, mở code/onCafe/pages/customer/home.html bằng Live Server.
-5. Để đăng nhập/đăng ký, sử dụng các trang trong code/onCafe/pages/auth/.
+2. Mở thư mục repository vừa clone bằng Visual Studio Code.
+3. Mở `public/onCafe/index.html` bằng Live Server để chạy khu vực nhân viên.
+4. Để chạy giao diện khách hàng, mở `public/onCafe/pages/customer/home.html` bằng Live Server.
+5. Để đăng nhập/đăng ký, sử dụng các trang trong `public/onCafe/pages/auth/`.
 
 Ứng dụng sử dụng JavaScript ES Modules và gọi Supabase qua HTTP nên cần chạy bằng máy chủ HTTP; không nên mở trực tiếp file HTML bằng đường dẫn file://.
 
 ### Các bước cấu hình backend Supabase
 
 1. Tạo hoặc chọn dự án Supabase.
-2. Cập nhật Project URL và Publishable Key trong code/onCafe/js/config/supabase.js.
+2. Cập nhật Project URL và Publishable Key trong `public/onCafe/js/config/supabase.js`.
 3. Áp dụng toàn bộ migration trong supabase/migrations/ theo thứ tự.
 4. Cấu hình các biến môi trường cần thiết cho Edge Functions trong Supabase.
 5. Triển khai các function được ứng dụng sử dụng:
@@ -278,7 +283,7 @@ Dự án hiện chưa kèm bộ kiểm thử tự động trong repository; các
 
 ## 11. Repository
 
-- GitHub: https://github.com/dinhanh1991/ONCafe
+- GitLab: https://git-dnu.onschool.edu.vn/fit4010-d/project.ver1.0/project.ver1.0-anhld150291
 
 ---
 
