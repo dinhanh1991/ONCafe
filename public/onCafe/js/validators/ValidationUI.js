@@ -13,9 +13,9 @@ export class ValidationUI {
             const validity = field.validity;
             let message = "Giá trị chưa hợp lệ. Vui lòng kiểm tra lại.";
             if (validity.valueMissing) {
-                message = field.tagName === "SELECT"
+                message = field.dataset.requiredMessage || (field.tagName === "SELECT"
                     ? "Vui lòng chọn một giá trị."
-                    : "Vui lòng điền vào trường này.";
+                    : "Vui lòng điền vào trường này.");
             } else if (validity.typeMismatch && field.type === "email") {
                 message = "Vui lòng nhập địa chỉ email hợp lệ.";
             } else if (validity.typeMismatch && field.type === "url") {
