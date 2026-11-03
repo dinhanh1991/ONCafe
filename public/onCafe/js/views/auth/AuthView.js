@@ -53,10 +53,9 @@ if (loginForm) {
             const requestedRedirect = new URLSearchParams(window.location.search).get("redirect");
             const customerRedirect = ["menu", "my-orders", "profile"].includes(requestedRedirect) ? requestedRedirect : "home";
 
-            // Admin và thu ngân đều dùng màn hình quản lý nhân viên.
-            // Chỉ tài khoản khách hàng mới được chuyển sang khu vực mua hàng.
+            // Tài khoản nhân viên vào dashboard riêng; khách hàng vào khu vực mua hàng.
             if (profile.role === "admin" || profile.role === "cashier" || profile.role === "seller") {
-                window.location.href = "../../index.html";
+                window.location.href = "../admin/dashboard.html";
             } else {
                 window.location.href = customerRedirect === "my-orders" ? "../customer/my-orders.html"
                     : customerRedirect === "menu" ? "../customer/menu.html"
