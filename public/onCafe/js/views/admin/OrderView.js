@@ -1,4 +1,5 @@
 import { formatCurrency } from "../../utils/FormatUtils.js";
+import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
 
 const STATUS = {
     pending: "Chờ xác nhận", confirmed: "Đã xác nhận", preparing: "Đang pha chế",
@@ -47,7 +48,7 @@ export class OrderView {
         this.searchTerm = "";
         this.sortBy = "newest";
         this.currentPage = 1;
-        this.pageSize = 10;
+        this.pageSize = 5;
         this.busy = new Set();
         this.container.addEventListener("click", (event) => this.handleClick(event));
         this.container.addEventListener("input", (event) => {
@@ -166,24 +167,17 @@ export class OrderView {
             return;
         }
 
-        const pageNumbers = [...new Set([1, this.currentPage - 1, this.currentPage, this.currentPage + 1, totalPages])]
-            .filter((page) => page >= 1 && page <= totalPages)
-            .sort((first, second) => first - second);
-        const pageButtons = pageNumbers.map((page, index) => {
-            const previousPage = pageNumbers[index - 1];
-            const separator = previousPage && page - previousPage > 1
-                ? '<span aria-hidden="true">…</span>'
-                : "";
-            return `${separator}<button class="button button-small" type="button" data-order-page="${page}"${page === this.currentPage ? ' aria-current="page"' : ""}>${page}</button>`;
-        }).join("");
         const firstOrder = startIndex + 1;
         const lastOrder = Math.min(startIndex + pageOrders.length, orders.length);
-        pagination.innerHTML = `<span>Hiển thị ${firstOrder}–${lastOrder} / ${orders.length} đơn hàng</span>
-            <div class="pagination-actions">
-                <button class="button button-small" type="button" data-order-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
-                ${pageButtons}
-                <button class="button button-small" type="button" data-order-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
-            </div>`;
+        pagination.innerHTML = createPaginationMarkup({
+            currentPage: this.currentPage,
+            totalPages,
+            firstItem: firstOrder,
+            lastItem: lastOrder,
+            totalItems: orders.length,
+            itemLabel: "đơn hàng",
+            pageKey: "order"
+        });
 
         list.innerHTML = pageOrders.map((order) => {
             const itemRows = (order.items || []).map((item) =>

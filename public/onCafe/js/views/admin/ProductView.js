@@ -1,4 +1,5 @@
 import { formatCurrency } from "../../utils/FormatUtils.js";
+import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
 import { ProductValidator } from "../../validators/ProductValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 
@@ -190,11 +191,17 @@ export class ProductView {
             return;
         }
 
-        pagination.innerHTML = `<span>Trang ${this.currentPage} / ${totalPages} · ${products.length} sản phẩm</span>
-            <div class="pagination-actions">
-                <button class="button button-small" type="button" data-product-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
-                <button class="button button-small" type="button" data-product-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
-            </div>`;
+        const firstProduct = startIndex + 1;
+        const lastProduct = Math.min(startIndex + pageProducts.length, products.length);
+        pagination.innerHTML = createPaginationMarkup({
+            currentPage: this.currentPage,
+            totalPages,
+            firstItem: firstProduct,
+            lastItem: lastProduct,
+            totalItems: products.length,
+            itemLabel: "sản phẩm",
+            pageKey: "product"
+        });
 
         list.innerHTML = pageProducts.map((product) => `
             <tr>

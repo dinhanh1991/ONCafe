@@ -1,4 +1,5 @@
 import { formatCurrency } from "../../utils/FormatUtils.js";
+import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 import { CounterOrderPaymentMonitor } from "../../controllers/admin/CounterOrderPaymentMonitor.js";
@@ -119,24 +120,17 @@ export class CounterOrderView {
         if (!visibleProducts.length) {
             pagination.innerHTML = "";
         } else {
-            const pageNumbers = [...new Set([1, this.currentPage - 1, this.currentPage, this.currentPage + 1, totalPages])]
-                .filter((page) => page >= 1 && page <= totalPages)
-                .sort((first, second) => first - second);
-            const pageButtons = pageNumbers.map((page, index) => {
-                const previousPage = pageNumbers[index - 1];
-                const separator = previousPage && page - previousPage > 1
-                    ? '<span aria-hidden="true">…</span>'
-                    : "";
-                return `${separator}<button class="button button-small" type="button" data-counter-page="${page}"${page === this.currentPage ? ' aria-current="page"' : ""}>${page}</button>`;
-            }).join("");
             const firstProduct = startIndex + 1;
             const lastProduct = Math.min(startIndex + pageProducts.length, visibleProducts.length);
-            pagination.innerHTML = `<span>Hiển thị ${firstProduct}–${lastProduct} / ${visibleProducts.length} đồ uống</span>
-                <div class="pagination-actions">
-                    <button class="button button-small" type="button" data-counter-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
-                    ${pageButtons}
-                    <button class="button button-small" type="button" data-counter-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
-                </div>`;
+            pagination.innerHTML = createPaginationMarkup({
+                currentPage: this.currentPage,
+                totalPages,
+                firstItem: firstProduct,
+                lastItem: lastProduct,
+                totalItems: visibleProducts.length,
+                itemLabel: "đồ uống",
+                pageKey: "counter"
+            });
         }
         this.renderCart();
     }

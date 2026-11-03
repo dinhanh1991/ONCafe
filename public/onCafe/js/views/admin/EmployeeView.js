@@ -1,5 +1,6 @@
 import { EmployeeValidator } from "../../validators/EmployeeValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
+import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
@@ -202,11 +203,17 @@ export class EmployeeView {
             return;
         }
 
-        pagination.innerHTML = `<span>Trang ${this.currentPage} / ${totalPages} · ${employees.length} nhân viên</span>
-            <div class="pagination-actions">
-                <button class="button button-small" type="button" data-employee-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
-                <button class="button button-small" type="button" data-employee-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
-            </div>`;
+        const firstEmployee = startIndex + 1;
+        const lastEmployee = Math.min(startIndex + pageEmployees.length, employees.length);
+        pagination.innerHTML = createPaginationMarkup({
+            currentPage: this.currentPage,
+            totalPages,
+            firstItem: firstEmployee,
+            lastItem: lastEmployee,
+            totalItems: employees.length,
+            itemLabel: "nhân viên",
+            pageKey: "employee"
+        });
 
         list.innerHTML = pageEmployees.map((employee) => `
             <tr>
