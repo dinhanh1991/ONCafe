@@ -56,12 +56,7 @@ async function startApp() {
     if (accountLabel) accountLabel.textContent = `Xin chào, ${profile.full_name || "nhân viên"}`;
     if (logoutButton) logoutButton.hidden = false;
     if (dashboardHomeLink) {
-        dashboardHomeLink.innerHTML = `<i class="bi bi-house-door-fill me-1" aria-hidden="true"></i>${isSeller ? "Trang chủ Seller" : isAdmin ? "Trang chủ Admin" : "Trang tổng quan"}`;
-
-        dashboardHomeLink.href = window.location.pathname.includes("/pages/admin/")
-            ? "./dashboard.html"
-            : "./pages/admin/dashboard.html";
-
+        dashboardHomeLink.innerHTML = '<i class="bi bi-house-door-fill me-1" aria-hidden="true"></i>Trang chủ';
         dashboardHomeLink.hidden = false;
     }
 
