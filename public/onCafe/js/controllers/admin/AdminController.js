@@ -1,3 +1,4 @@
+// Điều phối khởi tạo ứng dụng quản trị, xác thực quyền và nạp các khu vực quản lý.
 import { AuthService } from "../../services/AuthService.js";
 import { ProductRepository } from "../../repositories/ProductRepo.js";
 import { ProductService } from "../../services/ProductService.js";
@@ -28,10 +29,13 @@ const app = document.querySelector("#app");
 const logoutButton = document.querySelector("#logoutButton");
 const dashboardHomeLink = document.querySelector("#dashboardHomeLink");
 
+// Hiển thị thông báo thành công hoặc lỗi cho người dùng.
 function showMessage(message, isError = false) {
+    // Hiển thị thông báo kết quả truy cập khu vực quản trị.
     renderAccessMessage(app, message, isError);
 }
 
+// Khởi tạo ứng dụng, xác thực tài khoản và nạp giao diện phù hợp.
 async function startApp() {
     if (!app) throw new Error("Không tìm thấy vùng hiển thị ứng dụng.");
     const session = await authService.getCurrentSession();
@@ -131,6 +135,7 @@ async function startApp() {
         onQrPaymentConfirmed: () => sectionController.activateSection("overview")
     });
 
+    // Tải danh sách sản phẩm từ dịch vụ.
     async function loadProducts() {
         if (!productView) return;
         productPanel.innerHTML = '<p role="status">Đang tải sản phẩm...</p>';
@@ -142,11 +147,13 @@ async function startApp() {
         }
     }
 
+    // Tải danh sách nhân viên từ dịch vụ.
     async function loadEmployees() {
         if (!employeeView) return;
         await employeeView.load();
     }
 
+    // Tải danh sách đơn hàng từ dịch vụ.
     async function loadOrders() {
         orderPanel.innerHTML = '<p role="status">Đang tải đơn hàng...</p>';
         try {
@@ -202,5 +209,6 @@ if (logoutButton) {
 
 startApp().catch((error) => {
     console.error("Không thể khởi chạy ONCafe:", error);
+    // Hiển thị thông báo thành công hoặc lỗi cho người dùng.
     showMessage(error.message || "Không thể tải ứng dụng. Vui lòng tải lại trang.", true);
 });

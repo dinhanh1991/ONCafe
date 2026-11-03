@@ -1,4 +1,5 @@
 /* Bổ sung cho luồng bán hàng tại quầy */
+/* Tóm tắt đơn được tách nền để nhân viên rà soát trước khi xác nhận. */
 .counter-order [data-counter-feedback] {
     min-height: 22px;
     margin: 8px 0;

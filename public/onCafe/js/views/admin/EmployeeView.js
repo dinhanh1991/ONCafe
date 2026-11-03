@@ -1,7 +1,9 @@
+// Hiển thị danh sách nhân viên và các biểu mẫu quản lý tài khoản.
 import { EmployeeValidator } from "../../validators/EmployeeValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
 
+// Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
     "<": "&lt;",
@@ -11,6 +13,7 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character
 }[character]));
 
 export class EmployeeView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(container, { onLoad, onCreate, onUpdate, onDelete }) {
         if (!container) throw new Error("Không tìm thấy vùng hiển thị nhân viên.");
 
@@ -54,6 +57,7 @@ export class EmployeeView {
         });
     }
 
+    // Cập nhật nội dung giao diện do thành phần này quản lý.
     render() {
         this.container.innerHTML = `
             <section class="employee-manager" aria-labelledby="employee-heading">
@@ -156,6 +160,7 @@ export class EmployeeView {
         return this;
     }
 
+    // Lấy danh sách nhân viên sau khi áp dụng các bộ lọc.
     getFilteredEmployees() {
         const term = this.searchTerm.trim().toLocaleLowerCase("vi");
         const employees = this.employees.filter((employee) =>
@@ -172,6 +177,7 @@ export class EmployeeView {
         return employees;
     }
 
+    // Tải dữ liệu cần thiết cho thành phần.
     async load() {
         this.setFeedback("Đang tải danh sách nhân viên...");
         try {
@@ -184,6 +190,7 @@ export class EmployeeView {
         }
     }
 
+    // Hiển thị danh sách dữ liệu theo trang và bộ lọc hiện tại.
     renderList() {
         const list = this.container.querySelector("[data-employee-list]");
         if (!list) return;
@@ -227,6 +234,7 @@ export class EmployeeView {
             </tr>`).join("");
     }
 
+    // Xử lý thao tác nhấn nút trong giao diện.
     handleClick(event) {
         const dialogButton = event.target.closest("[data-employee-dialog-action]");
         if (dialogButton && this.container.contains(dialogButton)) {
@@ -260,6 +268,7 @@ export class EmployeeView {
         }
     }
 
+    // Mở biểu mẫu thêm mới hoặc chỉnh sửa dữ liệu.
     openForm(id = null) {
         const employee = id === null
             ? null
@@ -296,6 +305,7 @@ export class EmployeeView {
         form.querySelector('[name="fullName"]').focus();
     }
 
+    // Đóng biểu mẫu và trả giao diện về danh sách.
     closeForm() {
         this.editingId = null;
         const form = this.container.querySelector("[data-employee-form]");
@@ -305,6 +315,7 @@ export class EmployeeView {
         this.container.querySelector("[data-employee-list-view]").hidden = false;
     }
 
+    // Kiểm tra và xử lý việc gửi biểu mẫu.
     async handleSubmit(event) {
         if (!event.target.matches("[data-employee-form]")) return;
         event.preventDefault();
@@ -344,6 +355,7 @@ export class EmployeeView {
         });
     }
 
+    // Lưu thông tin tài khoản nhân viên.
     async saveEmployee(employee, wasEditing, form) {
         if (this.busy) return;
         this.setBusy(true);
@@ -390,6 +402,7 @@ export class EmployeeView {
         }
     }
 
+    // Xóa tài khoản nhân viên sau khi xác nhận.
     async deleteEmployee(id) {
         const employee = this.employees.find((item) => String(item.id) === String(id));
         if (!employee) return;
@@ -429,6 +442,7 @@ export class EmployeeView {
         });
     }
 
+    // Hiển thị hộp thoại với nội dung và thao tác được cung cấp.
     showDialog({ type = "info", title, message, confirmText = "Đóng", hideCancel = false, onConfirm = null }) {
         const dialog = this.container.querySelector("[data-employee-dialog]");
         const actions = dialog.querySelector("[data-employee-dialog-actions]");
@@ -444,6 +458,7 @@ export class EmployeeView {
         actions.querySelector('[data-employee-dialog-action="confirm"]').focus();
     }
 
+    // Xử lý thao tác của hộp thoại.
     async handleDialogAction(action) {
         const dialog = this.container.querySelector("[data-employee-dialog]");
         if (action === "cancel") {
@@ -458,6 +473,7 @@ export class EmployeeView {
         if (callback) await callback();
     }
 
+    // Đánh dấu giao diện đang bận hoặc sẵn sàng.
     setBusy(busy) {
         this.busy = busy;
         this.container.querySelectorAll("[data-employee-action], [data-employee-form] button, [data-employee-form] input")
@@ -465,6 +481,7 @@ export class EmployeeView {
         this.renderList();
     }
 
+    // Hiển thị thông tin phản hồi cho người dùng.
     setFeedback(message, isError = false) {
         const feedback = this.container.querySelector("[data-employee-feedback]");
         if (!feedback) return;

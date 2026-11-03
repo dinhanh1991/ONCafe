@@ -1,4 +1,5 @@
 /* Product image upload */
+/* Giữ phần trợ giúp cạnh trường chọn ảnh dễ đọc nhưng không lấn nội dung chính. */
 .product-form input[type="file"] {
     min-height: 44px;
     padding: 8px;

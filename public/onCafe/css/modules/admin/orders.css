@@ -1,4 +1,5 @@
 /* Khu vực nhân viên: điều hướng và quản lý đơn hàng */
+/* Bảng giữ độ rộng cột có kiểm soát; khung ngoài xử lý phần cuộn ngang. */
 .app-tabs {
     display: flex;
     gap: 8px;
@@ -135,6 +136,7 @@
     opacity: 0.55;
 }
 @media (max-width: 760px) {
+    /* Bộ lọc xếp dọc trên thiết bị nhỏ để tránh các trường bị ép hẹp. */
     .app-tabs {
         overflow-x: auto;
     }

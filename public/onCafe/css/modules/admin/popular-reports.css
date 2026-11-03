@@ -1,4 +1,5 @@
 /* Popular drinks report */
+/* Nhãn món dùng cột co giãn, còn thanh so sánh giữ khoảng hiển thị tối thiểu. */
 .seller-popular-page {
     display: grid;
     gap: 22px;

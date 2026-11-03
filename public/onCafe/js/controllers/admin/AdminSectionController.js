@@ -1,5 +1,7 @@
+// Điều hướng giữa các khu vực quản trị theo quyền của tài khoản.
 import { isSectionAllowed, getAdminPageUrl } from "../../utils/admin/AdminNavigation.js";
 
+// Tạo bộ điều khiển điều hướng các khu vực quản trị.
 export function createAdminSectionController({
     role,
     isAdmin,
@@ -38,6 +40,7 @@ export function createAdminSectionController({
 
     let orderRefreshTimer = null;
 
+    // Điều hướng đến khu vực quản trị được chọn.
     function navigateToSection(sectionName) {
         if (!isSectionAllowed(role, sectionName)) {
             showMessage("Tài khoản của bạn không có quyền truy cập trang này.", true);
@@ -47,6 +50,7 @@ export function createAdminSectionController({
         if (targetUrl) window.location.href = targetUrl;
     }
 
+    // Kích hoạt khu vực quản trị được chọn.
     function activateSection(sectionName) {
         if (!sectionDetails[sectionName]) return;
         if (!isSectionAllowed(role, sectionName)) {

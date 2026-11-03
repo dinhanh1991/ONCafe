@@ -5,6 +5,7 @@ const formIds = new WeakMap();
 let nextFormId = 0;
 
 export class ValidationUI {
+    // Thu thập các lỗi kiểm tra gốc từ biểu mẫu HTML.
     static getNativeErrors(form) {
         const errors = {};
         for (const field of form.elements) {
@@ -41,6 +42,7 @@ export class ValidationUI {
         return errors;
     }
 
+    // Hiển thị các lỗi kiểm tra tại các trường tương ứng.
     static showErrors(form, errors = {}) {
         this.clearErrors(form);
         let formId = formIds.get(form);
@@ -78,6 +80,7 @@ export class ValidationUI {
         return firstInvalid;
     }
 
+    // Xóa trạng thái lỗi của trường nhập.
     static clearField(field) {
         if (!field) return;
         field.classList.remove("is-invalid");
@@ -89,6 +92,7 @@ export class ValidationUI {
         error.remove();
     }
 
+    // Xóa các thông báo lỗi kiểm tra trên biểu mẫu.
     static clearErrors(form) {
         if (!form) return;
         form.querySelectorAll("[data-validation-error]").forEach((error) => {
@@ -102,6 +106,7 @@ export class ValidationUI {
         });
     }
 
+    // Gỡ mã mô tả lỗi khỏi thuộc tính aria-describedby của trường.
     static removeDescription(field, descriptionId) {
         const descriptions = (field.getAttribute("aria-describedby") || "")
             .split(/\s+/)
@@ -113,6 +118,7 @@ export class ValidationUI {
         }
     }
 
+    // Gắn các trình xử lý kiểm tra vào biểu mẫu.
     static bind(form) {
         if (!form || form.dataset.validationBound === "true") return;
         form.dataset.validationBound = "true";

@@ -1,3 +1,4 @@
+// Dựng thanh điều hướng và trạng thái tài khoản phía khách hàng.
 import { AuthService } from "../../services/AuthService.js";
 
 const authService = new AuthService();
@@ -7,6 +8,7 @@ const nav = document.querySelector("#customerNav");
 if (nav) {
     const loginLink = nav.querySelector("[data-auth-link]");
 
+    // Cập nhật biểu tượng và nhãn của liên kết điều hướng.
     function setIconLabel(element, iconName, label) {
         const icon = document.createElement("i");
         icon.className = `bi ${iconName}`;
@@ -20,6 +22,7 @@ if (nav) {
         return text;
     }
 
+    // Cập nhật thanh điều hướng theo phiên đăng nhập.
     async function updateNavigation(session) {
         nav.querySelector(".nav-user-name")?.remove();
         nav.querySelector(".nav-orders-link")?.remove();

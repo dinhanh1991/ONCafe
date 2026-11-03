@@ -1,6 +1,8 @@
+// Dựng khung làm việc quản trị và các khu vực điều hướng.
 import { createNavButton } from "../../ui/admin/AdminNavButton.js";
 import { createDashboardPanel } from "./DashboardView.js";
 
+// Dựng khung làm việc quản trị theo hồ sơ và quyền người dùng.
 export function createAdminWorkspace(app, profile, {
     isAdmin,
     isSeller,

@@ -1,3 +1,4 @@
+// Dựng chân trang dùng chung và điều chỉnh liên kết theo trang hiện tại.
 document.body.id = document.body.id || "top";
 
 const path = window.location.pathname;

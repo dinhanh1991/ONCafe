@@ -1,3 +1,5 @@
+// Tạo thông báo dùng chung cho trạng thái truy cập khu vực quản trị.
+// Hiển thị nội dung truy cập thành công hoặc lỗi trong vùng quản trị.
 export function renderAccessMessage(app, message, isError = false) {
     if (!app) return;
     app.replaceChildren();

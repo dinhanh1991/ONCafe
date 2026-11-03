@@ -1,3 +1,4 @@
+/* Dành khoảng trống cho thông báo kết quả đăng ký khi biểu mẫu gửi đi. */
 #registerMessage:not(:empty) {
     margin-top: 16px;
 }

@@ -1,3 +1,4 @@
+// Các hàm định dạng thời gian và nhãn so sánh báo cáo doanh thu.
 export const currencyFormatter = new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -6,6 +7,7 @@ export const currencyFormatter = new Intl.NumberFormat("vi-VN", {
 
 export const numberFormatter = new Intl.NumberFormat("vi-VN");
 
+// Lấy ngày hiện tại theo múi giờ cục bộ.
 export function getLocalDateValue() {
     const parts = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Ho_Chi_Minh",
@@ -17,6 +19,7 @@ export function getLocalDateValue() {
     return `${values.year}-${values.month}-${values.day}`;
 }
 
+// Tạo nhãn hiển thị cho kỳ báo cáo.
 export function formatPeriodLabel(value, period) {
     const [year, month, day] = value.split("-").map(Number);
     if (period === "day") return `Ngày ${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
@@ -24,6 +27,7 @@ export function formatPeriodLabel(value, period) {
     return `Năm ${year}`;
 }
 
+// Tính mốc ngày của kỳ liền trước.
 export function getPreviousAnchorDate(value, period) {
     const [year, month, day] = value.split("-").map(Number);
     const date = period === "day"
@@ -34,6 +38,7 @@ export function getPreviousAnchorDate(value, period) {
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
 }
 
+// Tạo nhãn so sánh giữa hai giá trị.
 export function getComparisonLabel(currentValue, previousValue) {
     const current = Number(currentValue) || 0;
     const previous = Number(previousValue) || 0;

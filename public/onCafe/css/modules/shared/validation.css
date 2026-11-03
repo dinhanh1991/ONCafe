@@ -1,4 +1,5 @@
 /* Thông báo lỗi validation ngay dưới trường nhập liệu */
+/* Lớp invalid tăng độ tương phản của viền mà vẫn giữ trạng thái focus rõ ràng. */
 .field-error {
     display: block;
     margin-top: 5px;

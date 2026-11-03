@@ -1,3 +1,4 @@
+/* Bố cục trang chủ khách hàng: hero, món nổi bật và lời nhắn thương hiệu. */
 .home-header {
     position: sticky;
     top: 0;
@@ -50,6 +51,7 @@ body.customer-home {
 }
 
 .home-hero {
+    /* Chia nội dung và ảnh thành hai cột cân đối ở màn hình lớn. */
     position: relative;
     display: grid;
     min-height: 510px;
@@ -181,6 +183,7 @@ body.customer-home {
 }
 
 .home-image-note {
+    /* Thẻ chú thích nổi chồng lên ảnh hero mà không chiếm thêm cột. */
     position: absolute;
     right: -24px;
     bottom: 28px;
@@ -275,6 +278,7 @@ body.customer-home {
 }
 
 .home-drink-grid {
+    /* Ba gợi ý đồng đều; breakpoint bên dưới đổi thành danh sách ngang. */
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px;
@@ -413,6 +417,7 @@ body.customer-home {
 }
 
 @media (max-width: 760px) {
+    /* Thu hẹp khoảng cách và ảnh trước khi xếp toàn bộ nội dung dọc. */
     .home-header {
         padding: 16px 5%;
     }
@@ -458,6 +463,7 @@ body.customer-home {
 }
 
 @media (max-width: 560px) {
+    /* Trên điện thoại, thẻ món chuyển thành hàng ảnh nhỏ và tên món. */
     .home-shell {
         width: min(100% - 32px, 420px);
     }

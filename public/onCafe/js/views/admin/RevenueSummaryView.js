@@ -1,3 +1,4 @@
+// Hiển thị bản tóm tắt doanh thu trên trang tổng quan.
 import {
     currencyFormatter,
     numberFormatter,
@@ -9,6 +10,7 @@ import {
 
 
 export class RevenueSummaryView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(container, { onLoad }) {
         if (!container) throw new Error("Không tìm thấy vùng hiển thị tổng hợp doanh thu.");
         this.container = container;
@@ -61,11 +63,13 @@ export class RevenueSummaryView {
         this.updatePeriodLabel();
     }
 
+    // Cập nhật nhãn kỳ báo cáo theo lựa chọn hiện tại.
     updatePeriodLabel() {
         const label = this.container.querySelector("[data-summary-period-label]");
         if (label) label.textContent = formatPeriodLabel(this.anchorDate, this.period);
     }
 
+    // Xử lý thay đổi giá trị của trường nhập.
     handleChange(event) {
         if (event.target.matches("[data-summary-period]")) {
             this.period = event.target.value;
@@ -79,6 +83,7 @@ export class RevenueSummaryView {
         void this.load();
     }
 
+    // Tải dữ liệu cần thiết cho thành phần.
     async load() {
         const requestId = ++this.requestId;
         const feedback = this.container.querySelector("[data-summary-feedback]");

@@ -1,3 +1,4 @@
+// Điều phối tải và cập nhật hồ sơ khách hàng.
 import { AuthService } from "../../services/AuthService.js";
 import { CustomerProfileService } from "../../services/CustomerProfileService.js";
 import { CustomerProfileView } from "../../views/customer/CustomerProfileView.js";

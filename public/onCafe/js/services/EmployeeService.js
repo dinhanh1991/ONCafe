@@ -1,14 +1,18 @@
+// Thực hiện nghiệp vụ quản lý tài khoản và vai trò nhân viên.
 import { EmployeeRepository } from "../repositories/EmployeeRepo.js";
 
 export class EmployeeService {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(repository = new EmployeeRepository()) {
         this.repository = repository;
     }
 
+    // Lấy hồ sơ của người dùng hiện tại.
     async getMyProfile() {
         return this.repository.getMyProfile();
     }
 
+    // Lưu các thay đổi hồ sơ của khách hàng.
     async updateMyProfile(profile) {
         const fullName = String(profile.fullName || "").trim();
         const phone = String(profile.phone || "").trim();
@@ -27,6 +31,7 @@ export class EmployeeService {
         return this.repository.updateMyProfile({ fullName, phone, address });
     }
 
+    // Cập nhật mật khẩu của tài khoản hiện tại.
     async changeMyPassword(password) {
         if (typeof password !== "string" || password.length < 8 || password.length > 72) {
             throw new Error("Mật khẩu cần có từ 8 đến 72 ký tự.");
@@ -34,18 +39,22 @@ export class EmployeeService {
         return this.repository.changeMyPassword(password);
     }
 
+    // Tải danh sách nhân viên từ dịch vụ.
     async listEmployees() {
         return this.repository.listEmployees();
     }
 
+    // Tạo tài khoản nhân viên theo thông tin biểu mẫu.
     async createEmployee(employee) {
         return this.repository.createEmployee(employee);
     }
 
+    // Lưu các thay đổi thông tin tài khoản nhân viên.
     async updateEmployee(employee) {
         return this.repository.updateEmployee(employee);
     }
 
+    // Xóa tài khoản nhân viên sau khi xác nhận.
     async deleteEmployee(id) {
         return this.repository.deleteEmployee(id);
     }

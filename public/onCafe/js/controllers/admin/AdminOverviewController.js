@@ -1,6 +1,8 @@
+// Chuẩn bị dữ liệu và các bộ nạp cho trang tổng quan quản trị.
 import { AdminOverviewService } from "../../services/AdminOverviewService.js";
 import { AdminOverviewView } from "../../views/admin/DashboardView.js";
 
+// Tạo các hàm tải dữ liệu tổng quan theo vai trò nhân viên.
 export function createAdminOverviewLoaders({
     dashboardPanel,
     popularPanel,
@@ -11,6 +13,7 @@ export function createAdminOverviewLoaders({
 }) {
     const overviewView = new AdminOverviewView({ dashboardPanel, popularPanel });
 
+    // Lấy ngày hiện tại theo múi giờ hệ thống.
     function getToday() {
         return new Intl.DateTimeFormat("en-CA", {
             timeZone: "Asia/Ho_Chi_Minh",
@@ -20,6 +23,7 @@ export function createAdminOverviewLoaders({
         }).format(new Date());
     }
 
+    // Kiểm tra ngày truyền vào có trùng với hôm nay hay không.
     function isToday(dateValue, today) {
         return dateValue && new Intl.DateTimeFormat("en-CA", {
             timeZone: "Asia/Ho_Chi_Minh",
@@ -29,6 +33,7 @@ export function createAdminOverviewLoaders({
         }).format(new Date(dateValue)) === today;
     }
 
+    // Tải danh sách đồ uống được quan tâm.
     async function loadPopularDrinks() {
         const chart = popularPanel.querySelector("[data-popular-drinks]");
         if (!chart) return;
@@ -46,6 +51,7 @@ export function createAdminOverviewLoaders({
         }
     }
 
+    // Tải dữ liệu tổng quan dành cho quản trị viên.
     async function loadAdminOverview() {
         const revenueElement = dashboardPanel.querySelector("[data-admin-today-revenue]");
         const ordersElement = dashboardPanel.querySelector("[data-admin-today-orders]");
@@ -54,6 +60,7 @@ export function createAdminOverviewLoaders({
         const refreshButton = dashboardPanel.querySelector("[data-admin-overview-refresh]");
         if (!revenueElement || !ordersElement || !productsElement || !employeesElement) return;
 
+        // Tải dữ liệu cần thiết cho thành phần.
         const load = async () => {
             overviewView.setAdminOverviewLoading();
             if (refreshButton) refreshButton.disabled = true;
@@ -117,6 +124,7 @@ export function createAdminOverviewLoaders({
         await load();
     }
 
+    // Tải dữ liệu tổng quan dành cho thu ngân.
     async function loadCashierOverview() {
         overviewView.setCashierOverviewLoading();
 
@@ -176,6 +184,7 @@ export function createAdminOverviewLoaders({
         }
     }
 
+    // Tải dữ liệu tổng quan dành cho người bán hàng.
     async function loadSellerOverview() {
         const chart = dashboardPanel.querySelector("[data-seller-sales-chart]");
         if (!chart) return;

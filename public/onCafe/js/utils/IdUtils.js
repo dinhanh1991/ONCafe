@@ -1,3 +1,5 @@
+// Tạo mã định danh duy nhất cho dữ liệu phía giao diện.
+// Sinh một mã duy nhất để phân biệt đối tượng trong ứng dụng.
 export function createUniqueId() {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
         return crypto.randomUUID();

@@ -2,6 +2,7 @@
  * Giữ thứ tự import để bảo toàn thứ tự cascade hiện tại.
  * Mỗi module chỉ quản lý một nhóm giao diện/chức năng.
  */
+/* Thay đổi thứ tự các import có thể làm ghi đè kiểu dùng chung ở module sau. */
 @import url("./modules/admin/base.css");
 @import url("./modules/admin/product-upload.css");
 @import url("./modules/shared/dialogs.css");

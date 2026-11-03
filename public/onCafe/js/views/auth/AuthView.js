@@ -4,6 +4,7 @@ import { ValidationUI } from "../../validators/ValidationUI.js";
 
 const authService = new AuthService();
 
+// Hiển thị thông báo thành công hoặc lỗi cho người dùng.
 function showMessage(element, message, isError = false) {
     element.textContent = message;
     element.dataset.state = isError ? "error" : "success";

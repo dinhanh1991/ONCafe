@@ -2,6 +2,7 @@ import { ValidationUtils } from "./ValidationUtils.js";
 import { CustomerValidator } from "./CustomerValidator.js";
 
 export class OrderValidator {
+    // Kiểm tra danh sách món và số lượng đặt hàng.
     static validateItems(items) {
         const errors = {};
 

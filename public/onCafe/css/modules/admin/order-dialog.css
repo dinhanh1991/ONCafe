@@ -1,4 +1,5 @@
 /* Popup xác nhận dùng chung cho thao tác đơn hàng */
+/* Lớp phủ cố định giúp hộp thoại nằm trên bảng kể cả khi trang đang cuộn. */
 .oncafe-dialog-backdrop {
     position: fixed;
     inset: 0;

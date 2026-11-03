@@ -1,4 +1,5 @@
 /* Phân trang danh sách quản trị */
+/* Trạng thái trang hiện hành được phân biệt qua aria-current, không chỉ hover. */
 .product-pagination {
     display: flex;
     align-items: center;

@@ -11,6 +11,7 @@ import { CustomerPaymentMonitor } from "./CustomerPaymentMonitor.js";
  * Không trực tiếp truy cập Supabase; dữ liệu được xử lý qua CustomerCheckoutService.
  */
 export class CustomerCheckoutController {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor({
         checkoutService,
         cartService,
@@ -55,6 +56,7 @@ export class CustomerCheckoutController {
         });
     }
 
+    // Gắn các trình xử lý cho sự kiện giao diện.
     bindEvents() {
         if (this.checkoutButton && this.checkoutForm) {
             this.checkoutButton.addEventListener("click", () => {
@@ -67,18 +69,22 @@ export class CustomerCheckoutController {
         });
     }
 
+    // Lấy giỏ hàng hiện tại.
     getCart() {
         return this.getCartItems();
     }
 
+    // Cập nhật các số liệu tóm tắt trên giao diện.
     updateSummary() {
         this.checkoutView.updateSummary(this.cartService.getSubtotal());
     }
 
+    // Hiển thị thông báo thành công hoặc lỗi cho người dùng.
     showMessage(message, isError = false) {
         this.checkoutView.showMessage(message, isError);
     }
 
+    // Mở bước thanh toán với thông tin giỏ hàng hiện tại.
     async openCheckout() {
         if (this.getCart().length === 0) {
             this.showMenuStatus("Giỏ hàng đang trống. Hãy thêm ít nhất một đồ uống trước.", true);
@@ -104,6 +110,7 @@ export class CustomerCheckoutController {
         this.showMessage("Vui lòng kiểm tra thông tin và xác nhận đơn hàng.");
     }
 
+    // Gửi thông tin đơn hàng sau khi biểu mẫu hợp lệ.
     async submitOrder(event) {
         event.preventDefault();
 

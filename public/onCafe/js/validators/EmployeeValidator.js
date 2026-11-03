@@ -1,6 +1,8 @@
+// Kiểm tra dữ liệu biểu mẫu tài khoản nhân viên.
 import { ValidationUtils } from "./ValidationUtils.js";
 
 export class EmployeeValidator {
+    // Kiểm tra tính hợp lệ của dữ liệu đầu vào.
     static validate(data = {}) {
         const errors = {};
         const fullName = String(data.fullName ?? "").trim();

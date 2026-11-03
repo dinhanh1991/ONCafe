@@ -4,6 +4,7 @@
  * Không truy cập repository, service hoặc Supabase.
  */
 export class CustomerMenuView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor({
         menuGrid,
         menuStatus,
@@ -26,6 +27,7 @@ export class CustomerMenuView {
         this.onRemoveFromCart = onRemoveFromCart;
     }
 
+    // Cập nhật thông báo trạng thái trên giao diện.
     showStatus(message, isError = false) {
         if (!this.menuStatus) return;
 
@@ -34,19 +36,23 @@ export class CustomerMenuView {
         this.menuStatus.hidden = false;
     }
 
+    // Ẩn thông báo trạng thái khỏi giao diện.
     hideStatus() {
         if (this.menuStatus) this.menuStatus.hidden = true;
     }
 
+    // Xóa các món đang hiển thị trên thực đơn.
     clearMenu() {
         this.menuGrid?.replaceChildren();
     }
 
+    // Hiển thị danh sách món trên thực đơn.
     renderMenu(products) {
         if (!this.menuGrid) return;
         this.menuGrid.replaceChildren(...products.map((product) => this.createMenuCard(product)));
     }
 
+    // Tạo thẻ hiển thị một món trên thực đơn.
     createMenuCard(product) {
         const card = document.createElement("article");
         card.className = "menu-card";
@@ -95,6 +101,7 @@ export class CustomerMenuView {
         return card;
     }
 
+    // Cập nhật các món và tổng tiền trong giỏ hàng.
     renderCart(items, totalQuantity, totalPrice) {
         if (!this.cartItems || !this.cartTotal || !this.cartCount) return;
 

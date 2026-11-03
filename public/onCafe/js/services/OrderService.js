@@ -1,3 +1,4 @@
+// Kiểm tra quy tắc nghiệp vụ trước khi thực hiện thao tác đơn hàng.
 const ALLOWED_STATUS = new Set([
     "confirmed",
     "preparing",
@@ -8,14 +9,17 @@ const ALLOWED_STATUS = new Set([
 ]);
 
 export class OrderService {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(orderRepository) {
         this.orderRepository = orderRepository;
     }
 
+    // Lấy danh sách đơn hàng dành cho nhân viên.
     async getStaffOrders() {
         return await this.orderRepository.findAllForStaff();
     }
 
+    // Gửi yêu cầu thay đổi trạng thái đơn hàng.
     async updateStatus(orderId, status) {
         if (!ALLOWED_STATUS.has(status)) {
             throw new Error("Trạng thái đơn hàng không hợp lệ.");
@@ -24,12 +28,14 @@ export class OrderService {
         return await this.orderRepository.updateStatus(orderId, status);
     }
 
+    // Ghi nhận đơn giao hàng đã đến nơi.
     async markDeliveryArrived(orderId) {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
         return await this.orderRepository.markDeliveryArrived(id);
     }
 
+    // Gửi yêu cầu tạo đơn tại quầy và chuẩn hóa kết quả.
     async createCounterOrder(order) {
         if (!order || !Array.isArray(order.items) || order.items.length === 0) {
             throw new Error("Vui lòng chọn ít nhất một đồ uống.");
@@ -55,10 +61,12 @@ export class OrderService {
         return createdOrder;
     }
 
+    // Tạo yêu cầu xác nhận thanh toán QR.
     async createQrConfirmation(orderId) {
         return await this.orderRepository.createQrConfirmation(orderId);
     }
 
+    // Cập nhật trạng thái thanh toán của đơn hàng.
     async updatePayment(orderId, paymentStatus) {
         if (!["paid", "unpaid"].includes(paymentStatus)) {
             throw new Error("Trạng thái thanh toán không hợp lệ.");

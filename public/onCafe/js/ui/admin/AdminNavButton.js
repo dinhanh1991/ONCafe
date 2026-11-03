@@ -1,3 +1,5 @@
+// Tạo nút điều hướng dùng chung trong giao diện quản trị.
+// Tạo nút chuyển đến khu vực quản trị được chỉ định.
 export function createNavButton(iconClass, label, value) {
     const button = document.createElement("button");
     button.type = "button";

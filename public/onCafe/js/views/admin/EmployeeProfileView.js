@@ -1,11 +1,14 @@
+// Hiển thị và chỉnh sửa hồ sơ nhân viên đang đăng nhập.
 import { CustomerValidator } from "../../validators/CustomerValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 
+// Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
 }[character]));
 
 export class EmployeeProfileView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(container, { onLoad, onSave, onChangePassword }) {
         this.container = container;
         this.onLoad = onLoad;
@@ -19,6 +22,7 @@ export class EmployeeProfileView {
         });
     }
 
+    // Cập nhật nội dung giao diện do thành phần này quản lý.
     async render() {
         this.container.innerHTML = `
             <section class="employee-profile">
@@ -66,6 +70,7 @@ export class EmployeeProfileView {
         await this.load();
     }
 
+    // Tải dữ liệu cần thiết cho thành phần.
     async load() {
         const feedback = this.container.querySelector("[data-profile-feedback]");
         feedback.textContent = "Đang tải thông tin tài khoản...";
@@ -84,11 +89,13 @@ export class EmployeeProfileView {
         }
     }
 
+    // Chuyển mã vai trò thành tên hiển thị cho người dùng.
     roleLabel(role) {
         const labels = { admin: "Quản trị viên", seller: "Người bán hàng", cashier: "Thu ngân", customer: "Khách hàng" };
         return labels[role] || "Chưa xác định";
     }
 
+    // Kiểm tra và xử lý việc gửi biểu mẫu.
     async handleSubmit(event) {
         const form = event.target;
         if (!form.matches("[data-profile-form], [data-password-form]")) return;

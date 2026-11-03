@@ -1,3 +1,4 @@
+// Ánh xạ trang quản trị và kiểm tra quyền truy cập từng khu vực.
 const PAGE_FILES = {
     overview: "dashboard",
     drinks: "products",
@@ -10,6 +11,7 @@ const PAGE_FILES = {
     "my-profile": "profile"
 };
 
+// Kiểm tra vai trò có quyền truy cập khu vực quản trị hay không.
 export function isSectionAllowed(role, sectionName) {
     const isAdmin = role === "admin";
     const isSeller = role === "seller";
@@ -31,6 +33,7 @@ export function isSectionAllowed(role, sectionName) {
     return permissions[sectionName] === true;
 }
 
+// Tạo đường dẫn đến trang quản trị theo khu vực.
 export function getAdminPageUrl(sectionName, currentPath = window.location.pathname) {
     const file = PAGE_FILES[sectionName];
     if (!file) return null;

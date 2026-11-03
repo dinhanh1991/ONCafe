@@ -1,8 +1,10 @@
+// Hiển thị, lọc và quản lý danh mục sản phẩm trong trang quản trị.
 import { formatCurrency } from "../../utils/FormatUtils.js";
 import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
 import { ProductValidator } from "../../validators/ProductValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 
+// Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
     "<": "&lt;",
@@ -12,6 +14,7 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character
 }[character]));
 
 export class ProductView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(container, { onSave, onDelete }) {
         if (!container) throw new Error("Không tìm thấy vùng hiển thị sản phẩm.");
 
@@ -56,6 +59,7 @@ export class ProductView {
         this.container.addEventListener("submit", (event) => this.handleSubmit(event));
     }
 
+    // Cập nhật nội dung giao diện do thành phần này quản lý.
     render(products) {
         this.products = Array.isArray(products) ? products : [];
         this.container.innerHTML = `
@@ -155,6 +159,7 @@ export class ProductView {
         return this;
     }
 
+    // Lấy danh sách sản phẩm sau khi áp dụng các bộ lọc.
     getFilteredProducts() {
         const term = this.searchTerm.trim().toLocaleLowerCase("vi");
         const products = this.products.filter((product) =>
@@ -172,6 +177,7 @@ export class ProductView {
         return products;
     }
 
+    // Hiển thị danh sách dữ liệu theo trang và bộ lọc hiện tại.
     renderList() {
         const list = this.container.querySelector("[data-product-list]");
         if (!list) return;
@@ -219,6 +225,7 @@ export class ProductView {
             </tr>`).join("");
     }
 
+    // Xử lý thao tác nhấn nút trong giao diện.
     handleClick(event) {
         const button = event.target.closest("button[data-action], button[data-dialog-action], button[data-product-page]");
         if (!button || !this.container.contains(button)) return;
@@ -254,6 +261,7 @@ export class ProductView {
         }
     }
 
+    // Mở biểu mẫu thêm mới hoặc chỉnh sửa dữ liệu.
     openForm(id = null) {
         const form = this.container.querySelector("[data-product-form]");
         const product = id === null ? null : this.products.find((item) => String(item.id) === String(id));
@@ -278,6 +286,7 @@ export class ProductView {
         form.querySelector('[name="name"]').focus();
     }
 
+    // Đóng biểu mẫu và trả giao diện về danh sách.
     closeForm() {
         const form = this.container.querySelector("[data-product-form]");
         form.reset();
@@ -285,6 +294,7 @@ export class ProductView {
         this.showList();
     }
 
+    // Hiển thị danh sách sản phẩm sau khi đóng biểu mẫu.
     showList() {
         this.detailId = null;
         this.container.querySelector("[data-product-form-view]").hidden = true;
@@ -292,6 +302,7 @@ export class ProductView {
         this.container.querySelector("[data-product-list-view]").hidden = false;
     }
 
+    // Mở chi tiết của mục được chọn.
     openDetail(id) {
         const product = this.products.find((item) => String(item.id) === String(id));
         if (!product) return;
@@ -329,6 +340,7 @@ export class ProductView {
         this.container.querySelector("[data-product-form-view]").hidden = true;
     }
 
+    // Kiểm tra và xử lý việc gửi biểu mẫu.
     async handleSubmit(event) {
         if (!event.target.matches("[data-product-form]")) return;
         event.preventDefault();
@@ -387,6 +399,7 @@ export class ProductView {
         });
     }
 
+    // Yêu cầu xác nhận trước khi xóa sản phẩm.
     confirmDeleteProduct(id) {
         const product = this.products.find((item) => String(item.id) === String(id));
         if (!product) return;
@@ -422,6 +435,7 @@ export class ProductView {
         });
     }
 
+    // Hiển thị hộp thoại với nội dung và thao tác được cung cấp.
     showDialog({ type = "info", title, message, confirmText = "Đóng", hideCancel = false, onConfirm = null }) {
         const dialog = this.container.querySelector("[data-dialog]");
         const actions = dialog.querySelector("[data-dialog-actions]");
@@ -437,6 +451,7 @@ export class ProductView {
         actions.querySelector('[data-dialog-action="confirm"]').focus();
     }
 
+    // Xử lý thao tác của hộp thoại.
     async handleDialogAction(action) {
         const dialog = this.container.querySelector("[data-dialog]");
         if (action === "cancel") {

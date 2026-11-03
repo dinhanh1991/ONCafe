@@ -4,12 +4,14 @@
  * Không thao tác DOM; View chịu trách nhiệm hiển thị kết quả.
  */
 export class CounterOrderController {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor({ createOrder, refreshOrders, createQrConfirmation }) {
         this.createOrderAction = createOrder;
         this.refreshOrdersAction = refreshOrders;
         this.createQrConfirmationAction = createQrConfirmation;
     }
 
+    // Tải lại danh sách đơn hàng mới nhất.
     async refreshOrders() {
         try {
             await this.refreshOrdersAction?.();
@@ -20,6 +22,7 @@ export class CounterOrderController {
         }
     }
 
+    // Kiểm tra dữ liệu và gửi yêu cầu tạo đơn hàng.
     async createOrder(order) {
         let createdOrder;
 
@@ -67,6 +70,7 @@ export class CounterOrderController {
         }
     }
 
+    // Thử lại thao tác xác nhận thanh toán QR.
     async retryQrConfirmation(order) {
         if (!order?.id) {
             throw new Error("Không tìm thấy đơn hàng cần tạo lại mã QR.");
