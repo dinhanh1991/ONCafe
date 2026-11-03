@@ -148,7 +148,7 @@ Dự án tổ chức mã nguồn JavaScript theo các nhóm trách nhiệm như 
     ├── README.md
     ├── public/
     │   └── onCafe/                         # Frontend tĩnh được GitLab Pages triển khai
-    │       ├── index.html                  # Điểm vào khu vực nhân viên
+    │       ├── index.html                  # Điểm vào công khai, chuyển đến trang chủ khách hàng
     │       ├── assets/images/              # Hình ảnh sản phẩm
     │       ├── css/                        # CSS chung và CSS theo màn hình
     │       ├── js/
@@ -234,9 +234,9 @@ Không chia sẻ giá trị thực tế của các khóa này trong README, mã 
        git clone https://git-dnu.onschool.edu.vn/fit4010-d/project.ver1.0/project.ver1.0-anhld150291
 
 2. Mở thư mục repository vừa clone bằng Visual Studio Code.
-3. Mở `public/onCafe/index.html` bằng Live Server để chạy khu vực nhân viên.
-4. Để chạy giao diện khách hàng, mở `public/onCafe/pages/customer/home.html` bằng Live Server.
-5. Để đăng nhập/đăng ký, sử dụng các trang trong `public/onCafe/pages/auth/`.
+3. Mở `public/onCafe/index.html` bằng Live Server để vào trang chủ ONCafe.
+4. Khu vực nhân viên nằm tại `public/onCafe/pages/admin/dashboard.html` và yêu cầu tài khoản nhân viên.
+5. Để đăng nhập/đăng ký khách hàng, sử dụng các trang trong `public/onCafe/pages/auth/`.
 
 Ứng dụng sử dụng JavaScript ES Modules và gọi Supabase qua HTTP nên cần chạy bằng máy chủ HTTP; không nên mở trực tiếp file HTML bằng đường dẫn file://.
 
