@@ -20,6 +20,8 @@ export class CounterOrderView {
         this.pendingQrOrder = null;
         this.reviewOrder = null;
         this.products = [];
+        this.currentPage = 1;
+        this.pageSize = 5;
         this.cart = new Map();
         this.busy = false;
         this.container.addEventListener("submit", (event) => void this.handleSubmit(event));
@@ -28,7 +30,10 @@ export class CounterOrderView {
             if (form) ValidationUI.bind(form);
         });
         this.container.addEventListener("input", (event) => {
-            if (event.target.matches("[data-counter-search]")) this.renderProducts();
+            if (event.target.matches("[data-counter-search]")) {
+                this.currentPage = 1;
+                this.renderProducts();
+            }
         });
         this.container.addEventListener("change", (event) => this.handleChange(event));
         this.container.addEventListener("click", (event) => this.handleClick(event));
@@ -59,6 +64,7 @@ export class CounterOrderView {
                         </select>
                     </div>
                     <div class="table-scroll"><table class="product-table"><thead><tr><th>Đồ uống</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Số lượng</th></tr></thead><tbody data-counter-products><tr><td colspan="5">Đang tải...</td></tr></tbody></table></div>
+                    <nav class="product-pagination" data-counter-pagination aria-label="Phân trang đồ uống"></nav>
                     <h3>Giỏ hàng</h3><div data-counter-cart></div>
                     <p class="counter-total">Tổng tiền: <strong data-counter-total>0 ₫</strong></p>
                     <div data-counter-review hidden></div>
@@ -99,18 +105,49 @@ export class CounterOrderView {
             categorySelect.value = categories.includes(selectedCategory) ? selectedCategory : "";
         }
         const searchTerm = (this.container.querySelector("[data-counter-search]")?.value || "").trim().toLocaleLowerCase("vi");
-        const visibleProducts = this.products.filter((product) => {
-            const name = String(product.name || "").toLocaleLowerCase("vi");
-            const category = String(product.category || "");
-            return (!searchTerm || name.includes(searchTerm)) &&
-                (!categorySelect?.value || category === categorySelect.value);
-        });
-        body.innerHTML = visibleProducts.map((p) => `<tr>
+        const visibleProducts = this.getVisibleProducts(searchTerm, categorySelect?.value || "");
+        const pagination = this.container.querySelector("[data-counter-pagination]");
+        const totalPages = Math.max(1, Math.ceil(visibleProducts.length / this.pageSize));
+        this.currentPage = Math.min(this.currentPage, totalPages);
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const pageProducts = visibleProducts.slice(startIndex, startIndex + this.pageSize);
+        body.innerHTML = pageProducts.map((p) => `<tr>
             <td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.category || "Khác")}</td>
             <td>${formatCurrency(p.price)}</td><td>${p.quantity}</td>
             <td><input name="quantity_${p.id}" aria-label="Số lượng ${escapeHtml(p.name)}" type="number" min="0" max="${p.quantity}" step="1" value="${this.cart.get(String(p.id)) || 0}" data-counter-quantity="${p.id}"></td>
         </tr>`).join("") || '<tr><td colspan="5">Không tìm thấy đồ uống phù hợp hoặc đã hết hàng.</td></tr>';
+        if (!visibleProducts.length) {
+            pagination.innerHTML = "";
+        } else {
+            const pageNumbers = [...new Set([1, this.currentPage - 1, this.currentPage, this.currentPage + 1, totalPages])]
+                .filter((page) => page >= 1 && page <= totalPages)
+                .sort((first, second) => first - second);
+            const pageButtons = pageNumbers.map((page, index) => {
+                const previousPage = pageNumbers[index - 1];
+                const separator = previousPage && page - previousPage > 1
+                    ? '<span aria-hidden="true">…</span>'
+                    : "";
+                return `${separator}<button class="button button-small" type="button" data-counter-page="${page}"${page === this.currentPage ? ' aria-current="page"' : ""}>${page}</button>`;
+            }).join("");
+            const firstProduct = startIndex + 1;
+            const lastProduct = Math.min(startIndex + pageProducts.length, visibleProducts.length);
+            pagination.innerHTML = `<span>Hiển thị ${firstProduct}–${lastProduct} / ${visibleProducts.length} đồ uống</span>
+                <div class="pagination-actions">
+                    <button class="button button-small" type="button" data-counter-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
+                    ${pageButtons}
+                    <button class="button button-small" type="button" data-counter-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
+                </div>`;
+        }
         this.renderCart();
+    }
+
+    getVisibleProducts(searchTerm, selectedCategory) {
+        return this.products.filter((product) => {
+            const name = String(product.name || "").toLocaleLowerCase("vi");
+            const category = String(product.category || "");
+            return (!searchTerm || name.includes(searchTerm)) &&
+                (!selectedCategory || category === selectedCategory);
+        });
     }
 
     renderCart() {
@@ -126,6 +163,7 @@ export class CounterOrderView {
 
     handleChange(event) {
         if (event.target.matches("[data-counter-category]")) {
+            this.currentPage = 1;
             this.renderProducts();
             return;
         }
@@ -144,6 +182,23 @@ export class CounterOrderView {
     }
 
     async handleClick(event) {
+        const pageButton = event.target instanceof Element
+            ? event.target.closest("button[data-counter-page]")
+            : null;
+        if (pageButton && this.container.contains(pageButton)) {
+            event.preventDefault();
+            const requestedPage = Number.parseInt(pageButton.dataset.counterPage, 10);
+            const searchTerm = (this.container.querySelector("[data-counter-search]")?.value || "").trim().toLocaleLowerCase("vi");
+            const selectedCategory = this.container.querySelector("[data-counter-category]")?.value || "";
+            const filteredProducts = this.getVisibleProducts(searchTerm, selectedCategory);
+            const totalPages = Math.max(1, Math.ceil(filteredProducts.length / this.pageSize));
+            if (Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= totalPages) {
+                this.currentPage = requestedPage;
+                this.renderProducts();
+                this.container.querySelector(`button[data-counter-page="${requestedPage}"][aria-current="page"]`)?.focus();
+            }
+            return;
+        }
         if (event.target.closest("[data-counter-edit-order]")) {
             const form = this.container.querySelector("[data-counter-form]");
             if (form) this.clearOrderReview(form);
