@@ -13,15 +13,15 @@ export function createPaginationMarkup({
     const pageButtons = pageNumbers.map((page, index) => {
         const previousPage = pageNumbers[index - 1];
         const separator = previousPage && page - previousPage > 1
-            ? '<span aria-hidden="true">…</span>'
+            ? '<span class="pagination-ellipsis" aria-hidden="true">…</span>'
             : "";
-        return `${separator}<button class="button button-small" type="button" data-${pageKey}-page="${page}"${page === currentPage ? ' aria-current="page"' : ""}>${page}</button>`;
+        return `${separator}<button class="button button-small pagination-page-button" type="button" data-${pageKey}-page="${page}" aria-label="Trang ${page}"${page === currentPage ? ' aria-current="page"' : ""}>${page}</button>`;
     }).join("");
 
     return `<span>Hiển thị ${firstItem}–${lastItem} / ${totalItems} ${itemLabel}</span>
         <div class="pagination-actions">
-            <button class="button button-small" type="button" data-${pageKey}-page="${currentPage - 1}" ${currentPage === 1 ? "disabled" : ""}>Trước</button>
+            <button class="button button-small pagination-direction-button" type="button" data-${pageKey}-page="${currentPage - 1}" ${currentPage === 1 ? "disabled" : ""}>Trước</button>
             ${pageButtons}
-            <button class="button button-small" type="button" data-${pageKey}-page="${currentPage + 1}" ${currentPage === totalPages ? "disabled" : ""}>Sau</button>
+            <button class="button button-small pagination-direction-button" type="button" data-${pageKey}-page="${currentPage + 1}" ${currentPage === totalPages ? "disabled" : ""}>Sau</button>
         </div>`;
 }
