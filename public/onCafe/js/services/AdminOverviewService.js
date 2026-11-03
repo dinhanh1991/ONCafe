@@ -3,6 +3,7 @@
  * Không truy cập DOM hoặc Supabase.
  */
 export class AdminOverviewService {
+    // Tổng hợp doanh thu từ các đơn hàng đã hoàn tất.
     static aggregateCompletedSales(orders = [], { trimNames = true, skipEmptyNames = true } = {}) {
         const completedOrders = orders.filter((order) => order.status === "completed");
         const salesByProduct = new Map();
@@ -29,6 +30,7 @@ export class AdminOverviewService {
         return { completedOrders, salesByProduct };
     }
 
+    // Lấy thống kê các đồ uống phổ biến.
     static getPopularDrinks(orders = [], limit = 10) {
         const { completedOrders, salesByProduct } = this.aggregateCompletedSales(orders);
         const products = [...salesByProduct.entries()]
@@ -49,6 +51,7 @@ export class AdminOverviewService {
         };
     }
 
+    // Lấy số liệu tổng quan dành cho người bán hàng.
     static getSellerOverview(orders = [], limit = 5) {
         const { completedOrders, salesByProduct } = this.aggregateCompletedSales(orders, {
             trimNames: false,

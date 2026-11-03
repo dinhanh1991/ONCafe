@@ -1,3 +1,4 @@
+// Hiển thị báo cáo doanh thu theo kỳ và các chỉ số phân tích.
 import {
     currencyFormatter,
     numberFormatter,
@@ -8,6 +9,7 @@ import {
 } from "../../utils/admin/RevenueReportUtils.js";
 
 
+// Tạo phần tử giao diện với lớp và nội dung tương ứng.
 function createElement(tag, className, text) {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -16,6 +18,7 @@ function createElement(tag, className, text) {
 }
 
 export class RevenueReportView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(container, { onLoad }) {
         if (!container) throw new Error("Không tìm thấy vùng hiển thị báo cáo doanh thu.");
         this.container = container;
@@ -76,6 +79,7 @@ export class RevenueReportView {
         this.updatePeriodLabel();
     }
 
+    // Cập nhật nhãn kỳ báo cáo theo lựa chọn hiện tại.
     updatePeriodLabel() {
         const label = this.container.querySelector("[data-revenue-period-label]");
         const heading = this.container.querySelector("[data-revenue-bucket-heading]");
@@ -83,6 +87,7 @@ export class RevenueReportView {
         if (heading) heading.textContent = this.period === "day" ? "Giờ" : this.period === "month" ? "Ngày" : "Tháng";
     }
 
+    // Xử lý thay đổi giá trị của trường nhập.
     handleChange(event) {
         if (event.target.matches("[data-revenue-period]")) {
             this.period = event.target.value;
@@ -94,6 +99,7 @@ export class RevenueReportView {
         void this.load();
     }
 
+    // Tải dữ liệu cần thiết cho thành phần.
     async load() {
         const requestId = ++this.requestId;
         const feedback = this.container.querySelector("[data-revenue-feedback]");
@@ -127,6 +133,7 @@ export class RevenueReportView {
         }
     }
 
+    // Hiển thị các số liệu và biểu đồ báo cáo.
     renderReport(report, previousReport) {
         const summary = report?.summary || {};
         const previousSummary = previousReport?.summary || {};

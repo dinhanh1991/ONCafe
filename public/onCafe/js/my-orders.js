@@ -1,3 +1,4 @@
+// Hiển thị lịch sử đơn hàng của khách hàng và xử lý các thao tác liên quan.
 import { CustomerOrderRepository } from "./repositories/CustomerOrderRepo.js";
 import { CustomerMyOrdersService } from "./services/CustomerMyOrdersService.js";
 import { CustomerQrPaymentService } from "./services/CustomerQrPaymentService.js";
@@ -23,6 +24,7 @@ const PAYMENT = { cash: "Tiền mặt khi nhận hàng", qr: "Thanh toán QR" };
 const PAYMENT_STATUS = { unpaid: "Chưa thanh toán", paid: "Đã thanh toán", refunded: "Đã hoàn tiền" };
 const FULFILLMENT = { pickup: "Nhận tại cửa hàng", delivery: "Giao tận nhà" };
 const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
+// Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -31,17 +33,20 @@ let hasLoadedOrders = false;
 let isLoadingOrders = false;
 const notifiedPaidOrders = new Set();
 
+// Định dạng ngày giờ cho giao diện.
 function formatDate(value) {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? "—" :
         new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+// Cập nhật nội dung thông báo cho người dùng.
 function setMessage(text, isError = false) {
     message.textContent = text;
     message.classList.toggle("is-error", isError);
 }
 
+// Hiển thị xác nhận thanh toán thành công cho khách hàng.
 function showPaymentSuccessPopup(order) {
     if (document.querySelector(".payment-success-backdrop")) return;
 
@@ -77,10 +82,12 @@ function showPaymentSuccessPopup(order) {
     closeButton.className = "payment-success-button";
     closeButton.textContent = "Tuyệt vời";
 
+    // Đóng hộp thoại và dọn các trình xử lý sự kiện liên quan.
     const close = () => {
         overlay.remove();
         document.removeEventListener("keydown", onKeydown);
     };
+    // Xử lý phím nhấn của người dùng trong hộp thoại.
     const onKeydown = (event) => {
         if (event.key === "Escape") close();
     };
@@ -96,6 +103,7 @@ function showPaymentSuccessPopup(order) {
     closeButton.focus();
 }
 
+// Mở hộp thoại xác nhận hủy đơn hàng.
 function showCancelOrderDialog() {
     return new Promise((resolve) => {
         const overlay = document.createElement("div");
@@ -139,11 +147,13 @@ function showCancelOrderDialog() {
         overlay.append(dialog);
         document.body.append(overlay);
 
+        // Hoàn tất thao tác và trả kết quả cho lời gọi.
         const finish = (confirmed) => {
             overlay.remove();
             document.removeEventListener("keydown", handleKeydown);
             resolve(confirmed);
         };
+        // Xử lý phím nhấn trong hộp thoại hoặc giao diện.
         const handleKeydown = (event) => {
             if (event.key === "Escape") finish(false);
         };
@@ -158,6 +168,7 @@ function showCancelOrderDialog() {
     });
 }
 
+// Tải danh sách đơn hàng từ dịch vụ.
 async function loadOrders() {
     if (isLoadingOrders) return;
     isLoadingOrders = true;
@@ -198,6 +209,7 @@ async function loadOrders() {
     }
 }
 
+// Cập nhật danh sách đơn hàng trên giao diện.
 function renderOrders(orders) {
     if (!orders.length) {
         list.innerHTML = '<div class="orders-empty"><h2>Chưa có đơn hàng</h2><p>Hãy chọn đồ uống yêu thích và đặt hàng tại ONCafe.</p><a href="./menu.html">Khám phá thực đơn</a></div>';
@@ -250,6 +262,7 @@ function renderOrders(orders) {
     }).join("");
 }
 
+// Tạo mã QR thanh toán cho đơn hàng.
 async function createQr(orderId, button) {
     button.disabled = true;
     button.textContent = "Đang tạo mã QR...";

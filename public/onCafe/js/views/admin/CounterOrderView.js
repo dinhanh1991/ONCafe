@@ -1,13 +1,16 @@
+// Hiển thị màn hình tạo đơn tại quầy, danh sách món và giỏ hàng.
 import { formatCurrency } from "../../utils/FormatUtils.js";
 import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 import { CounterOrderPaymentMonitor } from "../../controllers/admin/CounterOrderPaymentMonitor.js";
 
+// Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 export class CounterOrderView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(container, { onLoadProducts, orderController, onCheckQrPayment, onQrPaymentConfirmed }) {
         this.container = container;
         this.onLoadProducts = onLoadProducts;
@@ -40,6 +43,7 @@ export class CounterOrderView {
         this.container.addEventListener("click", (event) => this.handleClick(event));
     }
 
+    // Cập nhật nội dung giao diện do thành phần này quản lý.
     async render() {
         this.stopWatchingQrPayment();
         this.reviewOrder = null;
@@ -76,6 +80,7 @@ export class CounterOrderView {
         await this.loadProducts();
     }
 
+    // Tải danh sách sản phẩm từ dịch vụ.
     async loadProducts() {
         const feedback = this.container.querySelector("[data-counter-feedback]");
         feedback.textContent = "Đang tải đồ uống...";
@@ -94,6 +99,7 @@ export class CounterOrderView {
         }
     }
 
+    // Cập nhật danh sách sản phẩm đang hiển thị.
     renderProducts() {
         const body = this.container.querySelector("[data-counter-products]");
         const categorySelect = this.container.querySelector("[data-counter-category]");
@@ -135,6 +141,7 @@ export class CounterOrderView {
         this.renderCart();
     }
 
+    // Lấy các món phù hợp với từ khóa và danh mục.
     getVisibleProducts(searchTerm, selectedCategory) {
         return this.products.filter((product) => {
             const name = String(product.name || "").toLocaleLowerCase("vi");
@@ -144,6 +151,7 @@ export class CounterOrderView {
         });
     }
 
+    // Cập nhật các món và tổng tiền trong giỏ hàng.
     renderCart() {
         const cart = this.container.querySelector("[data-counter-cart]");
         const items = this.products.filter((p) => (this.cart.get(String(p.id)) || 0) > 0);
@@ -155,6 +163,7 @@ export class CounterOrderView {
         this.container.querySelector("[data-counter-total]").textContent = formatCurrency(total);
     }
 
+    // Xử lý thay đổi giá trị của trường nhập.
     handleChange(event) {
         if (event.target.matches("[data-counter-category]")) {
             this.currentPage = 1;
@@ -175,6 +184,7 @@ export class CounterOrderView {
         this.renderCart();
     }
 
+    // Xử lý thao tác nhấn nút trong giao diện.
     async handleClick(event) {
         const pageButton = event.target instanceof Element
             ? event.target.closest("button[data-counter-page]")
@@ -226,6 +236,7 @@ export class CounterOrderView {
         }
     }
 
+    // Kiểm tra và xử lý việc gửi biểu mẫu.
     async handleSubmit(event) {
         if (!event.target.matches("[data-counter-form]")) return;
         event.preventDefault();
@@ -328,6 +339,7 @@ export class CounterOrderView {
         }
     }
 
+    // Hiển thị thông tin đơn hàng để khách kiểm tra lại.
     showOrderReview(form) {
         const review = this.container.querySelector("[data-counter-review]");
         const button = form.querySelector('button[type="submit"]');
@@ -361,6 +373,7 @@ export class CounterOrderView {
             : "Kiểm tra món và tổng tiền, sau đó xác nhận tạo đơn QR.");
     }
 
+    // Xóa phần xem lại đơn hàng và cho phép chỉnh sửa lại.
     clearOrderReview(form) {
         this.reviewOrder = null;
         const review = this.container.querySelector("[data-counter-review]");
@@ -374,6 +387,7 @@ export class CounterOrderView {
         button.innerHTML = '<i class="bi bi-cart-check me-1" aria-hidden="true"></i>Tạo đơn hàng';
     }
 
+    // Hiển thị thông tin đơn hàng vừa được tạo.
     showOrderCreated(order, paymentPending = false) {
         const overlay = document.createElement("div");
         overlay.className = "oncafe-dialog-backdrop";
@@ -396,6 +410,7 @@ export class CounterOrderView {
     }
 
 
+    // Hiển thị mã QR dùng trong mô phỏng thanh toán.
     renderQrSimulation(order) {
         this.removeQrSimulation();
         const panel = document.createElement("section");
@@ -420,10 +435,12 @@ export class CounterOrderView {
         this.container.querySelector(".counter-order").append(panel);
     }
 
+    // Dừng mô phỏng QR và thu dọn các bộ hẹn giờ.
     removeQrSimulation() {
         this.container.querySelector("[data-qr-demo-panel]")?.remove();
     }
 
+    // Tạo thông tin mã QR gắn với đơn hàng.
     async createQrForOrder(order, result) {
         const feedback = this.container.querySelector('[data-qr-demo-feedback]');
         try {
@@ -451,10 +468,12 @@ export class CounterOrderView {
             throw error;
         }
     }
+    // Theo dõi kết quả thanh toán QR của đơn hàng.
     watchQrPayment(order) {
         this.paymentMonitor.start(order);
     }
 
+    // Cập nhật giao diện sau khi xác nhận thanh toán QR.
     handleQrPaymentConfirmed(order) {
         const message = `Khách đã xác nhận thanh toán thành công cho đơn ${order.order_code || "#" + order.id}.`;
         this.setFeedback(message);
@@ -468,6 +487,7 @@ export class CounterOrderView {
         this.showQrPaymentSuccess(order);
     }
 
+    // Hiển thị kết quả xác nhận thanh toán QR.
     showQrPaymentSuccess(order) {
         const overlay = document.createElement("div");
         overlay.className = "oncafe-dialog-backdrop";
@@ -491,10 +511,12 @@ export class CounterOrderView {
         okButton.focus();
     }
 
+    // Dừng theo dõi trạng thái thanh toán QR.
     stopWatchingQrPayment() {
         this.paymentMonitor.stop();
     }
 
+    // Hiển thị thông tin phản hồi cho người dùng.
     setFeedback(message, isError = false) {
         const node = this.container.querySelector("[data-counter-feedback]");
         node.textContent = message;

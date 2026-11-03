@@ -7,15 +7,18 @@ const STATUS = {
 };
 const PAYMENT = { cash: "Tiền mặt", qr: "QR / chuyển khoản", card: "Thẻ" };
 const PAYMENT_STATUS = { unpaid: "Chưa thanh toán", paid: "Đã thanh toán", refunded: "Đã hoàn tiền" };
+// Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+// Định dạng ngày giờ cho giao diện.
 function formatDate(value) {
     if (!value) return "—";
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
 }
 
+// Chuyển ngày giờ thành khóa ngày theo múi giờ địa phương.
 function toLocalDateKey(value) {
     if (!value) return "";
     const date = new Date(value);
@@ -31,6 +34,7 @@ function toLocalDateKey(value) {
 }
 
 export class OrderView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(container, { onUpdateStatus, onUpdatePayment, onMarkArrived, onRefresh, readOnly = false }) {
         if (!container) throw new Error("Không tìm thấy vùng hiển thị đơn hàng.");
         this.container = container;
@@ -60,6 +64,7 @@ export class OrderView {
         this.container.addEventListener("change", (event) => this.handleChange(event));
     }
 
+    // Cập nhật nội dung giao diện do thành phần này quản lý.
     render(orders) {
         this.orders = Array.isArray(orders) ? orders : [];
         this.container.innerHTML = `
@@ -112,6 +117,7 @@ export class OrderView {
         return this;
     }
 
+    // Lấy danh sách đơn hàng sau khi áp dụng các bộ lọc.
     getFilteredOrders() {
         const term = this.searchTerm.trim().toLocaleLowerCase("vi");
         const orders = this.orders.filter((order) => {
@@ -143,6 +149,7 @@ export class OrderView {
         return orders;
     }
 
+    // Hiển thị danh sách dữ liệu theo trang và bộ lọc hiện tại.
     renderList() {
         const list = this.container.querySelector("[data-order-list]");
         if (!list) return;
@@ -218,6 +225,7 @@ export class OrderView {
         }).join("");
     }
 
+    // Xác định các thao tác được phép theo trạng thái đơn hàng.
     getActions(order) {
         // Chỉ cho phép chuyển trạng thái theo đúng quy trình xử lý đơn hàng.
         if (order.status === "pending") return [
@@ -244,12 +252,14 @@ export class OrderView {
         return [];
     }
 
+    // Chọn lớp giao diện tương ứng với trạng thái.
     statusClass(status) {
         if (status === "completed") return "status-active";
         if (["cancelled", "rejected"].includes(status)) return "status-inactive";
         return "status-pending";
     }
 
+    // Xử lý thao tác nhấn nút trong giao diện.
     async handleClick(event) {
         if (this.readOnly && event.target instanceof Element &&
             event.target.closest("[data-order-action], [data-payment-action]")) return;
@@ -365,6 +375,7 @@ export class OrderView {
 
 
 
+    // Mở giao diện in hóa đơn cho đơn hàng.
     printOrder(order) {
         const printWindow = window.open("", "_blank", "width=420,height=720");
         if (!printWindow) {
@@ -384,6 +395,7 @@ export class OrderView {
         printWindow.document.close();
     }
 
+    // Hiển thị hộp thoại yêu cầu người dùng xác nhận.
     showConfirmDialog({ title, message, confirmText, danger = false }) {
         return new Promise((resolve) => {
             const overlay = document.createElement("div");
@@ -400,11 +412,13 @@ export class OrderView {
                 </section>`;
             document.body.append(overlay);
 
+            // Hoàn tất thao tác và trả kết quả cho lời gọi.
             const finish = (value) => {
                 overlay.remove();
                 document.removeEventListener("keydown", handleKeydown);
                 resolve(value);
             };
+            // Xử lý phím nhấn trong hộp thoại hoặc giao diện.
             const handleKeydown = (event) => {
                 if (event.key === "Escape") finish(false);
             };
@@ -417,6 +431,7 @@ export class OrderView {
         });
     }
 
+    // Tải lại dữ liệu đơn hàng và cập nhật danh sách.
     async refresh() {
         const activeElement = document.activeElement;
         const focusAttributes = [
@@ -454,6 +469,7 @@ export class OrderView {
         }
     }
 
+    // Xử lý thay đổi giá trị của trường nhập.
     handleChange(event) {
         if (event.target.matches("[data-order-filter]")) {
             this.filter = event.target.value;
@@ -479,6 +495,7 @@ export class OrderView {
         this.renderList();
     }
 
+    // Hiển thị thông tin phản hồi cho người dùng.
     setFeedback(message, isError = false) {
         const element = this.container.querySelector("[data-order-feedback]");
         if (!element) return;

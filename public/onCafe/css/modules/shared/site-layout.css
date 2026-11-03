@@ -1,4 +1,5 @@
 /* Shared ONCafe header and footer */
+/* Đầu trang luôn ở trên khi cuộn; chân trang dùng lưới co về một cột. */
 .site-header {
     position: sticky;
     top: 0;
@@ -157,6 +158,7 @@
 }
 
 @media (max-width: 700px) {
+    /* Điều hướng và chân trang chuyển thành khối xếp dọc ở màn hình hẹp. */
     .site-header {
         min-height: 68px;
         padding: 13px 20px;

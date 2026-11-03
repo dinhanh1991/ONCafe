@@ -1,7 +1,9 @@
+// Hiển thị và xử lý biểu mẫu hồ sơ khách hàng.
 import { CustomerValidator } from "../../validators/CustomerValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 
 export class CustomerProfileView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(container, { onLoad, onSave, onChangePassword }) {
         this.container = container;
         this.onLoad = onLoad;
@@ -12,6 +14,7 @@ export class CustomerProfileView {
         this.container.addEventListener("submit", (event) => void this.handleSubmit(event));
     }
 
+    // Cập nhật nội dung giao diện do thành phần này quản lý.
     async render() {
         this.container.innerHTML = `
             <section class="customer-profile">
@@ -64,6 +67,7 @@ export class CustomerProfileView {
         await this.load();
     }
 
+    // Tải dữ liệu cần thiết cho thành phần.
     async load() {
         const feedback = this.container.querySelector("[data-profile-feedback]");
         feedback.textContent = "Đang tải thông tin cá nhân...";
@@ -94,6 +98,7 @@ export class CustomerProfileView {
         }
     }
 
+    // Kiểm tra và xử lý việc gửi biểu mẫu.
     async handleSubmit(event) {
         const form = event.target;
         if (!form.matches("[data-profile-form], [data-password-form]")) return;
@@ -175,6 +180,7 @@ export class CustomerProfileView {
         }
     }
 
+    // Hiển thị hộp thoại với nội dung và thao tác được cung cấp.
     showDialog({ title, message, confirmText, cancelText }) {
         return new Promise((resolve) => {
             const dialog = document.createElement("dialog");
@@ -214,6 +220,7 @@ export class CustomerProfileView {
         });
     }
 
+    // Kiểm tra và gửi yêu cầu cập nhật mật khẩu.
     async handlePasswordSubmit(form) {
         const password = form.elements.password.value;
         const confirmPassword = form.elements.confirmPassword.value;

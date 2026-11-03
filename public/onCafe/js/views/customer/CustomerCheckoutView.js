@@ -4,6 +4,7 @@
  * Không xử lý nghiệp vụ đặt hàng hoặc truy cập service/repository.
  */
 export class CustomerCheckoutView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor({ form, message, totalSummary, currencyFormatter }) {
         this.form = form;
         this.message = message;
@@ -11,11 +12,13 @@ export class CustomerCheckoutView {
         this.currencyFormatter = currencyFormatter;
     }
 
+    // Gắn cập nhật biểu mẫu khi cách nhận hàng thay đổi.
     bindFulfillmentChange(onChange) {
         this.form?.querySelector('[name="fulfillmentMethod"]')
             ?.addEventListener("change", onChange);
     }
 
+    // Hiển thị biểu mẫu thanh toán với thông tin tài khoản và hồ sơ.
     showForm(user, profile) {
         if (!this.form) return;
 
@@ -33,6 +36,7 @@ export class CustomerCheckoutView {
         this.form.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
+    // Cập nhật các số liệu tóm tắt trên giao diện.
     updateSummary(productTotal) {
         if (!this.totalSummary) return;
 
@@ -58,21 +62,25 @@ export class CustomerCheckoutView {
         if (paymentSelect) paymentSelect.value = "qr";
     }
 
+    // Hiển thị thông báo thành công hoặc lỗi cho người dùng.
     showMessage(message, isError = false) {
         if (!this.message) return;
         this.message.textContent = message;
         this.message.classList.toggle("checkout-message-error", isError);
     }
 
+    // Cập nhật trạng thái đang gửi biểu mẫu.
     setSubmitting(isSubmitting) {
         const submitButton = this.form?.querySelector("#submitOrderButton");
         if (submitButton) submitButton.disabled = isSubmitting;
     }
 
+    // Ẩn biểu mẫu khỏi giao diện.
     hideForm() {
         if (this.form) this.form.hidden = true;
     }
 
+    // Xóa dữ liệu cũ và đưa biểu mẫu về trạng thái ban đầu.
     resetForm() {
         this.form?.reset();
     }

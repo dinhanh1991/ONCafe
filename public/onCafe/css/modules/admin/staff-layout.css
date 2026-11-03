@@ -1,4 +1,5 @@
 /* Dùng chung bố cục sidebar cho quản trị viên, người bán hàng và thu ngân */
+/* Các breakpoint khớp với dashboard để mọi vai trò chuyển bố cục đồng nhất. */
 .staff-workspace {
     display: grid;
     min-height: calc(100vh - 76px);

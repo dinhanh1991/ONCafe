@@ -1,3 +1,4 @@
+/* Thành phần nền của khu vực nhân viên: đầu trang, công cụ và bảng dữ liệu. */
  .site-header span {
     color: #ffffff;
 }
@@ -161,6 +162,7 @@ main {
 }
 
 .product-form-grid {
+    /* Bốn cột gọn cho các trường ngắn, đổi dần số cột ở breakpoint. */
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
@@ -189,6 +191,7 @@ main {
 }
 
 .table-scroll {
+    /* Cho phép bảng rộng cuộn ngang mà không làm tràn khung trang. */
     overflow-x: auto;
     border: 1px solid var(--line);
     border-radius: 4px;

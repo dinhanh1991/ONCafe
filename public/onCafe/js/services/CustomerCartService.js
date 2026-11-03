@@ -3,6 +3,7 @@
  * Quản lý dữ liệu giỏ hàng và lưu trữ cục bộ cho khách hàng.
  */
 export class CustomerCartService {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(storage = localStorage, storageKey = "oncafe-cart") {
         if (!storage) throw new Error("CustomerCartService cần storage.");
         this.storage = storage;
@@ -10,6 +11,7 @@ export class CustomerCartService {
         this.items = this.load();
     }
 
+    // Tải dữ liệu cần thiết cho thành phần.
     load() {
         try {
             const savedItems = JSON.parse(this.storage.getItem(this.storageKey) || "[]");
@@ -19,14 +21,17 @@ export class CustomerCartService {
         }
     }
 
+    // Lấy danh sách các món đã chọn.
     getItems() {
         return this.items.map((item) => ({ ...item }));
     }
 
+    // Lưu trữ dữ liệu hiện tại.
     save() {
         this.storage.setItem(this.storageKey, JSON.stringify(this.items));
     }
 
+    // Kiểm tra và thêm sản phẩm mới vào danh mục.
     addProduct(product) {
         if (!product?.id) throw new Error("Sản phẩm không hợp lệ.");
 
@@ -53,6 +58,7 @@ export class CustomerCartService {
         return this.getItems();
     }
 
+    // Thay đổi số lượng món trong giỏ hàng.
     changeQuantity(productId, amount, availableProduct = null) {
         const item = this.items.find((cartItem) => cartItem.id === productId);
         if (!item) return this.getItems();
@@ -72,22 +78,26 @@ export class CustomerCartService {
         return this.getItems();
     }
 
+    // Xóa sản phẩm khỏi danh sách hoặc giỏ hàng.
     removeProduct(productId) {
         this.items = this.items.filter((item) => item.id !== productId);
         this.save();
         return this.getItems();
     }
 
+    // Xóa dữ liệu tạm và lưu trạng thái rỗng.
     clear() {
         this.items = [];
         this.save();
         return this.getItems();
     }
 
+    // Tính tổng số lượng món trong giỏ hàng.
     getTotalQuantity() {
         return this.items.reduce((total, item) => total + Number(item.quantity), 0);
     }
 
+    // Tính thành tiền của các món đã chọn.
     getSubtotal() {
         return this.items.reduce(
             (total, item) => total + Number(item.price) * Number(item.quantity),

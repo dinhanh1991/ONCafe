@@ -1,3 +1,4 @@
+// Điều phối tải thực đơn và các thao tác với giỏ hàng của khách.
 import { CustomerMenuRepository } from "../../repositories/CustomerMenuRepo.js";
 import { CustomerOrderRepository } from "../../repositories/CustomerOrderRepo.js";
 import { CustomerMenuService } from "../../services/CustomerMenuService.js";
@@ -24,8 +25,10 @@ let availableProducts = [];
 const customerCartService = new CustomerCartService();
 let cart = customerCartService.getItems();
 
+// Cập nhật hiển thị giỏ hàng theo dữ liệu hiện tại.
 function refreshCart() {
     cart = customerCartService.getItems();
+    // Cập nhật các món và tổng tiền trong giỏ hàng.
     renderCart();
 }
 
@@ -41,10 +44,12 @@ const customerMenuView = new CustomerMenuView({
     onRemoveFromCart: removeFromCart
 });
 
+// Cập nhật thông báo trạng thái trên giao diện.
 function showStatus(message, isError = false) {
     customerMenuView.showStatus(message, isError);
 }
 
+// Thêm sản phẩm vào giỏ hàng của khách.
 function addToCart(productId) {
     const product = availableProducts.find((item) => item.id === productId);
     if (!product) return;
@@ -57,6 +62,7 @@ function addToCart(productId) {
     }
 }
 
+// Thay đổi số lượng món trong giỏ hàng.
 function changeQuantity(productId, amount) {
     const product = availableProducts.find((item) => item.id === productId);
 
@@ -68,11 +74,14 @@ function changeQuantity(productId, amount) {
     }
 }
 
+// Xóa sản phẩm khỏi giỏ hàng.
 function removeFromCart(productId) {
     customerCartService.removeProduct(productId);
+    // Cập nhật hiển thị giỏ hàng theo dữ liệu hiện tại.
     refreshCart();
 }
 
+// Cập nhật các món và tổng tiền trong giỏ hàng.
 function renderCart() {
     customerMenuView.renderCart(
         cart,
@@ -82,9 +91,11 @@ function renderCart() {
     customerCheckoutController.updateSummary();
 }
 
+// Tải thực đơn và cập nhật giao diện khách hàng.
 async function loadMenu() {
     if (!menuGrid) return;
 
+    // Cập nhật thông báo trạng thái trên giao diện.
     showStatus("Đang tải thực đơn...");
     customerMenuView.clearMenu();
 
@@ -107,6 +118,7 @@ async function loadMenu() {
         customerMenuView.hideStatus();
     }
 
+    // Cập nhật các món và tổng tiền trong giỏ hàng.
     renderCart();
 }
 

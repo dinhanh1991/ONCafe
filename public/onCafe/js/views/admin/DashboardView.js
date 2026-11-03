@@ -1,3 +1,5 @@
+// Dựng nội dung tổng quan theo dữ liệu tài khoản.
+// Tạo cấu trúc HTML cho trang tổng quan theo hồ sơ và các bảng dữ liệu.
 export function createDashboardPanel(profile, {
     isAdmin,
     isSeller,
@@ -109,11 +111,13 @@ export function createDashboardPanel(profile, {
  * Việc lấy dữ liệu và tính toán được điều phối ở Controller/Service.
  */
 export class AdminOverviewView {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor({ dashboardPanel, popularPanel }) {
         this.dashboardPanel = dashboardPanel;
         this.popularPanel = popularPanel;
     }
 
+    // Hiển thị trạng thái đang tải cho các chỉ số quản trị.
     setAdminOverviewLoading() {
         this.setText([
             "[data-admin-today-revenue]",
@@ -123,6 +127,7 @@ export class AdminOverviewView {
         ], "…");
     }
 
+    // Hiển thị các chỉ số tổng quan dành cho quản trị viên.
     renderAdminOverview({ revenue, orders, products, employees }) {
         this.setText([
             "[data-admin-today-revenue]",
@@ -132,6 +137,7 @@ export class AdminOverviewView {
         ], null, [revenue, orders, products, employees]);
     }
 
+    // Hiển thị các chỉ số tổng quan dành cho thu ngân.
     renderCashierOverview({ revenue, paid, today, unpaid, completed, active, refunded, comparison }) {
         this.setText([
             "[data-cashier-today-revenue]",
@@ -149,6 +155,7 @@ export class AdminOverviewView {
         }
     }
 
+    // Hiển thị trạng thái đang tải cho các chỉ số thu ngân.
     setCashierOverviewLoading() {
         this.setText([
             "[data-cashier-today-revenue]",
@@ -163,6 +170,7 @@ export class AdminOverviewView {
         if (comparison) comparison.textContent = "Đang so sánh doanh thu với ngày hôm qua...";
     }
 
+    // Hiển thị danh sách đồ uống phổ biến.
     renderPopularDrinks(statistics) {
         const chart = this.popularPanel.querySelector("[data-popular-drinks]");
         if (!chart) return;
@@ -214,12 +222,14 @@ export class AdminOverviewView {
         }
     }
 
+    // Hiển thị trạng thái đang tải danh sách món phổ biến.
     setPopularDrinksLoading() {
         const chart = this.popularPanel.querySelector("[data-popular-drinks]");
         if (!chart) return;
         this.renderLoading(chart, "Đang tải dữ liệu đồ uống bán chạy...");
     }
 
+    // Hiển thị các chỉ số tổng quan dành cho người bán hàng.
     renderSellerOverview(statistics) {
         this.setText([
             "[data-seller-order-count]",
@@ -258,11 +268,13 @@ export class AdminOverviewView {
         }
     }
 
+    // Hiển thị trạng thái đang tải cho các chỉ số người bán.
     setSellerOverviewLoading() {
         const chart = this.dashboardPanel.querySelector("[data-seller-sales-chart]");
         if (chart) this.renderLoading(chart, "Đang tải thống kê bán hàng...");
     }
 
+    // Hiển thị thông báo khi không thể tải biểu đồ.
     renderChartError(chart, message) {
         if (!chart) return;
         chart.replaceChildren();
@@ -273,6 +285,7 @@ export class AdminOverviewView {
         chart.append(element);
     }
 
+    // Hiển thị lỗi tải dữ liệu tổng quan thu ngân.
     renderCashierOverviewError(message) {
         const selectors = [
             "[data-cashier-today-revenue]",
@@ -291,6 +304,7 @@ export class AdminOverviewView {
         }
     }
 
+    // Hiển thị lỗi tải dữ liệu tổng quan quản trị.
     renderAdminOverviewError() {
         this.setText([
             "[data-admin-today-revenue]",
@@ -300,6 +314,7 @@ export class AdminOverviewView {
         ], "—");
     }
 
+    // Hiển thị trạng thái đang tải dữ liệu.
     renderLoading(container, message) {
         container.replaceChildren();
         const element = document.createElement("p");
@@ -308,6 +323,7 @@ export class AdminOverviewView {
         container.append(element);
     }
 
+    // Hiển thị trạng thái danh sách chưa có dữ liệu.
     renderEmpty(container, message) {
         const element = document.createElement("p");
         element.className = "seller-sales-empty";
@@ -315,6 +331,7 @@ export class AdminOverviewView {
         container.append(element);
     }
 
+    // Cập nhật nội dung các phần tử văn bản.
     setText(selectors, fallback, values = []) {
         selectors.forEach((selector, index) => {
             const element = this.dashboardPanel.querySelector(selector);

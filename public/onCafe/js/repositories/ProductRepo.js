@@ -1,8 +1,10 @@
+// Truy vấn và cập nhật sản phẩm, bao gồm dữ liệu ảnh liên quan.
 import { supabase } from "../config/supabase.js";
 import { createUniqueId } from "../utils/IdUtils.js";
 
 const PRODUCT_SELECT = "id, name, price, quantity, image_url, is_available, category_id, categories(name)";
 
+// Chuyển dữ liệu sản phẩm sang mô hình của ứng dụng.
 function mapProduct(row) {
     return {
         id: row.id,
@@ -15,15 +17,18 @@ function mapProduct(row) {
     };
 }
 
+// Ném lỗi truy vấn để tầng gọi xử lý minh bạch.
 function throwIfError(error) {
     if (error) throw error;
 }
 
 export class ProductRepository {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(supabaseClient = supabase) {
         this.supabase = supabaseClient;
     }
 
+    // Tải toàn bộ danh sách sản phẩm.
     async findAll() {
         const { data, error } = await this.supabase
             .from("products")
@@ -34,6 +39,7 @@ export class ProductRepository {
         return (data ?? []).map(mapProduct);
     }
 
+    // Tìm sản phẩm theo mã định danh.
     async findById(id) {
         const normalizedId = Number(id);
         if (!Number.isInteger(normalizedId) || normalizedId <= 0) return null;
@@ -48,6 +54,7 @@ export class ProductRepository {
         return data ? mapProduct(data) : null;
     }
 
+    // Lưu trữ dữ liệu hiện tại.
     async save(product) {
         const categoryId = await this.getOrCreateCategory(product.category);
         const { data, error } = await this.supabase
@@ -67,6 +74,7 @@ export class ProductRepository {
         return mapProduct(data);
     }
 
+    // Gửi yêu cầu cập nhật dữ liệu theo thông tin mới.
     async update(id, updatedData) {
         const normalizedId = Number(id);
         const categoryId = await this.getOrCreateCategory(updatedData.category);
@@ -88,6 +96,7 @@ export class ProductRepository {
         return mapProduct(data);
     }
 
+    // Gửi yêu cầu xóa dữ liệu theo mã được cung cấp.
     async delete(id) {
         const normalizedId = Number(id);
         const { error } = await this.supabase
@@ -99,6 +108,7 @@ export class ProductRepository {
         return true;
     }
 
+    // Tải ảnh sản phẩm lên kho lưu trữ.
     async uploadImage(file) {
         const extensionByType = {
             "image/jpeg": "jpg",
@@ -126,6 +136,7 @@ export class ProductRepository {
         return data.publicUrl;
     }
 
+    // Tìm danh mục theo tên hoặc tạo danh mục nếu chưa có.
     async getOrCreateCategory(name) {
         const normalizedName = String(name ?? "").trim();
         if (!normalizedName) {

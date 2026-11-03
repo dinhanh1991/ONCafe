@@ -1,5 +1,7 @@
+// Hiển thị hộp thoại kết quả đặt hàng và xác nhận thanh toán QR.
 let activeQrOrderDialogClose = null;
 
+// Hiển thị thông báo đã xác nhận thanh toán.
 export function showPaymentConfirmedPopup(order, currencyFormatter) {
     activeQrOrderDialogClose?.();
     if (document.querySelector(".payment-success-backdrop")) return;
@@ -39,10 +41,12 @@ export function showPaymentConfirmedPopup(order, currencyFormatter) {
     closeButton.className = "menu-order-dialog-secondary";
     closeButton.textContent = "Đóng";
 
+    // Đóng hộp thoại và dọn các trình xử lý sự kiện liên quan.
     const close = () => {
         overlay.remove();
         document.removeEventListener("keydown", handleKeydown);
     };
+    // Xử lý phím nhấn trong hộp thoại hoặc giao diện.
     const handleKeydown = (event) => {
         if (event.key === "Escape") close();
     };
@@ -61,6 +65,7 @@ export function showPaymentConfirmedPopup(order, currencyFormatter) {
     trackButton.focus();
 }
 
+// Hiển thị kết quả tạo đơn hàng thành công.
 export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, qrInfo, currencyFormatter) {
     const overlay = document.createElement("div");
     overlay.className = "menu-order-dialog-backdrop";
@@ -136,6 +141,7 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
     if (paymentMethod === "qr" && qrInfo?.image) {
         const expiresAt = Number(qrInfo.expiresAt);
         const expiry = qrPanel.querySelector("[data-qr-expiry]");
+        // Cập nhật thời gian còn lại của mã QR.
         const updateExpiry = () => {
             const remainingSeconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
             const minutes = Math.floor(remainingSeconds / 60);
@@ -153,6 +159,7 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
         expiryTimer = window.setInterval(updateExpiry, 1000);
     }
 
+    // Đóng hộp thoại và dọn các trình xử lý sự kiện liên quan.
     const close = () => {
         overlay.remove();
         if (expiryTimer) window.clearInterval(expiryTimer);
@@ -160,6 +167,7 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
         if (activeQrOrderDialogClose === close) activeQrOrderDialogClose = null;
     };
     activeQrOrderDialogClose = close;
+    // Xử lý phím nhấn trong hộp thoại hoặc giao diện.
     const handleKeydown = (event) => {
         if (event.key === "Escape") close();
     };

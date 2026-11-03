@@ -1,10 +1,13 @@
+// Giao tiếp với cơ sở dữ liệu cho nghiệp vụ đơn hàng quản trị.
 import { supabase } from "../config/supabase.js";
 
 export class OrderRepository {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(supabaseClient = supabase) {
         this.supabase = supabaseClient;
     }
 
+    // Tải danh sách đơn hàng mà nhân viên được phép xem.
     async findAllForStaff() {
         const { data, error } = await this.supabase.rpc("oncafe_staff_list_orders");
         if (error) throw error;
@@ -12,6 +15,7 @@ export class OrderRepository {
         return data;
     }
 
+    // Ghi nhận đơn giao hàng đã đến nơi.
     async markDeliveryArrived(orderId) {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
@@ -22,6 +26,7 @@ export class OrderRepository {
         return data;
     }
 
+    // Gửi yêu cầu thay đổi trạng thái đơn hàng.
     async updateStatus(orderId, status) {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
@@ -32,6 +37,7 @@ export class OrderRepository {
         if (error) throw error;
     }
 
+    // Gửi yêu cầu tạo đơn tại quầy và chuẩn hóa kết quả.
     async createCounterOrder(order) {
         const { data, error } = await this.supabase.rpc("oncafe_staff_create_order", {
             p_customer_name: order.customerName,
@@ -54,6 +60,7 @@ export class OrderRepository {
         };
     }
 
+    // Tạo yêu cầu xác nhận thanh toán QR.
     async createQrConfirmation(orderId) {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");
@@ -65,6 +72,7 @@ export class OrderRepository {
         return data;
     }
 
+    // Cập nhật trạng thái thanh toán của đơn hàng.
     async updatePayment(orderId, paymentStatus) {
         const id = Number(orderId);
         if (!Number.isInteger(id) || id <= 0) throw new Error("Mã đơn hàng không hợp lệ.");

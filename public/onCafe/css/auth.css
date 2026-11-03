@@ -1,5 +1,6 @@
 /* ===== THANH PHAN DUNG CHUNG CHO XAC THUC ===== */
 
+/* Khung giữa trang và thẻ biểu mẫu dùng chung cho đăng nhập/đăng ký. */
 .auth-container {
     display: flex;
     justify-content: center;
@@ -109,6 +110,7 @@
 }
 
 @media (max-width: 480px) {
+    /* Giảm khoảng đệm để biểu mẫu không chật trên màn hình nhỏ. */
     .auth-card {
         padding: 24px 18px;
     }

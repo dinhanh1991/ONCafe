@@ -1,10 +1,13 @@
+// Đọc và cập nhật thông tin hồ sơ khách hàng.
 import { supabase } from "../config/supabase.js";
 
 export class CustomerProfileRepository {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(supabaseClient = supabase) {
         this.supabase = supabaseClient;
     }
 
+    // Lấy hồ sơ của người dùng hiện tại.
     async getMyProfile(userId) {
         const { data, error } = await this.supabase
             .from("profiles")
@@ -17,6 +20,7 @@ export class CustomerProfileRepository {
         return data;
     }
 
+    // Lưu các thay đổi hồ sơ của khách hàng.
     async updateMyProfile({ fullName, phone, address }) {
         const { data, error } = await this.supabase.rpc("oncafe_update_my_profile", {
             p_full_name: fullName,

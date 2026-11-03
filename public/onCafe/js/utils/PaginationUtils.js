@@ -1,3 +1,5 @@
+// Tạo mã HTML cho các nút và số trang phân trang.
+// Dựng HTML điều hướng trang dựa trên số lượng bản ghi và trang hiện tại.
 export function createPaginationMarkup({
     currentPage,
     totalPages,
@@ -7,11 +9,13 @@ export function createPaginationMarkup({
     itemLabel,
     pageKey
 }) {
+    // Giữ trang đầu, trang cuối và các trang nằm cạnh trang hiện tại.
     const pageNumbers = [...new Set([1, currentPage - 1, currentPage, currentPage + 1, totalPages])]
         .filter((page) => page >= 1 && page <= totalPages)
         .sort((first, second) => first - second);
     const pageButtons = pageNumbers.map((page, index) => {
         const previousPage = pageNumbers[index - 1];
+        // Dùng dấu ba chấm để báo các trang được ẩn giữa hai số trang.
         const separator = previousPage && page - previousPage > 1
             ? '<span class="pagination-ellipsis" aria-hidden="true">…</span>'
             : "";

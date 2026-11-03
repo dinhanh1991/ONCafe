@@ -1,16 +1,20 @@
+// Xử lý nghiệp vụ đọc và cập nhật hồ sơ khách hàng.
 import { CustomerProfileRepository } from "../repositories/CustomerProfileRepo.js";
 import { CustomerValidator } from "../validators/CustomerValidator.js";
 
 export class CustomerProfileService {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor(repository = new CustomerProfileRepository()) {
         this.repository = repository;
     }
 
+    // Lấy hồ sơ của người dùng hiện tại.
     async getMyProfile(userId) {
         if (!userId) throw new Error("Bạn cần đăng nhập để xem thông tin cá nhân.");
         return this.repository.getMyProfile(userId);
     }
 
+    // Lưu các thay đổi hồ sơ của khách hàng.
     async updateMyProfile(profile) {
         const fullName = String(profile.fullName || "").trim();
         const phone = String(profile.phone || "").trim();

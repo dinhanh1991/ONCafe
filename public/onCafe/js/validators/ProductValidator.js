@@ -1,6 +1,7 @@
 import { ValidationUtils } from "./ValidationUtils.js";
 
 export class ProductValidator {
+    // Kiểm tra tính hợp lệ của dữ liệu đầu vào.
     static validate(data) {
         const errors = {};
         const product = data && typeof data === "object" ? data : {};
@@ -43,6 +44,7 @@ export class ProductValidator {
         };
     }
 
+    // Kiểm tra định dạng và kích thước tệp ảnh sản phẩm.
     static validateImageFile(file) {
         if (typeof File === "undefined" || !(file instanceof File)) {
             return {

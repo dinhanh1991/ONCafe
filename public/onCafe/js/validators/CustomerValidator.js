@@ -1,6 +1,8 @@
+// Kiểm tra dữ liệu đầu vào của hồ sơ khách hàng.
 import { ValidationUtils } from "./ValidationUtils.js";
 
 export class CustomerValidator {
+    // Kiểm tra tính hợp lệ của dữ liệu đầu vào.
     static validate(data = {}, { phoneRequired = false } = {}) {
         const errors = {};
         const phone = String(data.phone ?? "").trim();

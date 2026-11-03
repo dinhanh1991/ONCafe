@@ -3,6 +3,7 @@
  * Không truy cập Supabase; chỉ xử lý thời hạn, URL xác nhận và ảnh QR.
  */
 export class CustomerQrPaymentService {
+    // Chuẩn bị dữ liệu hiển thị mã QR và thông tin thanh toán.
     async createQrInfo(paymentData, currentPageUrl, width = 220) {
         if (!paymentData?.token) {
             throw new Error("Không nhận được mã xác nhận thanh toán.");

@@ -1,4 +1,5 @@
 /* Hộp thoại xác nhận và thông báo của ONCafe */
+/* Trạng thái hidden cần thắng display:flex của lớp phủ khi đóng. */
 .app-dialog-backdrop[hidden] {
     display: none;
 }

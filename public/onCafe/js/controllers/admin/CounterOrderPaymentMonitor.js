@@ -4,6 +4,7 @@
  * Không thao tác DOM; thông báo kết quả qua callback.
  */
 export class CounterOrderPaymentMonitor {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor({ getOrder, onPaid, onError = (error) => console.error("Không thể kiểm tra xác nhận QR:", error), intervalMs = 3000 }) {
         if (typeof getOrder !== "function") {
             throw new Error("CounterOrderPaymentMonitor cần hàm getOrder.");
@@ -19,6 +20,7 @@ export class CounterOrderPaymentMonitor {
         this.generation = 0;
     }
 
+    // Khởi động quá trình theo dõi hoặc cập nhật.
     start(order) {
         this.stop();
         if (!order?.id) return;
@@ -30,6 +32,7 @@ export class CounterOrderPaymentMonitor {
         }, this.intervalMs);
     }
 
+    // Kiểm tra trạng thái hoặc kết quả theo yêu cầu.
     async check(generation = this.generation) {
         if (!this.order || this.busy || generation !== this.generation) return;
 
@@ -48,6 +51,7 @@ export class CounterOrderPaymentMonitor {
         }
     }
 
+    // Dừng quá trình đang chạy và dọn tài nguyên liên quan.
     stop() {
         this.generation += 1;
         if (this.timer !== null) {

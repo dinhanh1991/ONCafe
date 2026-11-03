@@ -1,3 +1,4 @@
+/* Trang đăng nhập chia phần nhận diện bằng ảnh và biểu mẫu xác thực. */
 .login-container {
     min-height: calc(100vh - 68px);
     padding: 48px 24px;
@@ -31,6 +32,7 @@
 }
 
 .login-visual::after {
+    /* Lớp phủ tối giữ chữ trắng dễ đọc trên ảnh có vùng sáng. */
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg, rgba(28, 19, 16, 0.12) 15%, rgba(28, 19, 16, 0.88) 100%);
@@ -146,6 +148,7 @@
 }
 
 .password-field input {
+    /* Chừa chỗ cho nút hiện/ẩn nằm phủ bên trong trường mật khẩu. */
     padding-right: 68px !important;
 }
 
@@ -241,6 +244,7 @@
 }
 
 @media (max-width: 760px) {
+    /* Gộp hai cột thành một thẻ dọc, giữ phần ảnh làm lời chào ngắn. */
     .login-container {
         padding: 28px 18px;
     }

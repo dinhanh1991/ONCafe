@@ -4,6 +4,7 @@
  * Không trực tiếp thao tác giao diện; kết quả được chuyển qua callback.
  */
 export class CustomerPaymentMonitor {
+    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor({
         getPaymentState,
         onPaid,
@@ -26,6 +27,7 @@ export class CustomerPaymentMonitor {
         this.generation = 0;
     }
 
+    // Khởi động quá trình theo dõi hoặc cập nhật.
     start(orderId) {
         this.stop();
 
@@ -41,6 +43,7 @@ export class CustomerPaymentMonitor {
         }, this.intervalMs);
     }
 
+    // Kiểm tra trạng thái hoặc kết quả theo yêu cầu.
     async check(generation = this.generation) {
         if (!this.orderId || this.busy || generation !== this.generation) return;
 
@@ -66,6 +69,7 @@ export class CustomerPaymentMonitor {
         }
     }
 
+    // Dừng quá trình đang chạy và dọn tài nguyên liên quan.
     stop() {
         this.generation += 1;
 
