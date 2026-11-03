@@ -166,9 +166,22 @@ export class OrderView {
             return;
         }
 
-        pagination.innerHTML = `<span>Trang ${this.currentPage} / ${totalPages} · ${orders.length} đơn hàng · 10 đơn/trang</span>
+        const pageNumbers = [...new Set([1, this.currentPage - 1, this.currentPage, this.currentPage + 1, totalPages])]
+            .filter((page) => page >= 1 && page <= totalPages)
+            .sort((first, second) => first - second);
+        const pageButtons = pageNumbers.map((page, index) => {
+            const previousPage = pageNumbers[index - 1];
+            const separator = previousPage && page - previousPage > 1
+                ? '<span aria-hidden="true">…</span>'
+                : "";
+            return `${separator}<button class="button button-small" type="button" data-order-page="${page}"${page === this.currentPage ? ' aria-current="page"' : ""}>${page}</button>`;
+        }).join("");
+        const firstOrder = startIndex + 1;
+        const lastOrder = Math.min(startIndex + pageOrders.length, orders.length);
+        pagination.innerHTML = `<span>Hiển thị ${firstOrder}–${lastOrder} / ${orders.length} đơn hàng</span>
             <div class="pagination-actions">
                 <button class="button button-small" type="button" data-order-page="${this.currentPage - 1}" ${this.currentPage === 1 ? "disabled" : ""}>Trước</button>
+                ${pageButtons}
                 <button class="button button-small" type="button" data-order-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? "disabled" : ""}>Sau</button>
             </div>`;
 
@@ -257,6 +270,7 @@ export class OrderView {
             if (Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= totalPages) {
                 this.currentPage = requestedPage;
                 this.renderList();
+                this.container.querySelector(`button[data-order-page="${requestedPage}"][aria-current="page"]`)?.focus();
             }
             return;
         }
