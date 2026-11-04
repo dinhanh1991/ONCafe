@@ -94,6 +94,7 @@ export class CustomerProfileView {
             form.querySelector('button[type="submit"]').disabled = false;
             feedback.textContent = "";
         } catch (error) {
+            clearCoffeeLoading(feedback);
             console.error("Không thể tải hồ sơ khách hàng:", error);
             feedback.textContent = error.message || "Không thể tải thông tin cá nhân.";
             feedback.classList.add("is-error");
