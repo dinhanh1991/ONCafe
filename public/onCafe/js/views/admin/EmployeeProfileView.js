@@ -86,6 +86,7 @@ export class EmployeeProfileView {
             form.elements.role.value = this.roleLabel(profile.role);
             feedback.textContent = "";
         } catch (error) {
+            clearCoffeeLoading(feedback);
             feedback.textContent = error.message || "Không thể tải thông tin tài khoản.";
             feedback.className = "app-error";
         }
