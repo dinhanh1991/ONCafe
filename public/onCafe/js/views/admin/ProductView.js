@@ -3,6 +3,7 @@ import { formatCurrency } from "../../utils/FormatUtils.js";
 import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
 import { ProductValidator } from "../../validators/ProductValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
+import { createCoffeeLoadingMarkup } from "../../utils/CoffeeLoading.js";
 
 // Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -401,7 +402,7 @@ export class ProductView {
         const saveProduct = async () => {
             form.dataset.submitting = "true";
             submitButton.disabled = true;
-            submitButton.textContent = wasEditing ? "Đang cập nhật..." : "Đang thêm...";
+            submitButton.innerHTML = createCoffeeLoadingMarkup(wasEditing ? "Đang cập nhật..." : "Đang thêm...", { compact: true });
             cancelButtons.forEach((button) => { button.disabled = true; });
             form.querySelector("[data-form-error]").textContent = "";
 
@@ -554,7 +555,7 @@ export class ProductView {
         dialog.setAttribute("aria-busy", "true");
         confirmButton.disabled = true;
         cancelButton.disabled = true;
-        confirmButton.textContent = "Đang xử lý...";
+        confirmButton.innerHTML = createCoffeeLoadingMarkup("Đang xử lý...", { compact: true });
 
         try {
             await callback();
