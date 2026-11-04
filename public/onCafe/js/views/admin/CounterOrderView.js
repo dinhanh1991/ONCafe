@@ -3,6 +3,7 @@ import { formatCurrency } from "../../utils/FormatUtils.js";
 import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
+import { createCoffeeLoadingMarkup, renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
 import { CounterOrderPaymentMonitor } from "../../controllers/admin/CounterOrderPaymentMonitor.js";
 
 // Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
@@ -68,7 +69,7 @@ export class CounterOrderView {
                             <option value="">Tất cả danh mục</option>
                         </select>
                     </div>
-                    <div class="table-scroll"><table class="product-table"><thead><tr><th>Đồ uống</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Số lượng</th></tr></thead><tbody data-counter-products><tr><td colspan="5">Đang tải...</td></tr></tbody></table></div>
+                    <div class="table-scroll"><table class="product-table"><thead><tr><th>Đồ uống</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Số lượng</th></tr></thead><tbody data-counter-products><tr><td colspan="5">${createCoffeeLoadingMarkup("Đang tải đồ uống...", { compact: true })}</td></tr></tbody></table></div>
                     <nav class="product-pagination" data-counter-pagination aria-label="Phân trang đồ uống"></nav>
                     <h3>Giỏ hàng</h3><div data-counter-cart></div>
                     <p class="counter-total">Tổng tiền: <strong data-counter-total>0 ₫</strong></p>
@@ -83,7 +84,7 @@ export class CounterOrderView {
     // Tải danh sách sản phẩm từ dịch vụ.
     async loadProducts() {
         const feedback = this.container.querySelector("[data-counter-feedback]");
-        feedback.textContent = "Đang tải đồ uống...";
+        renderCoffeeLoading(feedback, "Đang tải danh sách đồ uống...", { compact: true });
         try {
             this.products = (await this.onLoadProducts()).filter((p) => p.status !== "inactive" && Number(p.quantity) > 0);
             for (const [id, quantity] of this.cart.entries()) {
@@ -519,7 +520,12 @@ export class CounterOrderView {
     // Hiển thị thông tin phản hồi cho người dùng.
     setFeedback(message, isError = false) {
         const node = this.container.querySelector("[data-counter-feedback]");
-        node.textContent = message;
+        if (message && message.startsWith("Đang")) {
+            renderCoffeeLoading(node, message, { compact: true });
+        } else {
+            clearCoffeeLoading(node);
+            node.textContent = message;
+        }
         node.className = isError ? "app-error" : "";
     }
 }
