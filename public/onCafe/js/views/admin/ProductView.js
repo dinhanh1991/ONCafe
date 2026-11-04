@@ -159,6 +159,35 @@ export class ProductView {
         return this;
     }
 
+
+    // Hiển thị lỗi tải danh sách và cung cấp thao tác thử lại.
+    renderLoadError(message, onRetry) {
+        this.container.innerHTML = `
+            <section class="product-load-error" role="alert" aria-live="assertive">
+                <p class="eyebrow">KHÔNG THỂ TẢI DỮ LIỆU</p>
+                <h2>Đã xảy ra lỗi khi tải danh sách đồ uống</h2>
+                <p data-load-error-message></p>
+                <button class="button button-primary" type="button" data-retry-load>
+                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Thử tải lại
+                </button>
+            </section>`;
+        this.container.querySelector("[data-load-error-message]").textContent =
+            message || "Không thể tải danh sách sản phẩm. Vui lòng kiểm tra kết nối và thử lại.";
+        this.container.querySelector("[data-retry-load]").addEventListener("click", async (event) => {
+            const button = event.currentTarget;
+            button.disabled = true;
+            button.textContent = "Đang thử tải...";
+            try {
+                await onRetry();
+            } finally {
+                if (button.isConnected) {
+                    button.disabled = false;
+                    button.textContent = "Thử tải lại";
+                }
+            }
+        });
+    }
+
     // Lấy danh sách sản phẩm sau khi áp dụng các bộ lọc.
     getFilteredProducts() {
         const term = this.searchTerm.trim().toLocaleLowerCase("vi");
@@ -340,27 +369,88 @@ export class ProductView {
         this.container.querySelector("[data-product-form-view]").hidden = true;
     }
 
-    // Kiểm tra và xử lý việc gửi biểu mẫu.
+    // Kiểm tra dữ liệu và xử lý thêm mới hoặc cập nhật sản phẩm.
     async handleSubmit(event) {
         if (!event.target.matches("[data-product-form]")) return;
         event.preventDefault();
 
         const form = event.target;
+        if (form.dataset.submitting === "true") return;
+
         const formData = new FormData(form);
         const product = Object.fromEntries(formData.entries());
         product.price = Number(product.price);
         product.quantity = Number(product.quantity);
         product.imageFile = form.querySelector('[name="imageFile"]').files[0] ?? null;
         product.status = this.products.find((item) => String(item.id) === String(this.editingId))?.status ?? "active";
+
         const validation = ProductValidator.validate(product);
         ValidationUI.bind(form);
         if (!validation.isValid) {
             ValidationUI.showErrors(form, validation.errors);
             return;
         }
+
         ValidationUI.clearErrors(form);
         const wasEditing = this.editingId !== null;
         if (wasEditing) product.id = this.editingId;
+
+        const submitButton = form.querySelector('button[type="submit"]');
+        const cancelButtons = form.querySelectorAll('[data-action="cancel"]');
+
+        const saveProduct = async () => {
+            form.dataset.submitting = "true";
+            submitButton.disabled = true;
+            submitButton.textContent = wasEditing ? "Đang cập nhật..." : "Đang thêm...";
+            cancelButtons.forEach((button) => { button.disabled = true; });
+            form.querySelector("[data-form-error]").textContent = "";
+
+            try {
+                const savedProduct = await this.onSave(product);
+                const index = this.products.findIndex((item) => String(item.id) === String(savedProduct.id));
+                if (index === -1) this.products = [...this.products, savedProduct];
+                else this.products = this.products.map((item, itemIndex) => itemIndex === index ? savedProduct : item);
+
+                form.dataset.submitting = "false";
+                submitButton.disabled = false;
+                submitButton.textContent = wasEditing ? "Lưu thay đổi" : "Thêm đồ uống";
+                cancelButtons.forEach((button) => { button.disabled = false; });
+
+                this.closeForm();
+                this.renderList();
+                if (wasEditing) this.openDetail(savedProduct.id);
+                this.showDialog({
+                    type: "success",
+                    title: wasEditing ? "Cập nhật thành công" : "Thêm sản phẩm thành công",
+                    message: wasEditing
+                        ? `Sản phẩm “${savedProduct.name}” đã được cập nhật.`
+                        : `Sản phẩm “${savedProduct.name}” đã được thêm vào danh sách.`,
+                    confirmText: "Đóng",
+                    hideCancel: true
+                });
+            } catch (error) {
+                form.dataset.submitting = "false";
+                submitButton.disabled = false;
+                submitButton.textContent = wasEditing ? "Lưu thay đổi" : "Thêm đồ uống";
+                cancelButtons.forEach((button) => { button.disabled = false; });
+
+                if (error.validationErrors) {
+                    ValidationUI.showErrors(form, error.validationErrors);
+                    form.querySelector("[data-form-error]").textContent = "";
+                } else {
+                    const message = error.message || "Không thể lưu sản phẩm. Vui lòng thử lại.";
+                    form.querySelector("[data-form-error]").textContent = message;
+                    this.showDialog({
+                        type: "error",
+                        title: wasEditing ? "Không thể cập nhật sản phẩm" : "Không thể thêm sản phẩm",
+                        message: `${message} Bạn có thể thử lại mà không cần nhập lại thông tin.`,
+                        confirmText: "Thử lại",
+                        onConfirm: saveProduct
+                    });
+                }
+                throw error;
+            }
+        };
 
         this.showDialog({
             type: "info",
@@ -369,69 +459,47 @@ export class ProductView {
                 ? `Bạn có chắc chắn muốn lưu thay đổi cho sản phẩm “${product.name}” không?`
                 : `Bạn có chắc chắn muốn thêm sản phẩm “${product.name}” không?`,
             confirmText: wasEditing ? "Xác nhận sửa" : "Xác nhận thêm",
-            onConfirm: async () => {
-                try {
-                    const savedProduct = await this.onSave(product);
-                    const index = this.products.findIndex((item) => String(item.id) === String(savedProduct.id));
-                    if (index === -1) this.products = [...this.products, savedProduct];
-                    else this.products = this.products.map((item, itemIndex) => itemIndex === index ? savedProduct : item);
-                    this.closeForm();
-                    this.renderList();
-                    if (wasEditing) this.openDetail(savedProduct.id);
-                    this.showDialog({
-                        type: "success",
-                        title: wasEditing ? "Cập nhật thành công" : "Thêm sản phẩm thành công",
-                        message: wasEditing
-                            ? `Sản phẩm “${savedProduct.name}” đã được cập nhật.`
-                            : `Sản phẩm “${savedProduct.name}” đã được thêm vào danh sách.`,
-                        confirmText: "Đóng",
-                        hideCancel: true
-                    });
-                } catch (error) {
-                    if (error.validationErrors) {
-                        ValidationUI.showErrors(form, error.validationErrors);
-                        form.querySelector("[data-form-error]").textContent = "";
-                    } else {
-                        form.querySelector("[data-form-error]").textContent = error.message || "Không thể lưu sản phẩm.";
-                    }
-                }
-            }
+            onConfirm: saveProduct
         });
     }
 
-    // Yêu cầu xác nhận trước khi xóa sản phẩm.
+    // Yêu cầu xác nhận và xử lý xóa sản phẩm.
     confirmDeleteProduct(id) {
         const product = this.products.find((item) => String(item.id) === String(id));
         if (!product) return;
+
+        const deleteProduct = async () => {
+            try {
+                await this.onDelete(id);
+                this.products = this.products.filter((item) => String(item.id) !== String(id));
+                this.showList();
+                this.renderList();
+                this.showDialog({
+                    type: "success",
+                    title: "Xóa thành công",
+                    message: `Sản phẩm “${product.name}” đã được xóa.`,
+                    confirmText: "Đóng",
+                    hideCancel: true
+                });
+            } catch (error) {
+                const message = error.message || "Đã xảy ra lỗi khi xóa sản phẩm.";
+                this.showDialog({
+                    type: "error",
+                    title: "Không thể xóa sản phẩm",
+                    message: `${message} Vui lòng kiểm tra kết nối và thử lại.`,
+                    confirmText: "Thử lại",
+                    onConfirm: deleteProduct
+                });
+                throw error;
+            }
+        };
 
         this.showDialog({
             type: "danger",
             title: "Xác nhận xóa sản phẩm",
             message: `Bạn có chắc chắn muốn xóa “${product.name}” không? Thao tác này không thể hoàn tác.`,
             confirmText: "Xác nhận xóa",
-            onConfirm: async () => {
-                try {
-                    await this.onDelete(id);
-                    this.products = this.products.filter((item) => String(item.id) !== String(id));
-                    this.showList();
-                    this.renderList();
-                    this.showDialog({
-                        type: "success",
-                        title: "Xóa thành công",
-                        message: `Sản phẩm “${product.name}” đã được xóa.`,
-                        confirmText: "Đóng",
-                        hideCancel: true
-                    });
-                } catch (error) {
-                    this.showDialog({
-                        type: "error",
-                        title: "Không thể xóa sản phẩm",
-                        message: error.message || "Đã xảy ra lỗi khi xóa sản phẩm.",
-                        confirmText: "Đóng",
-                        hideCancel: true
-                    });
-                }
-            }
+            onConfirm: deleteProduct
         });
     }
 
@@ -444,16 +512,23 @@ export class ProductView {
         dialog.querySelector("[data-dialog-message]").textContent = message;
         dialog.querySelector("[data-dialog-icon]").textContent =
             type === "success" ? "✓" : type === "danger" ? "!" : type === "error" ? "×" : "?";
-        actions.querySelector('[data-dialog-action="confirm"]').textContent = confirmText;
-        actions.querySelector('[data-dialog-action="cancel"]').hidden = hideCancel;
+        const confirmButton = actions.querySelector('[data-dialog-action="confirm"]');
+        const cancelButton = actions.querySelector('[data-dialog-action="cancel"]');
+        confirmButton.textContent = confirmText;
+        confirmButton.disabled = false;
+        cancelButton.disabled = false;
+        cancelButton.hidden = hideCancel;
+        dialog.setAttribute("aria-busy", "false");
         this.pendingDialogAction = onConfirm;
         dialog.hidden = false;
-        actions.querySelector('[data-dialog-action="confirm"]').focus();
+        confirmButton.focus();
     }
 
-    // Xử lý thao tác của hộp thoại.
+    // Xử lý thao tác hộp thoại và khóa nút trong thời gian chờ API.
     async handleDialogAction(action) {
         const dialog = this.container.querySelector("[data-dialog]");
+        if (dialog.getAttribute("aria-busy") === "true") return;
+
         if (action === "cancel") {
             this.pendingDialogAction = null;
             dialog.hidden = true;
@@ -461,8 +536,31 @@ export class ProductView {
         }
 
         const callback = this.pendingDialogAction;
+        if (!callback) {
+            dialog.hidden = true;
+            return;
+        }
+
+        const confirmButton = dialog.querySelector('[data-dialog-action="confirm"]');
+        const cancelButton = dialog.querySelector('[data-dialog-action="cancel"]');
         this.pendingDialogAction = null;
-        dialog.hidden = true;
-        if (callback) await callback();
+        dialog.setAttribute("aria-busy", "true");
+        confirmButton.disabled = true;
+        cancelButton.disabled = true;
+        confirmButton.textContent = "Đang xử lý...";
+
+        try {
+            await callback();
+        } catch (error) {
+            // Lỗi đã được hiển thị tại form hoặc hộp thoại; giữ giao diện ổn định.
+            console.error("Thao tác sản phẩm thất bại:", error);
+        } finally {
+            if (!dialog.hidden && dialog.getAttribute("aria-busy") === "true") {
+                dialog.setAttribute("aria-busy", "false");
+                confirmButton.disabled = false;
+                cancelButton.disabled = false;
+                confirmButton.textContent = "Thử lại";
+            }
+        }
     }
 }
