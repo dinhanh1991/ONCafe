@@ -19,6 +19,7 @@ import { renderAccessMessage } from "../../ui/admin/AccessMessage.js";
 import { createAdminWorkspace } from "../../views/admin/AdminWorkspaceView.js";
 import { createAdminOverviewLoaders } from "./AdminOverviewController.js";
 import { createAdminSectionController } from "./AdminSectionController.js";
+import { renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
 
 const authService = new AuthService();
 const productService = new ProductService(new ProductRepository());
@@ -138,10 +139,13 @@ async function startApp() {
     // Tải danh sách sản phẩm từ dịch vụ.
     async function loadProducts() {
         if (!productView) return;
-        productPanel.innerHTML = '<p role="status">Đang tải sản phẩm...</p>';
+        renderCoffeeLoading(productPanel, "Đang pha dữ liệu đồ uống...");
         try {
-            productView.render(await productService.getAllProducts());
+            const products = await productService.getAllProducts();
+            clearCoffeeLoading(productPanel);
+            productView.render(products);
         } catch (error) {
+            clearCoffeeLoading(productPanel);
             console.error("Không thể tải sản phẩm:", error);
             productView.renderLoadError(
                 error.message || "Không thể tải danh sách sản phẩm. Vui lòng kiểm tra kết nối mạng.",
@@ -158,10 +162,13 @@ async function startApp() {
 
     // Tải danh sách đơn hàng từ dịch vụ.
     async function loadOrders() {
-        orderPanel.innerHTML = '<p role="status">Đang tải đơn hàng...</p>';
+        renderCoffeeLoading(orderPanel, "Đang chuẩn bị danh sách đơn hàng...");
         try {
-            orderView.render(await orderService.getStaffOrders());
+            const orders = await orderService.getStaffOrders();
+            clearCoffeeLoading(orderPanel);
+            orderView.render(orders);
         } catch (error) {
+            clearCoffeeLoading(orderPanel);
             console.error("Không thể tải đơn hàng:", error);
             orderPanel.innerHTML = "";
             const message = document.createElement("p");
