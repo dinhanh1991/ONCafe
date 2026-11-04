@@ -70,10 +70,11 @@ export class CustomerProfileView {
     // Tải dữ liệu cần thiết cho thành phần.
     async load() {
         const feedback = this.container.querySelector("[data-profile-feedback]");
-        feedback.textContent = "Đang tải thông tin cá nhân...";
+        renderCoffeeLoading(feedback, "Đang tải thông tin cá nhân...", { compact: true });
 
         try {
             const result = await this.onLoad();
+            clearCoffeeLoading(feedback);
             if (!result) return;
             const { profile, email } = result;
             const form = this.container.querySelector("[data-profile-form]");
