@@ -1,4 +1,5 @@
 import pytest
+from urllib.parse import parse_qs, urlparse
 
 from conftest import BASE_URL
 
@@ -176,6 +177,7 @@ def test_staff_login_success_redirects_to_dashboard(page, role):
 @pytest.mark.parametrize(
     ("redirect", "expected_page"),
     [
+        ("", "home.html"),
         ("menu", "menu.html"),
         ("my-orders", "my-orders.html"),
         ("profile", "profile.html"),
@@ -238,6 +240,35 @@ def test_forgot_password_shows_success_after_request(page):
     assert "bạn sẽ nhận được hướng dẫn đặt lại mật khẩu" in message.inner_text()
 
 
+def test_forgot_password_sends_email_and_reset_redirect(page):
+    recovery_requests = []
+
+    def handle_recovery(route):
+        recovery_requests.append(route.request)
+        route.fulfill(
+            status=200,
+            content_type="application/json",
+            body="{}",
+        )
+
+    page.route("**/auth/v1/recover**", handle_recovery)
+    open_login_page(page)
+
+    page.locator("#email").fill("  test@example.com  ")
+    page.locator("#forgotPassword").click()
+    page.wait_for_function(
+        """() => document.querySelector("#loginMessage")
+        .textContent.includes("bạn sẽ nhận được hướng dẫn đặt lại mật khẩu")"""
+    )
+
+    assert len(recovery_requests) == 1
+    request = recovery_requests[0]
+    assert request.post_data_json["email"] == "test@example.com"
+    assert parse_qs(urlparse(request.url).query)["redirect_to"] == [
+        f"{BASE_URL}/pages/auth/reset-password.html"
+    ]
+
+
 def test_forgot_password_shows_server_error(page):
     page.route(
         "**/auth/v1/recover**",
@@ -260,3 +291,48 @@ def test_forgot_password_shows_server_error(page):
 
     assert message.get_attribute("data-state") == "error"
     assert "Recovery service unavailable" in message.inner_text()
+
+
+def test_profile_lookup_error_is_shown_without_redirect(page):
+    page.route(
+        "**/auth/v1/token**",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/json",
+            body='''{
+                "access_token": "fake-access-token",
+                "token_type": "bearer",
+                "expires_in": 3600,
+                "refresh_token": "fake-refresh-token",
+                "user": {
+                    "id": "test-user-id",
+                    "email": "test@example.com",
+                    "role": "authenticated"
+                }
+            }'''
+        )
+    )
+    page.route(
+        "**/rest/v1/profiles**",
+        lambda route: route.fulfill(
+            status=500,
+            content_type="application/json",
+            body='{"message":"Profile service unavailable"}',
+        )
+    )
+    open_login_page(page)
+    login_url = page.url
+
+    page.locator("#email").fill("test@example.com")
+    page.locator("#password").fill("fake-password")
+    page.locator('button[type="submit"]').click()
+
+    message = page.locator("#loginMessage")
+    page.wait_for_function(
+        """() => document.querySelector("#loginMessage")
+        .textContent.includes("Profile service unavailable")"""
+    )
+
+    assert page.url == login_url
+    assert message.get_attribute("data-state") == "error"
+    assert "Profile service unavailable" in message.inner_text()
