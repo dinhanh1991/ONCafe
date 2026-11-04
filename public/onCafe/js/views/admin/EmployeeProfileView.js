@@ -1,4 +1,4 @@
-import { renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
+import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 // Hiển thị và chỉnh sửa hồ sơ nhân viên đang đăng nhập.
 import { CustomerValidator } from "../../validators/CustomerValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
@@ -77,6 +77,7 @@ export class EmployeeProfileView {
         renderCoffeeLoading(feedback, "Đang tải thông tin nhân viên...", { compact: true });
         try {
             const profile = await this.onLoad();
+            await waitForCoffeeLoading(feedback);
             clearCoffeeLoading(feedback);
             const form = this.container.querySelector("[data-profile-form]");
             form.elements.fullName.value = profile.full_name || "";
@@ -86,6 +87,7 @@ export class EmployeeProfileView {
             form.elements.role.value = this.roleLabel(profile.role);
             feedback.textContent = "";
         } catch (error) {
+            await waitForCoffeeLoading(feedback);
             clearCoffeeLoading(feedback);
             feedback.textContent = error.message || "Không thể tải thông tin tài khoản.";
             feedback.className = "app-error";
