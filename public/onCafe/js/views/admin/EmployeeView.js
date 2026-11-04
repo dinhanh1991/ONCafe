@@ -2,6 +2,7 @@
 import { EmployeeValidator } from "../../validators/EmployeeValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
+import { renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
 
 // Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -485,7 +486,12 @@ export class EmployeeView {
     setFeedback(message, isError = false) {
         const feedback = this.container.querySelector("[data-employee-feedback]");
         if (!feedback) return;
-        feedback.textContent = message;
+        if (message && message.startsWith("Đang")) {
+            renderCoffeeLoading(feedback, message, { compact: true });
+        } else {
+            clearCoffeeLoading(feedback);
+            feedback.textContent = message;
+        }
         feedback.classList.toggle("app-error", isError);
     }
 }
