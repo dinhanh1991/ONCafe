@@ -434,6 +434,7 @@ export class ProductView {
             } catch (error) {
                 form.dataset.submitting = "false";
                 submitButton.disabled = false;
+                submitButton.removeAttribute("aria-busy");
                 submitButton.textContent = wasEditing ? "Lưu thay đổi" : "Thêm đồ uống";
                 cancelButtons.forEach((button) => { button.disabled = false; });
 
