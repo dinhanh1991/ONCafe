@@ -1,4 +1,6 @@
 // Tạo và hiển thị trạng thái tải theo nhận diện Coffee Motion của ONCafe.
+const loadingStartedAt = new WeakMap();
+
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
     "<": "&lt;",
@@ -32,6 +34,22 @@ export function renderCoffeeLoading(element, message, options) {
     if (!element) return;
     element.innerHTML = createCoffeeLoadingMarkup(message, options);
     element.setAttribute("aria-busy", "true");
+    loadingStartedAt.set(element, Date.now());
+}
+
+// Giữ hoạt ảnh tải danh sách đủ lâu để người dùng nhận biết trạng thái.
+export async function waitForCoffeeLoading(element, minDuration = 450) {
+    const startedAt = element ? loadingStartedAt.get(element) : null;
+    if (!startedAt) return;
+
+    const remainingTime = minDuration - (Date.now() - startedAt);
+    if (remainingTime > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+    }
+
+    if (loadingStartedAt.get(element) === startedAt) {
+        loadingStartedAt.delete(element);
+    }
 }
 
 // Kết thúc trạng thái tải trước khi render dữ liệu hoặc thông báo khác.
