@@ -11,7 +11,7 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character
 export function createCoffeeLoadingMarkup(message = "Đang tải dữ liệu...", { compact = false } = {}) {
     const safeMessage = escapeHtml(message);
     return `
-        <div class="coffee-loading${compact ? " coffee-loading-compact" : ""}" role="status" aria-live="polite" aria-label="${safeMessage}">
+        <span class="coffee-loading${compact ? " coffee-loading-compact" : ""}" role="status" aria-live="polite" aria-label="${safeMessage}">
             <span class="coffee-loading-cup" aria-hidden="true">
                 <svg viewBox="0 0 72 72" focusable="false">
                     <path class="coffee-steam coffee-steam-one" d="M25 19c-5-5 5-7 0-13" />
@@ -24,7 +24,7 @@ export function createCoffeeLoadingMarkup(message = "Đang tải dữ liệu..."
                 </svg>
             </span>
             <span class="coffee-loading-copy">${safeMessage}</span>
-        </div>`;
+        </span>`;
 }
 
 // Thay nội dung vùng tải bằng hoạt ảnh dùng chung.
