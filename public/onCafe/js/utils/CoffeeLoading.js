@@ -17,8 +17,8 @@ export function createCoffeeLoadingMarkup(message = "Đang tải dữ liệu..."
                     <path class="coffee-steam coffee-steam-one" d="M25 19c-5-5 5-7 0-13" />
                     <path class="coffee-steam coffee-steam-two" d="M36 17c-5-5 5-7 0-13" />
                     <path class="coffee-steam coffee-steam-three" d="M47 19c-5-5 5-7 0-13" />
-                    <path class="coffee-liquid" d="M17 31c7-4 13 4 20 0s13 4 20 0v5H17z" />
                     <path class="coffee-cup" d="M15 29h43l-4 27a7 7 0 0 1-7 6H26a7 7 0 0 1-7-6z" />
+                    <path class="coffee-liquid" d="M17 31c7-4 13 4 20 0s13 4 20 0v5H17z" />
                     <path class="coffee-handle" d="M58 35h4a7 7 0 0 1 0 14h-6" />
                     <path class="coffee-saucer" d="M12 64h50" />
                 </svg>
