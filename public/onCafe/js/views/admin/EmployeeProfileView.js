@@ -73,9 +73,10 @@ export class EmployeeProfileView {
     // Tải dữ liệu cần thiết cho thành phần.
     async load() {
         const feedback = this.container.querySelector("[data-profile-feedback]");
-        feedback.textContent = "Đang tải thông tin tài khoản...";
+        renderCoffeeLoading(feedback, "Đang tải thông tin nhân viên...", { compact: true });
         try {
             const profile = await this.onLoad();
+            clearCoffeeLoading(feedback);
             const form = this.container.querySelector("[data-profile-form]");
             form.elements.fullName.value = profile.full_name || "";
             form.elements.phone.value = profile.phone || "";
