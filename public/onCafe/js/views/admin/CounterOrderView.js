@@ -93,8 +93,10 @@ export class CounterOrderView {
                 else if (quantity > Number(product.quantity)) this.cart.set(id, Number(product.quantity));
             }
             this.renderProducts();
+            clearCoffeeLoading(feedback);
             feedback.textContent = "";
         } catch (error) {
+            clearCoffeeLoading(feedback);
             feedback.textContent = error.message || "Không thể tải đồ uống.";
             feedback.className = "app-error";
         }
