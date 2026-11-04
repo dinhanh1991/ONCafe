@@ -2,7 +2,7 @@
 import { EmployeeValidator } from "../../validators/EmployeeValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
 import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
-import { renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
+import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 
 // Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -180,12 +180,15 @@ export class EmployeeView {
 
     // Tải dữ liệu cần thiết cho thành phần.
     async load() {
+        const feedback = this.container.querySelector("[data-employee-feedback]");
         this.setFeedback("Đang tải danh sách nhân viên...");
         try {
             this.employees = await this.onLoad();
+            await waitForCoffeeLoading(feedback);
             this.setFeedback("");
             this.renderList();
         } catch (error) {
+            await waitForCoffeeLoading(feedback);
             console.error("Không thể tải danh sách nhân viên:", error);
             this.setFeedback(error.message || "Không thể tải danh sách nhân viên.", true);
         }
