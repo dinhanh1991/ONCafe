@@ -1,4 +1,4 @@
-import { createCoffeeLoadingMarkup, renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
+import { createCoffeeLoadingMarkup, renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 // Hiển thị báo cáo doanh thu theo kỳ và các chỉ số phân tích.
 import {
     currencyFormatter,
@@ -120,11 +120,15 @@ export class RevenueReportView {
                 this.onLoad(this.period, previousAnchorDate)
             ]);
             if (requestId !== this.requestId) return;
+            await Promise.all([waitForCoffeeLoading(feedback), waitForCoffeeLoading(chart)]);
+            if (requestId !== this.requestId) return;
             this.renderReport(report, previousReport);
             clearCoffeeLoading(feedback);
             clearCoffeeLoading(chart);
             if (feedback) feedback.textContent = "Đã cập nhật báo cáo.";
         } catch (error) {
+            if (requestId !== this.requestId) return;
+            await Promise.all([waitForCoffeeLoading(feedback), waitForCoffeeLoading(chart)]);
             if (requestId !== this.requestId) return;
             console.error("Không thể tải báo cáo doanh thu:", error);
             clearCoffeeLoading(feedback);
