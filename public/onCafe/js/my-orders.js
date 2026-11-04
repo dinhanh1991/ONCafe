@@ -2,7 +2,7 @@
 import { CustomerOrderRepository } from "./repositories/CustomerOrderRepo.js";
 import { CustomerMyOrdersService } from "./services/CustomerMyOrdersService.js";
 import { CustomerQrPaymentService } from "./services/CustomerQrPaymentService.js";
-import { renderCoffeeLoading, clearCoffeeLoading } from "./utils/CoffeeLoading.js";
+import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "./utils/CoffeeLoading.js";
 
 const customerMyOrdersService = new CustomerMyOrdersService(new CustomerOrderRepository());
 const customerQrPaymentService = new CustomerQrPaymentService();
@@ -179,17 +179,20 @@ async function loadOrders() {
     if (isLoadingOrders) return;
     isLoadingOrders = true;
     refreshButton.disabled = true;
-    if (!hasLoadedOrders) setMessage("Đang tải đơn hàng...");
+    const showInitialLoading = !hasLoadedOrders;
+    if (showInitialLoading) setMessage("Đang tải đơn hàng...");
 
     try {
         const user = await customerMyOrdersService.getCurrentUser();
         if (!user) {
+            if (showInitialLoading) await waitForCoffeeLoading(message);
             setMessage("Bạn cần đăng nhập để xem đơn hàng của mình.", true);
             list.innerHTML = '<a class="orders-login-link" href="../auth/login.html?redirect=my-orders">Đăng nhập</a>';
             return;
         }
 
         const orders = await customerMyOrdersService.getMyOrders();
+        if (showInitialLoading) await waitForCoffeeLoading(message);
 
         if (hasLoadedOrders) {
             for (const order of orders) {
@@ -207,6 +210,7 @@ async function loadOrders() {
         renderOrders(orders);
         setMessage(orders.length ? `Bạn có ${orders.length} đơn hàng. Trạng thái được tự động cập nhật.` : "Bạn chưa có đơn hàng online nào.");
     } catch (error) {
+        if (showInitialLoading) await waitForCoffeeLoading(message);
         console.error("Không thể tải đơn hàng khách hàng:", error);
         setMessage(error.message || "Không thể tải đơn hàng. Vui lòng thử lại.", true);
     } finally {
