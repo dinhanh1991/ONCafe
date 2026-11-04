@@ -402,6 +402,7 @@ export class ProductView {
         const saveProduct = async () => {
             form.dataset.submitting = "true";
             submitButton.disabled = true;
+            submitButton.setAttribute("aria-busy", "true");
             submitButton.innerHTML = createCoffeeLoadingMarkup(wasEditing ? "Đang cập nhật..." : "Đang thêm...", { compact: true });
             cancelButtons.forEach((button) => { button.disabled = true; });
             form.querySelector("[data-form-error]").textContent = "";
@@ -414,6 +415,7 @@ export class ProductView {
 
                 form.dataset.submitting = "false";
                 submitButton.disabled = false;
+                submitButton.removeAttribute("aria-busy");
                 submitButton.textContent = wasEditing ? "Lưu thay đổi" : "Thêm đồ uống";
                 cancelButtons.forEach((button) => { button.disabled = false; });
 
