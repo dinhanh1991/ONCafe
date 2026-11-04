@@ -143,7 +143,10 @@ async function startApp() {
             productView.render(await productService.getAllProducts());
         } catch (error) {
             console.error("Không thể tải sản phẩm:", error);
-            productPanel.textContent = error.message || "Không thể tải danh sách sản phẩm.";
+            productView.renderLoadError(
+                error.message || "Không thể tải danh sách sản phẩm. Vui lòng kiểm tra kết nối mạng.",
+                loadProducts
+            );
         }
     }
 
