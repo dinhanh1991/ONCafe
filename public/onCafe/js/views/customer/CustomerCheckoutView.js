@@ -79,9 +79,11 @@ export class CustomerCheckoutView {
                 submitButton.dataset.defaultLabel = submitButton.textContent.trim() || "Đặt hàng";
             }
             submitButton.disabled = true;
+            submitButton.setAttribute("aria-busy", "true");
             submitButton.innerHTML = createCoffeeLoadingMarkup("Đang gửi đơn...", { compact: true });
         } else {
             submitButton.disabled = false;
+            submitButton.removeAttribute("aria-busy");
             if (submitButton.dataset.defaultLabel) {
                 submitButton.textContent = submitButton.dataset.defaultLabel;
                 delete submitButton.dataset.defaultLabel;
