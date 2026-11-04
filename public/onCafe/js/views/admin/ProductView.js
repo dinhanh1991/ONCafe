@@ -437,6 +437,13 @@ export class ProductView {
                 if (error.validationErrors) {
                     ValidationUI.showErrors(form, error.validationErrors);
                     form.querySelector("[data-form-error]").textContent = "";
+                    this.showDialog({
+                        type: "error",
+                        title: "Dữ liệu không hợp lệ",
+                        message: "Vui lòng kiểm tra lại các trường thông tin được đánh dấu.",
+                        confirmText: "Đóng",
+                        hideCancel: true
+                    });
                 } else {
                     const message = error.message || "Không thể lưu sản phẩm. Vui lòng thử lại.";
                     form.querySelector("[data-form-error]").textContent = message;
