@@ -2,6 +2,7 @@
 import { CustomerOrderRepository } from "./repositories/CustomerOrderRepo.js";
 import { CustomerMyOrdersService } from "./services/CustomerMyOrdersService.js";
 import { CustomerQrPaymentService } from "./services/CustomerQrPaymentService.js";
+import { renderCoffeeLoading, clearCoffeeLoading } from "./utils/CoffeeLoading.js";
 
 const customerMyOrdersService = new CustomerMyOrdersService(new CustomerOrderRepository());
 const customerQrPaymentService = new CustomerQrPaymentService();
@@ -42,7 +43,12 @@ function formatDate(value) {
 
 // Cập nhật nội dung thông báo cho người dùng.
 function setMessage(text, isError = false) {
-    message.textContent = text;
+    if (text && text.startsWith("Đang tải")) {
+        renderCoffeeLoading(message, text, { compact: true });
+    } else {
+        clearCoffeeLoading(message);
+        message.textContent = text;
+    }
     message.classList.toggle("is-error", isError);
 }
 
