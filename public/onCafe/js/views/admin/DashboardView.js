@@ -1,3 +1,5 @@
+import { renderCoffeeLoading } from "../../utils/CoffeeLoading.js";
+
 // Dựng nội dung tổng quan theo dữ liệu tài khoản.
 // Tạo cấu trúc HTML cho trang tổng quan theo hồ sơ và các bảng dữ liệu.
 export function createDashboardPanel(profile, {
@@ -316,11 +318,7 @@ export class AdminOverviewView {
 
     // Hiển thị trạng thái đang tải dữ liệu.
     renderLoading(container, message) {
-        container.replaceChildren();
-        const element = document.createElement("p");
-        element.setAttribute("role", "status");
-        element.textContent = message;
-        container.append(element);
+        renderCoffeeLoading(container, message);
     }
 
     // Hiển thị trạng thái danh sách chưa có dữ liệu.
