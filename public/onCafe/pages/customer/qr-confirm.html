@@ -71,6 +71,7 @@
 
 <script type="module">
     import { supabase } from "../../js/config/supabase.js";
+    import { renderCoffeeLoading, clearCoffeeLoading } from "../../js/utils/CoffeeLoading.js";
 
     const button = document.querySelector("#confirmButton");
     const feedback = document.querySelector("#feedback");
@@ -124,8 +125,8 @@
             return;
         }
         button.disabled = true;
-        button.textContent = "Đang xác nhận...";
-        feedback.textContent = "ONCafe đang kiểm tra xác nhận thanh toán...";
+        renderCoffeeLoading(button, "Đang xác nhận...", { compact: true });
+        renderCoffeeLoading(feedback, "ONCafe đang kiểm tra xác nhận thanh toán...", { compact: true });
         feedback.className = "";
         try {
             const { data, error } = await supabase.functions.invoke("oncafe-qr-payment", {
@@ -135,11 +136,13 @@
             if (!data?.confirmed) throw new Error(data?.error || "Mã QR không còn hiệu lực.");
 
             button.textContent = "Đã xác nhận thanh toán";
+            clearCoffeeLoading(feedback);
             feedback.textContent = "";
             successOrder.textContent = data.order_code ? "Mã đơn hàng: " + data.order_code : "";
             successOverlay.classList.add("show");
             viewOrders.focus();
         } catch (error) {
+            clearCoffeeLoading(feedback);
             feedback.textContent = error.message || "Có lỗi xảy ra. Vui lòng báo nhân viên.";
             feedback.className = "error";
             button.disabled = false;
