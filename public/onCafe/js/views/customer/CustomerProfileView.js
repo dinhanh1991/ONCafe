@@ -1,4 +1,4 @@
-import { renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
+import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 // Hiển thị và xử lý biểu mẫu hồ sơ khách hàng.
 import { CustomerValidator } from "../../validators/CustomerValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
@@ -75,6 +75,7 @@ export class CustomerProfileView {
 
         try {
             const result = await this.onLoad();
+            await waitForCoffeeLoading(feedback);
             clearCoffeeLoading(feedback);
             if (!result) return;
             const { profile, email } = result;
@@ -94,6 +95,7 @@ export class CustomerProfileView {
             form.querySelector('button[type="submit"]').disabled = false;
             feedback.textContent = "";
         } catch (error) {
+            await waitForCoffeeLoading(feedback);
             clearCoffeeLoading(feedback);
             console.error("Không thể tải hồ sơ khách hàng:", error);
             feedback.textContent = error.message || "Không thể tải thông tin cá nhân.";
