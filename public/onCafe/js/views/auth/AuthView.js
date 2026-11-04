@@ -1,3 +1,4 @@
+import { renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
 import { AuthService } from "../../services/AuthService.js";
 import { ValidationUtils } from "../../validators/ValidationUtils.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
@@ -6,7 +7,12 @@ const authService = new AuthService();
 
 // Hiển thị thông báo thành công hoặc lỗi cho người dùng.
 function showMessage(element, message, isError = false) {
-    element.textContent = message;
+    if (message && message.startsWith("Đang")) {
+        renderCoffeeLoading(element, message, { compact: true });
+    } else {
+        clearCoffeeLoading(element);
+        element.textContent = message;
+    }
     element.dataset.state = isError ? "error" : "success";
 }
 
