@@ -1,3 +1,4 @@
+import { createCoffeeLoadingMarkup } from "../../utils/CoffeeLoading.js";
 /**
  * CustomerCheckoutView
  * Chịu trách nhiệm hiển thị và cập nhật giao diện checkout.
@@ -72,7 +73,20 @@ export class CustomerCheckoutView {
     // Cập nhật trạng thái đang gửi biểu mẫu.
     setSubmitting(isSubmitting) {
         const submitButton = this.form?.querySelector("#submitOrderButton");
-        if (submitButton) submitButton.disabled = isSubmitting;
+        if (!submitButton) return;
+        if (isSubmitting) {
+            if (!submitButton.dataset.defaultLabel) {
+                submitButton.dataset.defaultLabel = submitButton.textContent.trim() || "Đặt hàng";
+            }
+            submitButton.disabled = true;
+            submitButton.innerHTML = createCoffeeLoadingMarkup("Đang gửi đơn...", { compact: true });
+        } else {
+            submitButton.disabled = false;
+            if (submitButton.dataset.defaultLabel) {
+                submitButton.textContent = submitButton.dataset.defaultLabel;
+                delete submitButton.dataset.defaultLabel;
+            }
+        }
     }
 
     // Ẩn biểu mẫu khỏi giao diện.
