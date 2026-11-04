@@ -19,7 +19,7 @@ import { renderAccessMessage } from "../../ui/admin/AccessMessage.js";
 import { createAdminWorkspace } from "../../views/admin/AdminWorkspaceView.js";
 import { createAdminOverviewLoaders } from "./AdminOverviewController.js";
 import { createAdminSectionController } from "./AdminSectionController.js";
-import { renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
+import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 
 const authService = new AuthService();
 const productService = new ProductService(new ProductRepository());
@@ -142,9 +142,11 @@ async function startApp() {
         renderCoffeeLoading(productPanel, "Đang pha dữ liệu đồ uống...");
         try {
             const products = await productService.getAllProducts();
+            await waitForCoffeeLoading(productPanel);
             clearCoffeeLoading(productPanel);
             productView.render(products);
         } catch (error) {
+            await waitForCoffeeLoading(productPanel);
             clearCoffeeLoading(productPanel);
             console.error("Không thể tải sản phẩm:", error);
             productView.renderLoadError(
@@ -165,9 +167,11 @@ async function startApp() {
         renderCoffeeLoading(orderPanel, "Đang chuẩn bị danh sách đơn hàng...");
         try {
             const orders = await orderService.getStaffOrders();
+            await waitForCoffeeLoading(orderPanel);
             clearCoffeeLoading(orderPanel);
             orderView.render(orders);
         } catch (error) {
+            await waitForCoffeeLoading(orderPanel);
             clearCoffeeLoading(orderPanel);
             console.error("Không thể tải đơn hàng:", error);
             orderPanel.innerHTML = "";
