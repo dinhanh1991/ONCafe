@@ -3,7 +3,7 @@ import { formatCurrency } from "../../utils/FormatUtils.js";
 import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
 import { OrderValidator } from "../../validators/OrderValidator.js";
 import { ValidationUI } from "../../validators/ValidationUI.js";
-import { createCoffeeLoadingMarkup, renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
+import { createCoffeeLoadingMarkup, renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 import { CounterOrderPaymentMonitor } from "../../controllers/admin/CounterOrderPaymentMonitor.js";
 
 // Mã hóa ký tự đặc biệt trước khi chèn dữ liệu vào HTML.
@@ -87,6 +87,7 @@ export class CounterOrderView {
         renderCoffeeLoading(feedback, "Đang tải danh sách đồ uống...", { compact: true });
         try {
             this.products = (await this.onLoadProducts()).filter((p) => p.status !== "inactive" && Number(p.quantity) > 0);
+            await waitForCoffeeLoading(feedback);
             for (const [id, quantity] of this.cart.entries()) {
                 const product = this.products.find((item) => String(item.id) === id);
                 if (!product) this.cart.delete(id);
@@ -96,6 +97,7 @@ export class CounterOrderView {
             clearCoffeeLoading(feedback);
             feedback.textContent = "";
         } catch (error) {
+            await waitForCoffeeLoading(feedback);
             clearCoffeeLoading(feedback);
             feedback.textContent = error.message || "Không thể tải đồ uống.";
             feedback.className = "app-error";
