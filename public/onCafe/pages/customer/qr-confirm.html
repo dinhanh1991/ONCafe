@@ -135,6 +135,7 @@
             if (error) throw new Error(data?.error || error.message || "Không thể xác nhận.");
             if (!data?.confirmed) throw new Error(data?.error || "Mã QR không còn hiệu lực.");
 
+            clearCoffeeLoading(button);
             button.textContent = "Đã xác nhận thanh toán";
             clearCoffeeLoading(feedback);
             feedback.textContent = "";
@@ -142,6 +143,7 @@
             successOverlay.classList.add("show");
             viewOrders.focus();
         } catch (error) {
+            clearCoffeeLoading(button);
             clearCoffeeLoading(feedback);
             feedback.textContent = error.message || "Có lỗi xảy ra. Vui lòng báo nhân viên.";
             feedback.className = "error";
