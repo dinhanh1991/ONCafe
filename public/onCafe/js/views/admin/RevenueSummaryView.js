@@ -1,4 +1,4 @@
-import { renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
+import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 // Hiển thị bản tóm tắt doanh thu trên trang tổng quan.
 import {
     currencyFormatter,
@@ -100,6 +100,8 @@ export class RevenueSummaryView {
                 this.onLoad(this.period, previousAnchorDate)
             ]);
             if (requestId !== this.requestId) return;
+            await waitForCoffeeLoading(feedback);
+            if (requestId !== this.requestId) return;
             clearCoffeeLoading(feedback);
             const summary = report?.summary || {};
             const previousSummary = previousReport?.summary || {};
@@ -119,6 +121,8 @@ export class RevenueSummaryView {
             });
             if (feedback) feedback.textContent = "Đã cập nhật số liệu tổng hợp.";
         } catch (error) {
+            if (requestId !== this.requestId) return;
+            await waitForCoffeeLoading(feedback);
             if (requestId !== this.requestId) return;
             clearCoffeeLoading(feedback);
             console.error("Không thể tải tổng hợp doanh thu:", error);
