@@ -5,6 +5,7 @@ import { CustomerMenuService } from "../../services/CustomerMenuService.js";
 import { CustomerCheckoutService } from "../../services/CustomerCheckoutService.js";
 import { CustomerCartService } from "../../services/CustomerCartService.js";
 import { CustomerMenuView } from "../../views/customer/CustomerMenuView.js";
+import { renderCoffeeLoading, clearCoffeeLoading } from "../../utils/CoffeeLoading.js";
 import { CustomerCheckoutController } from "./CustomerCheckoutController.js";
 
 const customerMenuService = new CustomerMenuService(new CustomerMenuRepository());
@@ -46,7 +47,13 @@ const customerMenuView = new CustomerMenuView({
 
 // Cập nhật thông báo trạng thái trên giao diện.
 function showStatus(message, isError = false) {
-    customerMenuView.showStatus(message, isError);
+    const status = document.querySelector("#menuStatus");
+    if (message && message.startsWith("Đang")) {
+        renderCoffeeLoading(status, message, { compact: true });
+    } else {
+        clearCoffeeLoading(status);
+        customerMenuView.showStatus(message, isError);
+    }
 }
 
 // Thêm sản phẩm vào giỏ hàng của khách.
