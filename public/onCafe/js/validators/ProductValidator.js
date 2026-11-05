@@ -31,6 +31,10 @@ export class ProductValidator {
             errors.quantity = "Số lượng tồn kho phải là số nguyên không âm.";
         }
 
+        if (!["active", "inactive"].includes(product.status)) {
+            errors.status = "Vui lòng chọn trạng thái sản phẩm hợp lệ.";
+        }
+
         if (product.imageFile) {
             const imageResult = this.validateImageFile(product.imageFile);
             if (!imageResult.isValid) {
