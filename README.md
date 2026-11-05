@@ -8,16 +8,15 @@ Dự án được xây dựng bằng HTML, CSS và JavaScript ES Modules. Fronte
 
 ## Giao diện
 
-Một số ảnh chụp giao diện khách hàng:
+Các ảnh dưới đây được trích nguyên bản từ báo cáo đồ án:
 
-![Trang chủ ONCafe](./report/screenshots/customer-home.png)
-
-<p align="center">
-  <img src="./report/screenshots/menu.png" alt="Trang thực đơn ONCafe" width="48%">
-  <img src="./report/screenshots/login.png" alt="Trang đăng nhập ONCafe" width="48%">
-</p>
-
-Các ảnh được chụp từ giao diện đang chạy; thực đơn hiển thị dữ liệu của môi trường Supabase được kết nối khi chụp. Dashboard nhân viên yêu cầu tài khoản có quyền phù hợp nên chưa đưa ảnh vào README.
+<table>
+  <tr>
+    <td align="center"><img src="./public/onCafe/assets/readme/customer-home.png" alt="Trang chủ ONCafe" width="100%"><br><sub>Trang chủ khách hàng</sub></td>
+    <td align="center"><img src="./public/onCafe/assets/readme/customer-registration-validation.png" alt="Màn hình đăng ký và kiểm tra dữ liệu" width="100%"><br><sub>Đăng ký và kiểm tra dữ liệu đầu vào</sub></td>
+    <td align="center"><img src="./public/onCafe/assets/readme/mobile-order-confirmation.jpg" alt="Xác nhận đơn hàng trên điện thoại" width="100%"><br><sub>Xác nhận đơn hàng trên điện thoại</sub></td>
+  </tr>
+</table>
 
 ## 1. Mục tiêu
 
@@ -144,34 +143,33 @@ Quyền truy cập được kiểm tra ở giao diện và được giới hạn
 Dự án tổ chức mã nguồn JavaScript theo các nhóm trách nhiệm như Model, Repository, Service, View và Validator. Cách tổ chức này giúp tách giao diện khỏi xử lý nghiệp vụ và truy cập dữ liệu.
 
     ONCafe/
+    ├── .gitignore
     ├── .gitlab-ci.yml
     ├── README.md
     ├── public/
     │   └── onCafe/                         # Frontend tĩnh được GitLab Pages triển khai
     │       ├── index.html                  # Điểm vào công khai, chuyển đến trang chủ khách hàng
-    │       ├── assets/images/              # Hình ảnh sản phẩm
-    │       ├── css/                        # CSS chung và CSS theo màn hình
+    │       ├── assets/images/              # Hình ảnh sản phẩm và giao diện
+    │       ├── css/
+    │       │   └── modules/{admin,shared}/
     │       ├── js/
     │       │   ├── config/                 # Cấu hình Supabase
-    │       │   ├── controllers/            # Điều phối luồng ứng dụng
-    │       │   ├── models/
+    │       │   ├── controllers/{admin,customer}/
+    │       │   ├── models/                 # Mô hình dữ liệu
     │       │   ├── repositories/           # Truy cập dữ liệu
     │       │   ├── services/               # Quy tắc nghiệp vụ
-    │       │   ├── ui/                     # Thành phần giao diện dùng lại
-    │       │   ├── utils/
+    │       │   ├── ui/{admin,customer}/     # Thành phần giao diện dùng lại
+    │       │   ├── utils/admin/
     │       │   ├── validators/
-    │       │   └── views/                  # Khởi tạo và hiển thị màn hình
-    │       └── pages/
-    │           ├── admin/
-    │           ├── auth/
-    │           └── customer/
-    │               ├── home.html
-    │               ├── menu.html
-    │               ├── profile.html
-    │               └── my-orders.html
-    ├── report/                             # Tài liệu báo cáo và ảnh README
+    │       │   └── views/{admin,auth,customer,shared}/
+    │       └── pages/{admin,auth,customer}/
+    ├── python-tests/
+    │   └── tests/                          # Kiểm thử giao diện và API
     └── supabase/
-        ├── functions/                      # Supabase Edge Functions
+        ├── functions/
+        │   ├── admin-create-employee/
+        │   ├── admin-manage-employees/
+        │   └── oncafe-qr-payment/
         └── migrations/                     # Schema, RLS và nghiệp vụ database
 
 ### Trách nhiệm của các thành phần chính
@@ -268,28 +266,23 @@ GitLab Pages chỉ phục vụ frontend tĩnh. Cơ sở dữ liệu, xác thực
 
 ## 9. Kiểm thử
 
-Khi kiểm thử một môi trường mới, nên thực hiện tối thiểu các nhóm tình huống sau:
+Các bài kiểm thử tự động nằm trong `python-tests/tests/` và dùng Pytest. Bốn bài kiểm thử API Supabase là opt-in để tránh gọi nhầm môi trường; hướng dẫn cấu hình project kiểm thử và các biến môi trường nằm trong [`python-tests/API_TESTING.md`](./python-tests/API_TESTING.md).
 
-- Đăng ký, đăng nhập, đăng xuất và đặt lại mật khẩu.
-- Kiểm tra quyền truy cập riêng của Admin, Seller, Cashier và Customer.
-- Thêm, sửa, xóa đồ uống; tải ảnh; cập nhật số lượng và trạng thái mở bán.
-- Đặt hàng online với hình thức nhận tại cửa hàng và giao tận nhà.
-- Kiểm tra trường bắt buộc, địa chỉ giao hàng, số điện thoại, phí giao hàng và phương thức thanh toán.
-- Kiểm tra đơn online xuất hiện trong danh sách đơn của nhân viên.
-- Kiểm tra tạo đơn tại quầy với tiền mặt và QR.
-- Kiểm tra tồn kho khi tạo đơn, hủy đơn, từ chối đơn và QR hết hạn.
-- Kiểm tra cập nhật trạng thái đơn và quyền chỉ xem của Cashier.
-- Kiểm tra tổng hợp doanh thu, báo cáo theo thời gian và đồ uống bán chạy.
-- Kiểm tra các thao tác quản lý nhân viên chỉ được Admin thực hiện.
+Để chạy bộ kiểm thử giao diện, cài Pytest và Playwright, cài Chromium cho Playwright, rồi khởi động Live Server với thư mục gốc `public/onCafe` tại `http://127.0.0.1:5500`:
 
-Dự án hiện chưa kèm bộ kiểm thử tự động trong repository; các tình huống trên là danh sách kiểm thử chức năng đề xuất để thực hiện thủ công và ghi kết quả vào báo cáo.
+    python -m pip install pytest playwright
+    python -m playwright install chromium
+    cd python-tests
+    python -m pytest -v
+
+Theo kết quả được ghi trong báo cáo, lần chạy suite cục bộ đạt **40 passed, 3 skipped, 0 failed**; ba bài kiểm thử REST opt-in được bỏ qua vì lần chạy đó không cấu hình biến môi trường Supabase. Lần kiểm thử REST riêng trên project Supabase dành cho kiểm thử đạt **4/4 passed**; kết quả chi tiết và phạm vi kiểm thử được ghi trong `python-tests/API_TESTING.md`. Các kết quả này không thay thế việc xác minh pipeline GitLab Pages và website sau khi triển khai.
 
 ## 10. Giới hạn hiện tại và hướng phát triển
 
 - Chưa tích hợp cổng thanh toán hoặc API ngân hàng để tự động đối soát giao dịch QR.
 - Chưa có bằng chứng trong mã nguồn hiện tại về việc phát hành hóa đơn điện tử hoặc xuất hóa đơn PDF hoàn chỉnh; không xem đây là chức năng đã hoàn thành.
 - Cần tiếp tục kiểm thử các quy tắc tồn kho, thời hạn QR, chuyển trạng thái đơn và phân quyền trên môi trường Supabase triển khai thực tế.
-- Có thể bổ sung kiểm thử tự động, nhật ký thao tác, báo cáo nâng cao và hoàn thiện quy trình triển khai production.
+- Có thể mở rộng độ bao phủ kiểm thử tự động, bổ sung nhật ký thao tác, báo cáo nâng cao và hoàn thiện quy trình triển khai production.
 
 ## 11. Repository
 
