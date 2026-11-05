@@ -6,6 +6,8 @@ Dự án được xây dựng bằng HTML, CSS và JavaScript ES Modules. Fronte
 
 > **Trạng thái dự án:** Mã nguồn frontend và các migration/Edge Functions của Supabase được lưu trong repository. Để vận hành ứng dụng cần cấu hình dự án Supabase, áp dụng migration và triển khai các Edge Functions tương ứng.
 
+> **Báo cáo:** Tệp `report/FIT4010-D.0379101001.LEDINHANH.D0525HNCNA4.docx` được lưu bằng Git LFS. Cài Git LFS trước khi clone; nếu đã clone rồi, chạy `git lfs pull` để tải tệp đầy đủ.
+
 ## Giao diện
 
 Một số ảnh chụp giao diện khách hàng:
