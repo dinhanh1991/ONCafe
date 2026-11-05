@@ -1,0 +1,15 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Test reports
+test-results/
+reports/
+.coverage
+htmlcov/
+python-tests/report.html
