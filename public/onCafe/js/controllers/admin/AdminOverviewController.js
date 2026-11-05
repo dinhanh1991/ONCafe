@@ -1,6 +1,7 @@
 // Chuẩn bị dữ liệu và các bộ nạp cho trang tổng quan quản trị.
 import { AdminOverviewService } from "../../services/AdminOverviewService.js";
 import { AdminOverviewView } from "../../views/admin/DashboardView.js";
+import { waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 
 // Tạo các hàm tải dữ liệu tổng quan theo vai trò nhân viên.
 export function createAdminOverviewLoaders({
@@ -41,8 +42,10 @@ export function createAdminOverviewLoaders({
 
         try {
             const orders = await orderService.getStaffOrders();
+            await waitForCoffeeLoading(chart);
             overviewView.renderPopularDrinks(AdminOverviewService.getPopularDrinks(orders));
         } catch (error) {
+            await waitForCoffeeLoading(chart);
             console.error("Không thể tải đồ uống bán chạy:", error);
             overviewView.renderChartError(
                 chart,
@@ -192,8 +195,10 @@ export function createAdminOverviewLoaders({
 
         try {
             const orders = await orderService.getStaffOrders();
+            await waitForCoffeeLoading(chart);
             overviewView.renderSellerOverview(AdminOverviewService.getSellerOverview(orders));
         } catch (error) {
+            await waitForCoffeeLoading(chart);
             console.error("Không thể tải thống kê bán hàng:", error);
             overviewView.renderChartError(
                 chart,

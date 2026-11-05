@@ -1,3 +1,4 @@
+import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 // Hiển thị bản tóm tắt doanh thu trên trang tổng quan.
 import {
     currencyFormatter,
@@ -88,7 +89,7 @@ export class RevenueSummaryView {
         const requestId = ++this.requestId;
         const feedback = this.container.querySelector("[data-summary-feedback]");
         if (feedback) {
-            feedback.textContent = "Đang tải số liệu doanh thu...";
+            renderCoffeeLoading(feedback, "Đang tổng hợp số liệu doanh thu...", { compact: true });
             feedback.classList.remove("app-error");
         }
 
@@ -99,6 +100,9 @@ export class RevenueSummaryView {
                 this.onLoad(this.period, previousAnchorDate)
             ]);
             if (requestId !== this.requestId) return;
+            await waitForCoffeeLoading(feedback);
+            if (requestId !== this.requestId) return;
+            clearCoffeeLoading(feedback);
             const summary = report?.summary || {};
             const previousSummary = previousReport?.summary || {};
             this.container.querySelectorAll("[data-summary-compare]").forEach((element) => {
@@ -118,6 +122,9 @@ export class RevenueSummaryView {
             if (feedback) feedback.textContent = "Đã cập nhật số liệu tổng hợp.";
         } catch (error) {
             if (requestId !== this.requestId) return;
+            await waitForCoffeeLoading(feedback);
+            if (requestId !== this.requestId) return;
+            clearCoffeeLoading(feedback);
             console.error("Không thể tải tổng hợp doanh thu:", error);
             if (feedback) {
                 feedback.textContent = error.message || "Không thể tải tổng hợp doanh thu.";

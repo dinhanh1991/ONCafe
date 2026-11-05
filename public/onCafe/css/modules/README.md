@@ -5,7 +5,7 @@ Thư mục này chứa CSS được tách theo nhóm giao diện/chức năng.
 ## Cấu trúc
 
 - `admin/`: giao diện hệ thống quản trị, nhân viên, sản phẩm, đơn hàng, bán hàng tại quầy và báo cáo.
-- `shared/`: thành phần dùng chung giữa nhiều khu vực, ví dụ hộp thoại và thông báo validation.
+- `shared/`: thành phần dùng chung giữa nhiều khu vực, ví dụ hộp thoại, thông báo validation và hoạt ảnh Coffee Motion Loading.
 
 ## Quy tắc sử dụng
 
