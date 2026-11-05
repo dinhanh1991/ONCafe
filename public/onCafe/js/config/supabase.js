@@ -9,7 +9,7 @@ export const supabase = createClient(
     SUPABASE_PUBLISHABLE_KEY,
     {
         auth: {
-            storage: window.sessionStorage
+            storage: window.localStorage
         }
     }
 );
