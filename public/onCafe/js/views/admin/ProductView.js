@@ -121,6 +121,12 @@ export class ProductView {
                             <label>Danh mục<input name="category" required maxlength="80"></label>
                             <label>Giá bán (VNĐ)<input name="price" type="number" min="0" step="1" required></label>
                             <label>Số lượng<input name="quantity" type="number" min="0" step="1" required></label>
+                            <label>Trạng thái
+                                <select name="status" required>
+                                    <option value="active">Đang bán</option>
+                                    <option value="inactive">Ngừng bán</option>
+                                </select>
+                            </label>
                             <label class="product-description">Ảnh đồ uống
                                 <input name="imageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
                                 <small class="image-help">Chọn ảnh JPG, PNG, WEBP hoặc GIF, tối đa 5 MB. Ảnh sẽ được lưu trên Supabase Storage.</small>
@@ -311,6 +317,7 @@ export class ProductView {
         form.querySelector('[name="category"]').value = product?.category ?? "";
         form.querySelector('[name="price"]').value = product?.price ?? "";
         form.querySelector('[name="quantity"]').value = product?.quantity ?? "0";
+        form.querySelector('[name="status"]').value = product?.status ?? "active";
         form.querySelector('[name="imageFile"]').value = "";
         form.querySelector("[data-form-error]").textContent = "";
         form.querySelector('[name="name"]').focus();
@@ -383,7 +390,6 @@ export class ProductView {
         product.price = Number(product.price);
         product.quantity = Number(product.quantity);
         product.imageFile = form.querySelector('[name="imageFile"]').files[0] ?? null;
-        product.status = this.products.find((item) => String(item.id) === String(this.editingId))?.status ?? "active";
 
         const validation = ProductValidator.validate(product);
         ValidationUI.bind(form);
