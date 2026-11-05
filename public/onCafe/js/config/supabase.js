@@ -6,5 +6,10 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_zMXRwAe2NB62KcWcW_UvGA_3G-ESxqu
 
 export const supabase = createClient(
     SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
+    SUPABASE_PUBLISHABLE_KEY,
+    {
+        auth: {
+            storage: window.sessionStorage
+        }
+    }
 );
