@@ -31,21 +31,25 @@ export class ProductService {
 
     // Kiểm tra và thêm sản phẩm mới vào danh mục.
     async addProduct(data) {
-        this.validate(data);
+        const normalizedData = {
+            ...data,
+            status: data.status ?? "active"
+        };
+        this.validate(normalizedData);
 
         let imageUrl = "";
-        if (data.imageFile) {
-            imageUrl = await this.productRepository.uploadImage(data.imageFile);
+        if (normalizedData.imageFile) {
+            imageUrl = await this.productRepository.uploadImage(normalizedData.imageFile);
         }
 
         const product = new Product(
             null,
-            data.name.trim(),
-            Number(data.price),
-            data.category.trim(),
-            Number(data.quantity),
+            normalizedData.name.trim(),
+            Number(normalizedData.price),
+            normalizedData.category.trim(),
+            Number(normalizedData.quantity),
             imageUrl,
-            data.status || "active"
+            normalizedData.status
         );
 
         return await this.productRepository.save(product);
@@ -54,21 +58,25 @@ export class ProductService {
     // Lưu các thay đổi thông tin sản phẩm.
     async updateProduct(id, data) {
         const existingProduct = await this.getProductById(id);
-        this.validate(data);
+        const normalizedData = {
+            ...data,
+            status: data.status ?? existingProduct.status ?? "active"
+        };
+        this.validate(normalizedData);
 
         let imageUrl = existingProduct.imageUrl || "";
 
-        if (data.imageFile) {
-            imageUrl = await this.productRepository.uploadImage(data.imageFile);
+        if (normalizedData.imageFile) {
+            imageUrl = await this.productRepository.uploadImage(normalizedData.imageFile);
         }
 
         const updatedData = {
-            name: data.name.trim(),
-            price: Number(data.price),
-            category: data.category.trim(),
-            quantity: Number(data.quantity),
+            name: normalizedData.name.trim(),
+            price: Number(normalizedData.price),
+            category: normalizedData.category.trim(),
+            quantity: Number(normalizedData.quantity),
             imageUrl,
-            status: data.status || "active"
+            status: normalizedData.status
         };
 
         return await this.productRepository.update(Number(id), updatedData);

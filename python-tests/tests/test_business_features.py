@@ -25,12 +25,12 @@ def test_product_service_add_update_and_delete(page):
                         imageUrl: product.imageUrl,
                         status: product.status
                     };
-                    calls.push(["add", storedProduct.name]);
+                    calls.push(["add", storedProduct.name, storedProduct.status]);
                     return storedProduct;
                 },
                 update: async (id, product) => {
                     storedProduct = { id, ...product };
-                    calls.push(["update", id, storedProduct.name, storedProduct.quantity]);
+                    calls.push(["update", id, storedProduct.name, storedProduct.quantity, storedProduct.status]);
                     return storedProduct;
                 },
                 delete: async (id) => {
@@ -46,6 +46,7 @@ def test_product_service_add_update_and_delete(page):
                 category: "  Cà phê ",
                 quantity: "8"
             });
+            storedProduct.status = "inactive";
             const updated = await service.updateProduct(added.id, {
                 name: "Bạc xỉu đá",
                 price: "40000",
@@ -59,8 +60,8 @@ def test_product_service_add_update_and_delete(page):
 
     assert result == {
         "calls": [
-            ["add", "Bạc xỉu"],
-            ["update", 12, "Bạc xỉu đá", 5],
+            ["add", "Bạc xỉu", "active"],
+            ["update", 12, "Bạc xỉu đá", 5, "inactive"],
             ["delete", 12],
         ],
         "storedProduct": None,
