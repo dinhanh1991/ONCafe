@@ -1,3 +1,4 @@
+import { createCoffeeLoadingMarkup, renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 // Hiển thị báo cáo doanh thu theo kỳ và các chỉ số phân tích.
 import {
     currencyFormatter,
@@ -106,11 +107,11 @@ export class RevenueReportView {
         const chart = this.container.querySelector("[data-revenue-chart]");
         const rows = this.container.querySelector("[data-revenue-rows]");
         if (feedback) {
-            feedback.textContent = "Đang tải dữ liệu doanh thu...";
+            renderCoffeeLoading(feedback, "Đang tổng hợp dữ liệu doanh thu...", { compact: true });
             feedback.classList.remove("app-error");
         }
-        if (chart) chart.textContent = "Đang tải báo cáo...";
-        if (rows) rows.innerHTML = '<tr><td colspan="5">Đang tải dữ liệu...</td></tr>';
+        if (chart) renderCoffeeLoading(chart, "Đang dựng biểu đồ doanh thu...");
+        if (rows) rows.innerHTML = `<tr><td colspan="5">${createCoffeeLoadingMarkup("Đang tổng hợp từng kỳ...", { compact: true })}</td></tr>`;
 
         try {
             const previousAnchorDate = getPreviousAnchorDate(this.anchorDate, this.period);
@@ -119,11 +120,19 @@ export class RevenueReportView {
                 this.onLoad(this.period, previousAnchorDate)
             ]);
             if (requestId !== this.requestId) return;
+            await Promise.all([waitForCoffeeLoading(feedback), waitForCoffeeLoading(chart)]);
+            if (requestId !== this.requestId) return;
             this.renderReport(report, previousReport);
+            clearCoffeeLoading(feedback);
+            clearCoffeeLoading(chart);
             if (feedback) feedback.textContent = "Đã cập nhật báo cáo.";
         } catch (error) {
             if (requestId !== this.requestId) return;
+            await Promise.all([waitForCoffeeLoading(feedback), waitForCoffeeLoading(chart)]);
+            if (requestId !== this.requestId) return;
             console.error("Không thể tải báo cáo doanh thu:", error);
+            clearCoffeeLoading(feedback);
+            clearCoffeeLoading(chart);
             if (feedback) {
                 feedback.textContent = error.message || "Không thể tải báo cáo doanh thu.";
                 feedback.classList.add("app-error");

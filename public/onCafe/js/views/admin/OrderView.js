@@ -1,5 +1,6 @@
 import { formatCurrency } from "../../utils/FormatUtils.js";
 import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
+import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 
 const STATUS = {
     pending: "Chờ xác nhận", confirmed: "Đã xác nhận", preparing: "Đang pha chế",
@@ -449,8 +450,11 @@ export class OrderView {
         const selectionStart = focusedAttribute === "data-order-search" ? activeElement.selectionStart : null;
         const selectionEnd = focusedAttribute === "data-order-search" ? activeElement.selectionEnd : null;
 
+        const feedback = this.container.querySelector("[data-order-feedback]");
+        this.setFeedback("Đang tải danh sách đơn hàng...");
         try {
             const orders = await this.onRefresh();
+            await waitForCoffeeLoading(feedback);
             this.render(orders);
             this.setFeedback("");
 
@@ -464,6 +468,7 @@ export class OrderView {
                 }
             }
         } catch (error) {
+            await waitForCoffeeLoading(feedback);
             console.error("Tải đơn hàng thất bại:", error);
             this.setFeedback(error.message || "Không thể tải đơn hàng.", true);
         }
@@ -499,7 +504,12 @@ export class OrderView {
     setFeedback(message, isError = false) {
         const element = this.container.querySelector("[data-order-feedback]");
         if (!element) return;
-        element.textContent = message;
+        if (message && message.startsWith("Đang")) {
+            renderCoffeeLoading(element, message, { compact: true });
+        } else {
+            clearCoffeeLoading(element);
+            element.textContent = message;
+        }
         element.classList.toggle("app-error", isError);
     }
 }
