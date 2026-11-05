@@ -26,14 +26,15 @@ class SupabaseRestClient:
     def __init__(self, project_url, api_key, access_token=None):
         self.project_url = project_url.rstrip("/")
         self.api_key = api_key
-        self.access_token = access_token or api_key
+        self.access_token = access_token
 
     def request(self, method, path, payload=None, prefer=None):
         headers = {
             "apikey": self.api_key,
-            "Authorization": f"Bearer {self.access_token}",
             "Accept": "application/json",
         }
+        if self.access_token:
+            headers["Authorization"] = f"Bearer {self.access_token}"
         if payload is not None:
             headers["Content-Type"] = "application/json"
         if prefer:
