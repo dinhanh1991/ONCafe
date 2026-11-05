@@ -4,15 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Chào mừng bạn đến với ONCafe.">
-    <meta http-equiv="refresh" content="0; url=./pages/customer/home.html">
     <title>ONCafe - Trang chủ</title>
 </head>
 <body>
-    <!-- Điểm vào gọn nhẹ: tự chuyển đến trang chủ và vẫn có liên kết dự phòng. -->
-    <p>Đang chuyển đến trang chủ ONCafe...</p>
-    <p>Nếu trang không tự chuyển, <a href="./pages/customer/home.html">nhấn vào đây để tiếp tục</a>.</p>
-    <script>
-        window.location.replace("./pages/customer/home.html");
+    <p id="entryMessage" role="status" aria-live="polite">Đang kiểm tra phiên đăng nhập...</p>
+    <p>Nếu không tự chuyển trang, <a href="./pages/customer/home.html">mở trang chủ ONCafe</a>.</p>
+    <script type="module">
+        import { AuthService } from "./js/services/AuthService.js";
+
+        const authService = new AuthService();
+        const entryMessage = document.querySelector("#entryMessage");
+
+        try {
+            const session = await authService.getCurrentSession();
+            let destination = "./pages/customer/home.html";
+
+            if (session?.user?.id) {
+                const profile = await authService.getMyProfile(session.user.id);
+                if (["admin", "cashier", "seller"].includes(profile.role)) {
+                    destination = "./pages/admin/dashboard.html";
+                }
+            }
+
+            window.location.replace(destination);
+        } catch (error) {
+            console.error("Không thể kiểm tra phiên đăng nhập:", error);
+            entryMessage.textContent = "Không thể kiểm tra phiên đăng nhập. Vui lòng tải lại trang hoặc mở trang chủ ONCafe.";
+        }
     </script>
 </body>
 </html>
