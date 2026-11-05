@@ -73,3 +73,39 @@ python -m pytest -v
 - `SKIPPED`: chưa bật hoặc chưa khai báo đủ cấu hình kiểm thử Supabase.
 
 Các bài test API xác nhận phản hồi thực tế từ Supabase project được cấu hình. Chúng không thay thế việc kiểm tra chính sách RLS, migration và luồng giao diện trên môi trường triển khai.
+## Kết quả kiểm thử tích hợp Supabase REST API
+
+**Ngày kiểm thử:** 05/11/2026
+
+**Môi trường kiểm thử:**
+- Hệ điều hành: Windows 11
+- Python: 3.12.10
+- Pytest: 9.1.1
+- Cơ sở dữ liệu: Supabase PostgreSQL
+- Phương thức kiểm thử: Supabase REST API
+
+**Lệnh thực thi:**
+
+```powershell
+python -m pytest -v -rs python-tests/tests/test_supabase_api.py
+```
+
+**Kết quả tổng hợp:**
+
+| STT | Test case | Kết quả |
+|---|---|---|
+| 1 | test_supabase_rest_connection_returns_products | PASSED |
+| 2 | test_supabase_rest_rejects_write_without_staff_login | PASSED |
+| 3 | test_supabase_products_post_get_patch_delete_and_invalid_data | PASSED |
+| 4 | test_supabase_api_connection_failure_is_reported | PASSED |
+
+**Tổng kết:**
+- Tổng số test: 4
+- Thành công: 4
+- Thất bại: 0
+- Lỗi: 0
+- Tỷ lệ thành công: 100%
+
+**Đánh giá:**
+
+Các bài kiểm thử xác nhận kết nối Supabase REST API, xác thực tài khoản nhân viên, kiểm soát quyền truy cập dữ liệu, các thao tác CRUD sản phẩm và xử lý lỗi kết nối API hoạt động đúng theo các trường hợp đã kiểm thử.
