@@ -238,6 +238,13 @@ Không chia sẻ giá trị thực tế của các khóa này trong README, mã 
 
 Ứng dụng sử dụng JavaScript ES Modules và gọi Supabase qua HTTP nên cần chạy bằng máy chủ HTTP; không nên mở trực tiếp file HTML bằng đường dẫn file://.
 
+### Kiểm tra đặt lại mật khẩu cục bộ
+
+- Mở website bằng máy chủ đang chạy và giữ nguyên địa chỉ/port đó khi mở liên kết trong email. Ví dụ Live Server thường dùng `http://127.0.0.1:5500`; `localhost:3000` chỉ hoạt động nếu có máy chủ lắng nghe ở port 3000.
+- Trong Supabase, thêm chính xác URL trang callback của môi trường đang kiểm tra vào **Authentication → URL Configuration → Redirect URLs**, ví dụ `http://127.0.0.1:5500/pages/auth/reset-password.html`. Nếu chạy bằng `localhost` hoặc port khác, thêm URL tương ứng.
+- Yêu cầu email mới sau khi cấu hình redirect. Liên kết recovery chỉ dùng được một lần và có thể hết hạn; hãy mở email mới nhất khi ứng dụng vẫn đang chạy.
+- Nếu trình duyệt báo `otp_expired`, yêu cầu email recovery mới. Nếu báo `ERR_CONNECTION_REFUSED`, khởi động lại máy chủ frontend trên đúng host/port của URL trong email.
+
 ### Các bước cấu hình backend Supabase
 
 1. Tạo hoặc chọn dự án Supabase.
