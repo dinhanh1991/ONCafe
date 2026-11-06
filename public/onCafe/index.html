@@ -16,7 +16,11 @@
         const entryMessage = document.querySelector("#entryMessage");
 
         const authError = new URLSearchParams(window.location.hash.slice(1));
-        if (authError.has("error") || authError.has("error_code")) {
+        if (
+            authError.has("error") ||
+            authError.has("error_code") ||
+            authError.get("type") === "recovery"
+        ) {
             window.location.replace(`./pages/auth/reset-password.html${window.location.hash}`);
         } else {
             try {
