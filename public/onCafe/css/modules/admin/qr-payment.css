@@ -1,13 +1,12 @@
 /* Thanh toán QR mô phỏng dành riêng cho bài tập — không phải mã thanh toán thật */
 /* QR đặt cạnh hướng dẫn trên desktop, chuyển lên đầu khi bố cục thành một cột. */
-.qr-demo-panel { display:grid; grid-template-columns:minmax(0,1fr) 220px; align-items:center; gap:28px; margin-top:24px; padding:24px; border:1px solid #e8d7c5; border-radius:14px; background:#fffaf3; }
+.qr-demo-panel { display:grid; grid-template-columns:minmax(0,1fr) 240px; align-items:center; gap:28px; margin-top:24px; padding:24px; border:1px solid #e8d7c5; border-radius:14px; background:#fffaf3; }
 .qr-demo-copy h3 { margin:0 0 12px; }
 .qr-demo-copy > p { line-height:1.6; }
 .qr-demo-amount { display:block; margin:4px 0 14px; color:#38251d; font-size:28px; }
-.qr-demo-warning { padding:10px 12px; border-left:3px solid #c58b3c; background:#fff1d9; color:#754b16; font-size:12px; }
-.qr-demo-code { position:relative; display:grid; width:220px; height:220px; place-items:center; justify-self:center; overflow:hidden; border:10px solid white; outline:1px solid #e5ddd3; background:white; }
-.qr-demo-image { display:block; width:200px; height:200px; object-fit:contain; background:white; }
-.qr-demo-code small { position:absolute; bottom:0; left:0; right:0; padding:4px 0; background:white; color:#8c4c41; font-size:9px; font-weight:800; text-align:center; }
+.qr-demo-code { display:grid; width:240px; min-height:240px; place-items:center; justify-self:center; border:10px solid white; outline:1px solid #e5ddd3; background:white; }
+.qr-demo-image { display:block; width:220px; height:220px; object-fit:contain; background:white; }
+.qr-demo-code small { display:block; width:100%; padding:6px 0; background:white; color:#8c4c41; font-size:10px; font-weight:800; text-align:center; }
 
 .qr-demo-success { color:#386443; font-weight:650; }
 @media (max-width:600px) { .qr-demo-panel { grid-template-columns:1fr; padding:18px; } .qr-demo-code { grid-row:1; } }
@@ -21,4 +20,3 @@
 .order-detail summary{color:#87552f;font-weight:700;cursor:pointer}
 .order-detail-items{padding:7px 0;line-height:1.7}
 .order-detail>p{margin:5px 0;color:#76665d}
-
