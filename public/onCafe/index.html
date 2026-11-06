@@ -15,21 +15,30 @@
         const authService = new AuthService();
         const entryMessage = document.querySelector("#entryMessage");
 
-        try {
-            const session = await authService.getCurrentSession();
-            let destination = "./pages/customer/home.html";
+        const authError = new URLSearchParams(window.location.hash.slice(1));
+        if (
+            authError.has("error") ||
+            authError.has("error_code") ||
+            authError.get("type") === "recovery"
+        ) {
+            window.location.replace(`./pages/auth/reset-password.html${window.location.hash}`);
+        } else {
+            try {
+                const session = await authService.getCurrentSession();
+                let destination = "./pages/customer/home.html";
 
-            if (session?.user?.id) {
-                const profile = await authService.getMyProfile(session.user.id);
-                if (["admin", "cashier", "seller"].includes(profile.role)) {
-                    destination = "./pages/admin/dashboard.html";
+                if (session?.user?.id) {
+                    const profile = await authService.getMyProfile(session.user.id);
+                    if (["admin", "cashier", "seller"].includes(profile.role)) {
+                        destination = "./pages/admin/dashboard.html";
+                    }
                 }
-            }
 
-            window.location.replace(destination);
-        } catch (error) {
-            console.error("Không thể kiểm tra phiên đăng nhập:", error);
-            entryMessage.textContent = "Không thể kiểm tra phiên đăng nhập. Vui lòng tải lại trang hoặc mở trang chủ ONCafe.";
+                window.location.replace(destination);
+            } catch (error) {
+                console.error("Không thể kiểm tra phiên đăng nhập:", error);
+                entryMessage.textContent = "Không thể kiểm tra phiên đăng nhập. Vui lòng tải lại trang hoặc mở trang chủ ONCafe.";
+            }
         }
     </script>
 </body>

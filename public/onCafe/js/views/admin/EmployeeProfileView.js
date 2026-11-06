@@ -16,6 +16,7 @@ export class EmployeeProfileView {
         this.onSave = onSave;
         this.onChangePassword = onChangePassword;
         this.busy = false;
+        this.savedProfile = null;
         container.addEventListener("submit", (event) => void this.handleSubmit(event));
         container.addEventListener("focusin", (event) => {
             const form = event.target.closest("[data-profile-form], [data-password-form]");
@@ -68,6 +69,7 @@ export class EmployeeProfileView {
                 </form>
             </section>`;
         this.container.querySelectorAll("form").forEach((form) => ValidationUI.bind(form));
+        this.container.querySelector('[data-profile-form] button[type="submit"]').disabled = true;
         await this.load();
     }
 
@@ -85,6 +87,12 @@ export class EmployeeProfileView {
             form.elements.address.value = profile.address || "";
             form.elements.email.value = profile.email || "";
             form.elements.role.value = this.roleLabel(profile.role);
+            this.savedProfile = {
+                fullName: form.elements.fullName.value,
+                phone: form.elements.phone.value,
+                address: form.elements.address.value
+            };
+            form.querySelector('button[type="submit"]').disabled = false;
             feedback.textContent = "";
         } catch (error) {
             await waitForCoffeeLoading(feedback);
@@ -128,12 +136,40 @@ export class EmployeeProfileView {
                     return;
                 }
                 ValidationUI.clearErrors(form);
-                await this.onSave({
+                const profile = {
                     fullName: form.elements.fullName.value.trim(),
                     phone: form.elements.phone.value.trim(),
                     address: form.elements.address.value.trim()
+                };
+                const confirmed = await this.showDialog({
+                    title: "Xác nhận lưu thông tin",
+                    message: "Bạn có muốn lưu các thay đổi thông tin cá nhân không?",
+                    confirmText: "Lưu thay đổi",
+                    cancelText: "Hủy"
                 });
-                feedback.textContent = "Đã lưu thông tin cá nhân.";
+                if (!confirmed) {
+                    form.elements.fullName.value = this.savedProfile.fullName;
+                    form.elements.phone.value = this.savedProfile.phone;
+                    form.elements.address.value = this.savedProfile.address;
+                    feedback.textContent = "Đã hủy lưu thông tin. Thông tin cũ được giữ nguyên.";
+                    await this.showDialog({
+                        type: "info",
+                        title: "Đã hủy thay đổi",
+                        message: "Thông tin cá nhân cũ được giữ nguyên.",
+                        hideCancel: true
+                    });
+                    return;
+                }
+
+                await this.onSave(profile);
+                this.savedProfile = profile;
+                feedback.textContent = "Đã lưu thông tin cá nhân thành công.";
+                await this.showDialog({
+                    type: "success",
+                    title: "Lưu thành công",
+                    message: "Thông tin cá nhân của bạn đã được cập nhật.",
+                    hideCancel: true
+                });
             } else {
                 const password = form.elements.password.value;
                 const confirmPassword = form.elements.confirmPassword.value;
@@ -155,9 +191,33 @@ export class EmployeeProfileView {
                     return;
                 }
                 ValidationUI.clearErrors(form);
+                const confirmed = await this.showDialog({
+                    title: "Xác nhận đổi mật khẩu",
+                    message: "Bạn có chắc chắn muốn đổi mật khẩu đăng nhập không?",
+                    confirmText: "Đổi mật khẩu",
+                    cancelText: "Hủy"
+                });
+                if (!confirmed) {
+                    form.reset();
+                    feedback.textContent = "Đã hủy đổi mật khẩu. Mật khẩu hiện tại được giữ nguyên.";
+                    await this.showDialog({
+                        type: "info",
+                        title: "Đã hủy đổi mật khẩu",
+                        message: "Mật khẩu hiện tại được giữ nguyên.",
+                        hideCancel: true
+                    });
+                    return;
+                }
+
                 await this.onChangePassword(password);
                 form.reset();
                 feedback.textContent = "Đã đổi mật khẩu thành công.";
+                await this.showDialog({
+                    type: "success",
+                    title: "Đổi mật khẩu thành công",
+                    message: "Mật khẩu đăng nhập của bạn đã được cập nhật.",
+                    hideCancel: true
+                });
             }
         } catch (error) {
             feedback.textContent = error.message || "Không thể lưu thay đổi.";
@@ -166,5 +226,85 @@ export class EmployeeProfileView {
             this.busy = false;
             buttons.forEach((button) => { button.disabled = false; });
         }
+    }
+
+    // Hiển thị hộp thoại xác nhận hoặc thông báo.
+    showDialog({
+        type = "info",
+        title,
+        message,
+        confirmText = "Xác nhận",
+        cancelText = "Hủy",
+        hideCancel = false
+    }) {
+        return new Promise((resolve) => {
+            const backdrop = document.createElement("div");
+            backdrop.className = "app-dialog-backdrop";
+            backdrop.setAttribute("role", "presentation");
+
+            const dialog = document.createElement("section");
+            dialog.className = "app-dialog";
+            dialog.dataset.type = type;
+            dialog.setAttribute("role", "dialog");
+            dialog.setAttribute("aria-modal", "true");
+            dialog.setAttribute("aria-labelledby", "employee-profile-dialog-title");
+            dialog.setAttribute("aria-describedby", "employee-profile-dialog-message");
+
+            const icon = document.createElement("div");
+            icon.className = "dialog-icon";
+            icon.setAttribute("aria-hidden", "true");
+            icon.textContent = type === "success" ? "✓" : type === "error" ? "×" : "?";
+
+            const heading = document.createElement("h3");
+            heading.id = "employee-profile-dialog-title";
+            heading.textContent = title;
+            const description = document.createElement("p");
+            description.id = "employee-profile-dialog-message";
+            description.textContent = message;
+
+            const actions = document.createElement("div");
+            actions.className = "dialog-actions";
+            let cancelButton;
+            if (!hideCancel) {
+                cancelButton = document.createElement("button");
+                cancelButton.type = "button";
+                cancelButton.className = "button button-secondary";
+                cancelButton.textContent = cancelText;
+                actions.append(cancelButton);
+            }
+
+            const confirmButton = document.createElement("button");
+            confirmButton.type = "button";
+            confirmButton.className = "button button-primary";
+            confirmButton.textContent = hideCancel ? "Đóng" : confirmText;
+            actions.append(confirmButton);
+            dialog.append(icon, heading, description, actions);
+            backdrop.append(dialog);
+            document.body.append(backdrop);
+
+            let finished = false;
+            const handleBackdropClick = (event) => {
+                if (event.target === backdrop) finish(false);
+            };
+            const handleKeydown = (event) => {
+                if (event.key === "Escape") {
+                    event.preventDefault();
+                    finish(false);
+                }
+            };
+            const finish = (confirmed) => {
+                if (finished) return;
+                finished = true;
+                backdrop.removeEventListener("click", handleBackdropClick);
+                backdrop.removeEventListener("keydown", handleKeydown);
+                backdrop.remove();
+                resolve(confirmed);
+            };
+            confirmButton.addEventListener("click", () => finish(true), { once: true });
+            cancelButton?.addEventListener("click", () => finish(false), { once: true });
+            backdrop.addEventListener("click", handleBackdropClick);
+            backdrop.addEventListener("keydown", handleKeydown);
+            (cancelButton || confirmButton).focus();
+        });
     }
 }
