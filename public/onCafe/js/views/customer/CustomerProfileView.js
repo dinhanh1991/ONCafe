@@ -253,14 +253,36 @@ export class CustomerProfileView {
         const feedback = this.container.querySelector("[data-profile-feedback]");
         const button = form.querySelector('button[type="submit"]');
         feedback.classList.remove("is-error");
-        feedback.textContent = "Đang đổi mật khẩu...";
         this.isSaving = true;
         button.disabled = true;
 
         try {
+            const confirmed = await this.showDialog({
+                title: "Xác nhận đổi mật khẩu",
+                message: "Bạn có chắc chắn muốn đổi mật khẩu đăng nhập không?",
+                confirmText: "Đổi mật khẩu",
+                cancelText: "Hủy"
+            });
+            if (!confirmed) {
+                form.reset();
+                feedback.textContent = "Đã hủy đổi mật khẩu. Mật khẩu hiện tại được giữ nguyên.";
+                await this.showDialog({
+                    title: "Đã hủy đổi mật khẩu",
+                    message: "Mật khẩu hiện tại được giữ nguyên.",
+                    confirmText: "Đóng"
+                });
+                return;
+            }
+
+            feedback.textContent = "Đang đổi mật khẩu...";
             await this.onChangePassword(password);
             form.reset();
             feedback.textContent = "Đã đổi mật khẩu thành công.";
+            await this.showDialog({
+                title: "Đổi mật khẩu thành công",
+                message: "Mật khẩu đăng nhập của bạn đã được cập nhật.",
+                confirmText: "Đóng"
+            });
         } catch (error) {
             console.error("Không thể đổi mật khẩu khách hàng:", error);
             feedback.textContent = error.message || "Không thể đổi mật khẩu.";
