@@ -293,6 +293,34 @@ def test_forgot_password_shows_server_error(page):
     assert "Recovery service unavailable" in message.inner_text()
 
 
+def test_expired_recovery_error_at_root_opens_reset_password_page(page):
+    page.goto(
+        f"{BASE_URL}/#error=access_denied&error_code=otp_expired"
+        "&error_description=Email+link+is+invalid+or+has+expired"
+    )
+
+    page.wait_for_url("**/pages/auth/reset-password.html#error=access_denied&error_code=otp_expired*")
+
+    assert page.locator("#resetPasswordForm button[type='submit']").is_disabled()
+    assert "đã hết hạn hoặc đã được sử dụng" in page.locator("#resetPasswordMessage").inner_text()
+
+
+def test_expired_recovery_link_shows_actionable_message(page):
+    page.goto(
+        f"{BASE_URL}/pages/auth/reset-password.html"
+        "#error=access_denied&error_code=otp_expired"
+    )
+
+    message = page.locator("#resetPasswordMessage")
+    page.wait_for_function(
+        """() => document.querySelector("#resetPasswordMessage")
+        .textContent.includes("đã hết hạn hoặc đã được sử dụng")"""
+    )
+
+    assert message.get_attribute("data-state") == "error"
+    assert page.locator("#resetPasswordForm button[type='submit']").is_disabled()
+
+
 def test_profile_lookup_error_is_shown_without_redirect(page):
     page.route(
         "**/auth/v1/token**",
