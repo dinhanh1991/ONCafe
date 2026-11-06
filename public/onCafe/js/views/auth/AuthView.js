@@ -117,26 +117,37 @@ if (resetPasswordForm) {
     ValidationUI.bind(resetPasswordForm);
     const message = document.querySelector("#resetPasswordMessage");
     const submitButton = resetPasswordForm.querySelector('button[type="submit"]');
+    const authError = new URLSearchParams(window.location.hash.slice(1));
+    const recoveryError = authError.get("error_code");
 
-    try {
-        const user = await authService.getCurrentUser();
-        if (!user) {
-            submitButton.disabled = true;
-            showMessage(
-                message,
-                "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Hãy yêu cầu một email mới.",
-                true
-            );
-        }
-    } catch (error) {
+    if (recoveryError === "otp_expired" || authError.get("error") === "access_denied") {
         submitButton.disabled = true;
         showMessage(
             message,
-            error.name === "AuthSessionMissingError"
-                ? "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Hãy yêu cầu một email mới."
-                : error.message || "Không thể xác thực liên kết đặt lại mật khẩu.",
+            "Liên kết đặt lại mật khẩu đã hết hạn hoặc đã được sử dụng. Hãy yêu cầu email mới và mở liên kết mới nhất.",
             true
         );
+    } else {
+        try {
+            const user = await authService.getCurrentUser();
+            if (!user) {
+                submitButton.disabled = true;
+                showMessage(
+                    message,
+                    "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Hãy yêu cầu một email mới.",
+                    true
+                );
+            }
+        } catch (error) {
+            submitButton.disabled = true;
+            showMessage(
+                message,
+                error.name === "AuthSessionMissingError"
+                    ? "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Hãy yêu cầu một email mới."
+                    : error.message || "Không thể xác thực liên kết đặt lại mật khẩu.",
+                true
+            );
+        }
     }
 
     resetPasswordForm.addEventListener("submit", async (event) => {
