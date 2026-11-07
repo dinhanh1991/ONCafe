@@ -282,7 +282,7 @@ Các bài kiểm thử tự động nằm trong `python-tests/tests/` và dùng 
     cd python-tests
     python -m pytest -v
 
-Theo kết quả được ghi trong báo cáo, lần chạy suite cục bộ đạt **40 passed, 3 skipped, 0 failed**; ba bài kiểm thử REST opt-in được bỏ qua vì lần chạy đó không cấu hình biến môi trường Supabase. Lần kiểm thử REST riêng trên project Supabase dành cho kiểm thử đạt **4/4 passed**; kết quả chi tiết và phạm vi kiểm thử được ghi trong `python-tests/API_TESTING.md`. Các kết quả này không thay thế việc xác minh pipeline GitLab Pages và website sau khi triển khai.
+Theo [báo cáo đồ án](./report/FIT4010-D.0379101001.LEDINHANH.D0525HNCNA4.docx), kiểm thử trực tiếp trên website ghi nhận **10/10 trường hợp đạt (100%)**, không có trường hợp thất bại hoặc chưa kiểm thử. Đây là kết quả trong phạm vi các ca đã chọn, không thay thế kiểm thử tải, kiểm thử bảo mật chuyên sâu hoặc xác minh production. Kiểm thử REST API trên project Supabase dành riêng cho kiểm thử được ghi nhận **4/4 passed**; môi trường, từng ca và kết quả chi tiết nằm trong [`python-tests/API_TESTING.md`](./python-tests/API_TESTING.md). Các kết quả này không thay thế việc xác minh pipeline GitLab Pages và website sau khi triển khai.
 
 ## 10. Giới hạn hiện tại và hướng phát triển
 
