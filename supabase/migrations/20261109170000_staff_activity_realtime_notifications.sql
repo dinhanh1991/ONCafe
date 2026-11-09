@@ -39,6 +39,7 @@ as $$
 declare
   v_row record;
   v_type text;
+  v_changes_summary text;
 begin
   if tg_op = 'DELETE' then
     v_row := old;
@@ -57,6 +58,9 @@ begin
     end if;
     v_row := new;
     v_type := 'product_updated';
+    if old.quantity is distinct from new.quantity then
+      v_changes_summary := 'Tồn kho: ' || coalesce(new.quantity::text, '0');
+    end if;
   end if;
 
   begin
@@ -71,11 +75,7 @@ begin
           'name', v_row.name,
           'quantity', v_row.quantity
         ),
-        'changes_summary', case
-          when tg_op = 'UPDATE' and old.quantity is distinct from new.quantity
-            then 'Tồn kho: ' || coalesce(new.quantity::text, '0')
-          else null
-        end
+        'changes_summary', v_changes_summary
       ),
       v_type,
       'oncafe:staff-products',
