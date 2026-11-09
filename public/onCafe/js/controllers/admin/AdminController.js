@@ -19,6 +19,9 @@ import { renderAccessMessage } from "../../ui/admin/AccessMessage.js";
 import { createAdminWorkspace } from "../../views/admin/AdminWorkspaceView.js";
 import { createAdminOverviewLoaders } from "./AdminOverviewController.js";
 import { createAdminSectionController } from "./AdminSectionController.js";
+import { createOrderNotificationController } from "./OrderNotificationController.js";
+import { getAdminPageUrl } from "../../utils/admin/AdminNavigation.js";
+import { supabase } from "../../config/supabase.js";
 import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 
 const authService = new AuthService();
@@ -104,8 +107,26 @@ async function startApp() {
         });
     void employeeProfileView.render();
 
+    // Thông báo cho nhân viên khi có đơn mới và khi đơn hàng hoàn tất.
+    const orderNotifications = createOrderNotificationController({
+        supabaseClient: supabase,
+        getOrders: () => orderService.getStaffOrders(),
+        userId: session.user.id,
+        openOrdersPage: () => {
+            const url = getAdminPageUrl("orders");
+            if (url) window.location.href = url;
+        }
+    });
+    void orderNotifications.start();
+    window.addEventListener("pagehide", () => orderNotifications.stop());
+
     const orderView = new OrderView(orderPanel, {
-        onUpdateStatus: isCashier ? null : (id, status) => orderService.updateStatus(id, status),
+        // Thay đổi do chính nhân viên này thực hiện đã có phản hồi trên màn hình nên không thông báo lại.
+        onUpdateStatus: isCashier ? null : async (id, status) => {
+            const result = await orderService.updateStatus(id, status);
+            if (status === "completed") orderNotifications.markHandled("completed", id);
+            return result;
+        },
         onUpdatePayment: isCashier ? null : (id, status) => orderService.updatePayment(id, status),
         onMarkArrived: isCashier ? null : (id) => orderService.markDeliveryArrived(id),
         onRefresh: () => orderService.getStaffOrders(),
@@ -121,7 +142,17 @@ async function startApp() {
     });
 
     const counterOrderController = new CounterOrderController({
-        createOrder: (order) => orderService.createCounterOrder(order),
+        createOrder: async (order) => {
+            try {
+                const createdOrder = await orderService.createCounterOrder(order);
+                orderNotifications.markHandled("new", createdOrder.id);
+                return createdOrder;
+            } catch (error) {
+                // Đơn đã tạo nhưng bước ghi nhận tiền mặt lỗi: vẫn là đơn do chính nhân viên này lập.
+                if (error?.orderCreated?.id) orderNotifications.markHandled("new", error.orderCreated.id);
+                throw error;
+            }
+        },
         refreshOrders: () => orderView.refresh(),
         createQrConfirmation: (id) => orderService.createQrConfirmation(id)
     });
