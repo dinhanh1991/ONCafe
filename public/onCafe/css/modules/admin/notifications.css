@@ -1,0 +1,245 @@
+/* Thông báo đơn hàng cho nhân viên: chuông trên đầu trang, danh sách và thông báo nổi */
+.order-bell {
+    position: relative;
+    display: inline-flex;
+    margin-left: 10px;
+}
+
+.order-bell-button {
+    position: relative;
+    min-width: 42px;
+    padding: 8px 12px;
+    font-size: 16px;
+}
+
+.order-bell-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--red);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 19px;
+    text-align: center;
+}
+
+.order-bell-badge[hidden] {
+    display: none;
+}
+
+.order-bell-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 70;
+    width: min(360px, calc(100vw - 32px));
+    max-height: min(480px, 70vh);
+    overflow: auto;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--paper);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+    color: var(--ink);
+}
+
+.order-bell-panel[hidden] {
+    display: none;
+}
+
+.order-bell-heading {
+    margin-bottom: 6px;
+}
+
+.order-bell-status {
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.order-bell-status::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: var(--brand-accent);
+}
+
+.order-bell-status.is-connected::before {
+    background: var(--success);
+}
+
+.order-bell-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-bottom: 10px;
+}
+
+.order-bell-link {
+    padding: 2px 0;
+    border: 0;
+    background: none;
+    color: var(--brand-link);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.order-bell-link:disabled {
+    color: var(--muted);
+    text-decoration: none;
+    cursor: default;
+}
+
+.order-bell-list {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.order-bell-empty {
+    padding: 14px 0;
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+}
+
+.order-bell-entry {
+    display: grid;
+    width: 100%;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--brand-accent);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.order-bell-entry.is-completed {
+    border-left-color: var(--success);
+}
+
+.order-bell-entry:hover {
+    background: var(--canvas);
+}
+
+.order-bell-entry span {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.order-bell-entry small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.order-toast-stack {
+    position: fixed;
+    top: 88px;
+    right: 16px;
+    z-index: 1100;
+    display: grid;
+    width: min(360px, calc(100vw - 32px));
+    gap: 10px;
+    pointer-events: none;
+}
+
+.order-toast {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start;
+    gap: 12px;
+    padding: 12px 12px 12px 14px;
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--brand-accent);
+    border-radius: 10px;
+    background: var(--paper);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.2);
+    color: var(--ink);
+    pointer-events: auto;
+    animation: order-toast-in 180ms ease-out;
+}
+
+.order-toast.is-completed {
+    border-left-color: var(--success);
+}
+
+.order-toast > i {
+    margin-top: 2px;
+    color: var(--brand-link);
+    font-size: 20px;
+}
+
+.order-toast.is-completed > i {
+    color: var(--success);
+}
+
+.order-toast-body {
+    display: grid;
+    gap: 2px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.order-toast-body span {
+    color: var(--muted);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.order-toast-close {
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+@keyframes order-toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .order-toast {
+        animation: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .order-bell {
+        margin-left: 6px;
+    }
+
+    .order-toast-stack {
+        top: 70px;
+    }
+}
