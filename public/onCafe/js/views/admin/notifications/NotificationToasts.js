@@ -28,13 +28,18 @@ export class NotificationToasts {
     }
 
     // Hiển thị một thông báo nổi; giữ tối đa vài thông báo cùng lúc.
-    show({ type, title, detail }) {
+    show({ type, category = "orders", title, detail }) {
         if (!this.stack) return;
         while (this.stack.children.length >= MAX_TOASTS) this.stack.firstElementChild.remove();
 
         const completed = type === "completed";
-        const toast = createElement("div", `order-toast is-${completed ? "completed" : "new"}`);
-        const icon = createElement("i", completed ? "bi bi-check-circle-fill" : "bi bi-bag-plus-fill");
+        const iconClass = category === "products"
+            ? "bi bi-cup-hot-fill"
+            : category === "employees"
+                ? "bi bi-person-plus-fill"
+                : completed ? "bi bi-check-circle-fill" : "bi bi-bag-plus-fill";
+        const toast = createElement("div", `order-toast is-${completed ? "completed" : "new"} is-${category}`);
+        const icon = createElement("i", iconClass);
         icon.setAttribute("aria-hidden", "true");
         const body = createElement("button", "order-toast-body");
         body.type = "button";
@@ -53,7 +58,7 @@ export class NotificationToasts {
         body.addEventListener("click", () => {
             window.clearTimeout(timer);
             toast.remove();
-            this.onOpen?.();
+            this.onOpen?.({ category, type, title, detail });
         });
     }
 }

@@ -115,6 +115,14 @@ async function startApp() {
         openOrdersPage: () => {
             const url = getAdminPageUrl("orders");
             if (url) window.location.href = url;
+        },
+        openProductsPage: () => {
+            const url = getAdminPageUrl("drinks");
+            if (url) window.location.href = url;
+        },
+        openEmployeesPage: () => {
+            const url = getAdminPageUrl("employees");
+            if (url) window.location.href = url;
         }
     });
     void orderNotifications.start();
