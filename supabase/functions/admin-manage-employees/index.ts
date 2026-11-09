@@ -147,6 +147,16 @@ Deno.serve(async (request: Request) => {
                 return jsonResponse({ error: "Không thể tạo hồ sơ nhân viên." }, 500);
             }
 
+            // Chỉ phát thông báo sau khi cả tài khoản Auth và hồ sơ nhân viên đã được tạo thành công.
+            // Lỗi thông báo không làm đảo ngược thao tác tạo nhân viên hợp lệ.
+            const { error: notificationError } = await adminClient.rpc("oncafe_broadcast_employee_created", {
+                p_actor_id: userData.user.id,
+                p_employee_id: createdData.user.id
+            });
+            if (notificationError) {
+                console.error("Không gửi được thông báo tạo nhân viên:", notificationError);
+            }
+
             return jsonResponse({
                 employee: { id: createdData.user.id, full_name: fullName, email, role }
             }, 201);
