@@ -151,7 +151,7 @@ def test_realtime_repository_opens_private_channel_with_auth(page):
             await repo.subscribe({ onEvent: (p) => received.push(p), onStatusChange: (s) => statuses.push(s) });
             handlers.order_new({ payload: { type: "new", order: { id: 1 } } });
             handlers.order_completed({ payload: { type: "completed", order: { id: 2 } } });
-            statusCallbacks.forEach(({ callback }) => callback("SUBSCRIBED"));
+            statusCallback("SUBSCRIBED");
             await repo.unsubscribe();
             return { calls, received, statuses };
         }"""
