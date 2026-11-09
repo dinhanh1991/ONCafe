@@ -88,6 +88,7 @@ export function createOrderNotificationController({
     const activityService = new StaffActivityNotificationService({
         realtimeRepository: new StaffActivityRealtimeRepository({ client: supabaseClient }),
         stateRepository, includeProducts: role === "admin" || role === "seller", onNotify: present,
+        onConnectionChange: (isConnected) => { connected = isConnected; refresh(); },
         onError: (error) => console.error("Không thể nhận thông báo sản phẩm/nhân viên:", error)
     });
 
