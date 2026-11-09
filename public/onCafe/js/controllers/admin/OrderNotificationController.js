@@ -12,7 +12,7 @@ import { BrowserNotifier } from "../../views/admin/notifications/BrowserNotifier
 const MAX_DETAILED_TOASTS = 3;
 
 export function createOrderNotificationController({
-    supabaseClient, getOrders, userId, openOrdersPage, openProductsPage = openOrdersPage,
+    supabaseClient, getOrders, userId, role, openOrdersPage, openProductsPage = openOrdersPage,
     openEmployeesPage = openOrdersPage, header = document.querySelector(".site-header")
 }) {
     const stateRepository = new NotificationStateRepository({ userId });
@@ -87,7 +87,7 @@ export function createOrderNotificationController({
     });
     const activityService = new StaffActivityNotificationService({
         realtimeRepository: new StaffActivityRealtimeRepository({ client: supabaseClient }),
-        stateRepository, onNotify: present,
+        stateRepository, includeProducts: role === "admin" || role === "seller", onNotify: present,
         onError: (error) => console.error("Không thể nhận thông báo sản phẩm/nhân viên:", error)
     });
 

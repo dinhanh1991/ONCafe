@@ -2,9 +2,10 @@
 import { createStaffActivityNotification } from "../models/StaffActivityNotification.js";
 
 export class StaffActivityNotificationService {
-    constructor({ realtimeRepository, stateRepository, onNotify, onConnectionChange = () => {}, onError = (error) => console.error("Lỗi thông báo hoạt động:", error) }) {
+    constructor({ realtimeRepository, stateRepository, includeProducts = true, onNotify, onConnectionChange = () => {}, onError = (error) => console.error("Lỗi thông báo hoạt động:", error) }) {
         this.realtimeRepository = realtimeRepository;
         this.stateRepository = stateRepository;
+        this.includeProducts = includeProducts;
         this.onNotify = onNotify;
         this.onConnectionChange = onConnectionChange;
         this.onError = onError;
@@ -17,6 +18,7 @@ export class StaffActivityNotificationService {
         const generation = this.generation;
         try {
             await this.realtimeRepository.subscribe({
+                includeProducts: this.includeProducts,
                 onEvent: (payload) => this.handleEvent(payload, generation),
                 onStatusChange: (status, error) => {
                     if (generation !== this.generation) return;

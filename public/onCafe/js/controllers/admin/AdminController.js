@@ -110,6 +110,7 @@ async function startApp() {
     // Thông báo cho nhân viên khi có đơn mới và khi đơn hàng hoàn tất.
     const orderNotifications = createOrderNotificationController({
         supabaseClient: supabase,
+        role,
         getOrders: () => orderService.getStaffOrders(),
         userId: session.user.id,
         openOrdersPage: () => {

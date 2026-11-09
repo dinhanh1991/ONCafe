@@ -11,7 +11,7 @@ export class StaffActivityRealtimeRepository {
         this.channels = [];
     }
 
-    async subscribe({ onEvent, onStatusChange }) {
+    async subscribe({ onEvent, onStatusChange, includeProducts = true }) {
         await this.unsubscribe();
         const { data, error } = await this.client.auth.getSession();
         if (error) throw error;
@@ -28,7 +28,7 @@ export class StaffActivityRealtimeRepository {
             this.channels.push(channel);
         };
 
-        subscribeTopic(STAFF_PRODUCT_TOPIC, PRODUCT_EVENTS);
+        if (includeProducts) subscribeTopic(STAFF_PRODUCT_TOPIC, PRODUCT_EVENTS);
         subscribeTopic(STAFF_EMPLOYEE_TOPIC, EMPLOYEE_EVENTS);
     }
 
