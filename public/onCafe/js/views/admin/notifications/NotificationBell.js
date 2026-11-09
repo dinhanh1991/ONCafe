@@ -11,8 +11,9 @@ function createElement(tag, className, text) {
 
 export class NotificationBell {
     // Khởi tạo đối tượng với các callback xử lý hành động của nhân viên.
-    constructor({ onOpenOrders, onToggleSound, onRequestPermission, onPanelOpened }) {
+    constructor({ onOpenOrders, onOpenNotification, onToggleSound, onRequestPermission, onPanelOpened }) {
         this.onOpenOrders = onOpenOrders;
+        this.onOpenNotification = onOpenNotification;
         this.onToggleSound = onToggleSound;
         this.onRequestPermission = onRequestPermission;
         this.onPanelOpened = onPanelOpened;
@@ -43,9 +44,9 @@ export class NotificationBell {
 
         this.panel = createElement("section", "order-bell-panel");
         this.panel.hidden = true;
-        this.panel.setAttribute("aria-label", "Danh sách thông báo đơn hàng");
+        this.panel.setAttribute("aria-label", "Danh sách thông báo");
         const heading = createElement("div", "order-bell-heading");
-        heading.append(createElement("strong", "", "Thông báo đơn hàng"));
+        heading.append(createElement("strong", "", "Thông báo"));
         this.status = createElement("p", "order-bell-status");
         const actions = createElement("div", "order-bell-actions");
         this.soundButton = createElement("button", "order-bell-link");
@@ -66,8 +67,11 @@ export class NotificationBell {
         this.permissionButton.addEventListener("click", () => this.onRequestPermission?.());
         this.list.addEventListener("click", (event) => {
             if (!event.target.closest("[data-notification-item]")) return;
+            const itemKey = event.target.closest("[data-notification-item]")?.dataset.notificationKey;
+            const item = this.state.history.find((entry) => entry.key === itemKey);
             this.close();
-            this.onOpenOrders?.();
+            if (this.onOpenNotification) this.onOpenNotification(item);
+            else this.onOpenOrders?.();
         });
         document.addEventListener("click", (event) => {
             if (!this.panel.hidden && !wrapper.contains(event.target)) this.close();
@@ -93,7 +97,7 @@ export class NotificationBell {
         this.badge.textContent = unread > 9 ? "9+" : String(unread);
         this.button.setAttribute(
             "aria-label",
-            unread ? `Thông báo đơn hàng, ${unread} thông báo chưa xem` : "Thông báo đơn hàng"
+            unread ? `Thông báo, ${unread} thông báo chưa xem` : "Thông báo"
         );
 
         this.status.textContent = connected
@@ -117,6 +121,7 @@ export class NotificationBell {
             const entry = createElement("button", `order-bell-entry is-${item.type === "completed" ? "completed" : "new"}`);
             entry.type = "button";
             entry.dataset.notificationItem = "true";
+            entry.dataset.notificationKey = item.key || "";
             const time = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })
                 .format(new Date(item.at));
             entry.append(createElement("strong", "", item.title), createElement("span", "", item.detail), createElement("small", "", time));

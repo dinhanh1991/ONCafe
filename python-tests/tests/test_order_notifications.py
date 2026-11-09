@@ -382,14 +382,14 @@ def test_controller_shows_realtime_events_and_groups_bursts(page):
             document.body.innerHTML = '<header class="site-header"><button id="logoutButton" type="button">Đăng xuất</button></header>';
 
             const handlers = {};
-            let statusCallback = null;
+            const statusCallbacks = [];
             const client = {
                 auth: { getSession: async () => ({ data: { session: { access_token: "t" } } }) },
                 realtime: { setAuth: () => {} },
-                channel: () => {
+                channel: (topic) => {
                     const channel = {
                         on: (type, filter, callback) => { handlers[filter.event] = callback; return channel; },
-                        subscribe: (callback) => { statusCallback = callback; return channel; }
+                        subscribe: (callback) => { statusCallbacks.push({ topic, callback }); return channel; }
                     };
                     return channel;
                 },
@@ -405,7 +405,7 @@ def test_controller_shows_realtime_events_and_groups_bursts(page):
             });
             await controller.start();
             await new Promise((resolve) => setTimeout(resolve, 30)); // chờ đồng bộ nền đầu tiên
-            statusCallback("SUBSCRIBED");
+            statusCallbacks.forEach(({ callback }) => callback("SUBSCRIBED"));
             await new Promise((resolve) => setTimeout(resolve, 30));
 
             const order = (id) => ({ id, order_code: "ON-" + id, status: "pending", order_source: "online",
@@ -420,8 +420,8 @@ def test_controller_shows_realtime_events_and_groups_bursts(page):
 
             // Mất kết nối rồi nối lại: 4 đơn phát sinh trong lúc đó được bù cùng một lượt và gộp thành một thông báo.
             orders = [4, 5, 6, 7].map((id) => ({ id, status: "pending" })).concat(orders);
-            statusCallback("TIMED_OUT");
-            statusCallback("SUBSCRIBED");
+            statusCallbacks.forEach(({ callback }) => callback("TIMED_OUT"));
+            statusCallbacks.forEach(({ callback }) => callback("SUBSCRIBED"));
             await new Promise((resolve) => setTimeout(resolve, 50));
             const afterBurst = [...document.querySelectorAll(".order-toast")].map((t) => t.textContent);
             const history = JSON.parse(localStorage.getItem("oncafe:notifications:me:history")).length;

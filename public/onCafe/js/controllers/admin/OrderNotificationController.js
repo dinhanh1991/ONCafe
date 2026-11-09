@@ -1,8 +1,9 @@
-// Nối các thành phần thông báo đơn hàng lại với nhau cho khu vực quản trị:
-// kênh WebSocket (repository) → service (lọc trùng, đồng bộ dự phòng) → các view (chuông, thông báo nổi, âm báo).
+// Bộ điều khiển thông báo đơn hàng, sản phẩm và nhân viên.
 import { NotificationStateRepository } from "../../repositories/NotificationStateRepo.js";
 import { OrderRealtimeRepository } from "../../repositories/OrderRealtimeRepo.js";
+import { StaffActivityRealtimeRepository } from "../../repositories/StaffActivityRealtimeRepo.js";
 import { OrderNotificationService } from "../../services/OrderNotificationService.js";
+import { StaffActivityNotificationService } from "../../services/StaffActivityNotificationService.js";
 import { NotificationBell } from "../../views/admin/notifications/NotificationBell.js";
 import { NotificationToasts } from "../../views/admin/notifications/NotificationToasts.js";
 import { NotificationSound } from "../../views/admin/notifications/NotificationSound.js";
@@ -10,36 +11,30 @@ import { BrowserNotifier } from "../../views/admin/notifications/BrowserNotifier
 
 const MAX_DETAILED_TOASTS = 3;
 
-// Tạo bộ điều khiển thông báo đơn hàng; trả về các hàm start, stop và markHandled.
 export function createOrderNotificationController({
-    supabaseClient,
-    getOrders,
-    userId,
-    openOrdersPage,
-    header = document.querySelector(".site-header")
+    supabaseClient, getOrders, userId, role, openOrdersPage, openProductsPage = openOrdersPage,
+    openEmployeesPage = openOrdersPage, header = document.querySelector(".site-header")
 }) {
     const stateRepository = new NotificationStateRepository({ userId });
     const sound = new NotificationSound({ stateRepository });
-    const browserNotifier = new BrowserNotifier({ onClick: openOrdersPage });
-    const toasts = new NotificationToasts({ onOpen: openOrdersPage }).mount();
-
+    let lastNotification = null;
+    const openNotification = (item = lastNotification) => {
+        if (item?.category === "products") return openProductsPage?.();
+        if (item?.category === "employees") return openEmployeesPage?.();
+        return openOrdersPage?.();
+    };
+    const browserNotifier = new BrowserNotifier({ onClick: () => openNotification() });
+    const toasts = new NotificationToasts({ onOpen: (item) => openNotification(item) }).mount();
     let history = stateRepository.getHistory();
     let unread = 0;
     let connected = false;
 
-    // Vẽ lại chuông theo trạng thái hiện tại.
     function refresh() {
-        bell.render({
-            history,
-            unread,
-            soundEnabled: sound.enabled,
-            permission: browserNotifier.permission,
-            connected
-        });
+        bell.render({ history, unread, soundEnabled: sound.enabled, permission: browserNotifier.permission, connected });
     }
 
     const bell = new NotificationBell({
-        onOpenOrders: openOrdersPage,
+        onOpenNotification: (item) => openNotification(item),
         onToggleSound: () => {
             sound.setEnabled(!sound.enabled);
             if (sound.enabled) sound.play("new");
@@ -49,59 +44,58 @@ export function createOrderNotificationController({
             await browserNotifier.requestPermission();
             refresh();
         },
-        onPanelOpened: () => {
-            unread = 0;
-            refresh();
-        }
+        onPanelOpened: () => { unread = 0; refresh(); }
     }).mount(header);
 
-    // Trình bày các thông báo mới: lưu lịch sử, hiện thông báo nổi, phát âm báo và báo ra ngoài trình duyệt nếu cần.
     function present(notifications) {
+        if (!notifications.length) return;
+        lastNotification = notifications[notifications.length - 1];
         history = [
-            ...notifications.map(({ key, type, title, detail, at }) => ({ key, type, title, detail, at })),
+            ...notifications.map(({ key, type, category = "orders", title, detail, at }) => ({ key, type, category, title, detail, at })),
             ...history
         ].slice(0, 20);
         stateRepository.saveHistory(history);
         unread += notifications.length;
         refresh();
 
-        // Nhiều sự kiện cùng lúc thì gộp thành một thông báo để không che màn hình.
         if (notifications.length > MAX_DETAILED_TOASTS) {
-            const newCount = notifications.filter((item) => item.type === "new").length;
-            const completedCount = notifications.length - newCount;
-            const parts = [];
-            if (newCount) parts.push(`${newCount} đơn mới`);
-            if (completedCount) parts.push(`${completedCount} đơn hoàn tất`);
-            toasts.show({ type: newCount ? "new" : "completed", title: "Có cập nhật đơn hàng", detail: parts.join(" · ") });
+            const categories = new Set(notifications.map((item) => item.category || "orders"));
+            toasts.show({
+                type: "summary",
+                category: categories.size === 1 ? [...categories][0] : "orders",
+                title: "ONCafe có cập nhật mới",
+                detail: `${notifications.length} thông báo mới. Mở chuông để xem chi tiết.`
+            });
         } else {
             for (const item of notifications) toasts.show(item);
         }
 
-        sound.play(notifications.some((item) => item.type === "new") ? "new" : "completed");
+        sound.play("new");
         if (document.hidden) {
             browserNotifier.show(
-                notifications.length > 1 ? `Có ${notifications.length} cập nhật đơn hàng` : notifications[0].title,
+                notifications.length > 1 ? `Có ${notifications.length} cập nhật mới` : notifications[0].title,
                 notifications.length > 1 ? "Mở ONCafe để xem chi tiết." : notifications[0].detail
             );
         }
     }
 
-    const service = new OrderNotificationService({
+    const orderService = new OrderNotificationService({
         realtimeRepository: new OrderRealtimeRepository({ client: supabaseClient }),
-        getOrders,
-        stateRepository,
-        currentUserId: userId,
+        getOrders, stateRepository, currentUserId: userId,
         onNotify: present,
-        onConnectionChange: (isConnected) => {
-            connected = isConnected;
-            refresh();
-        }
+        onConnectionChange: (isConnected) => { connected = isConnected; refresh(); }
+    });
+    const activityService = new StaffActivityNotificationService({
+        realtimeRepository: new StaffActivityRealtimeRepository({ client: supabaseClient }),
+        stateRepository, includeProducts: role === "admin" || role === "seller", onNotify: present,
+        onConnectionChange: (isConnected) => { connected = isConnected; refresh(); },
+        onError: (error) => console.error("Không thể nhận thông báo sản phẩm/nhân viên:", error)
     });
 
     refresh();
     return {
-        start: () => service.start(),
-        stop: () => service.stop(),
-        markHandled: (type, orderId) => service.markHandled(type, orderId)
+        start: async () => { await Promise.all([orderService.start(), activityService.start()]); },
+        stop: () => { orderService.stop(); activityService.stop(); },
+        markHandled: (type, orderId) => orderService.markHandled(type, orderId)
     };
 }
