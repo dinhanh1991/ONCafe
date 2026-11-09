@@ -427,7 +427,6 @@ export class CounterOrderView {
                 <h3>Đơn ${escapeHtml(order.order_code || "#" + order.id)}</h3>
                 <p>Tổng tiền cần thanh toán</p>
                 <strong class="qr-demo-amount">${formatCurrency(order.total_amount)}</strong>
-                <p class="qr-demo-warning">Đây là xác nhận nội bộ, chưa kiểm tra giao dịch ngân hàng thực tế. Khách quét mã và xác nhận trên iPhone.</p>
                 <p data-qr-demo-feedback role="status" aria-live="polite">Đang tạo liên kết xác nhận...</p>
                 <button class="button button-primary" type="button" data-qr-retry hidden><i class="bi bi-qr-code me-1" aria-hidden="true"></i>Tạo lại mã QR</button>
             </div>
@@ -460,7 +459,7 @@ export class CounterOrderView {
             const openLink = this.container.querySelector('[data-qr-open]');
             openLink.href = confirmUrl.href;
             this.container.querySelector('[data-qr-expiry]').textContent = 'Mã có hiệu lực đến ' + new Date(result.expires_at).toLocaleTimeString('vi-VN');
-            if (feedback) feedback.textContent = 'Khách quét mã bằng iPhone để mở trang xác nhận.';
+            if (feedback) feedback.textContent = 'Quét mã bằng điện thoại để mở trang xác nhận thanh toán.';
             const retryButton = this.container.querySelector("[data-qr-retry]");
             if (retryButton) retryButton.hidden = true;
         } catch (error) {
