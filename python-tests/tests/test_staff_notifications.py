@@ -122,11 +122,11 @@ def test_state_repository_works_when_storage_is_blocked(page):
     assert result == {"snapshot": {"5": "pending"}, "seen": True, "history": []}
 
 
-def test_realtime_repository_listens_on_the_role_channel_with_auth(page):
+def test_realtime_repository_listens_to_own_database_notifications(page):
     open_app(page)
 
     result = page.evaluate(
-        """async () => {
+        \"\"\"async () => {
             const { StaffRealtimeRepository, staffTopicFor } =
                 await import("/js/repositories/StaffRealtimeRepo.js");
             const calls = [];
@@ -135,10 +135,14 @@ def test_realtime_repository_listens_on_the_role_channel_with_auth(page):
             const client = {
                 auth: { getSession: async () => ({ data: { session: { access_token: "tok-123" } } }) },
                 realtime: { setAuth: (token) => calls.push(["setAuth", token]) },
-                channel: (topic, options) => {
-                    calls.push(["channel", topic, options]);
+                channel: (topic) => {
+                    calls.push(["channel", topic]);
                     const channel = {
-                        on: (type, filter, callback) => { handlers[filter.event] = callback; calls.push(["on", type, filter.event]); return channel; },
+                        on: (type, filter, callback) => {
+                            handlers[filter.event] = callback;
+                            calls.push(["on", type, filter.event, filter.table, filter.filter]);
+                            return channel;
+                        },
                         subscribe: (callback) => { statusCallback = callback; calls.push(["subscribe"]); return channel; }
                     };
                     return channel;
@@ -148,31 +152,30 @@ def test_realtime_repository_listens_on_the_role_channel_with_auth(page):
             const received = [];
             const statuses = [];
             const repo = new StaffRealtimeRepository({ client });
-            await repo.subscribe({ role: "seller", onEvent: (p) => received.push(p), onStatusChange: (s) => statuses.push(s) });
-            handlers["*"]({ payload: { type: "new", order: { id: 1 } } });
-            handlers["*"]({ payload: { type: "menu_created", product: { id: 2, name: "Cà phê" } } });
+            await repo.subscribe({ userId: "seller-user", role: "seller", onEvent: (p) => received.push(p), onStatusChange: (s) => statuses.push(s) });
+            handlers["INSERT"]({ new: { id: "n1", recipient_id: "seller-user", payload: { type: "new" } } });
             statusCallback("SUBSCRIBED");
             await repo.unsubscribe();
 
             let rejected = [];
-            for (const role of ["customer", undefined, "../admin"]) {
-                try { await new StaffRealtimeRepository({ client }).subscribe({ role }); rejected.push(false); }
+            for (const userId of [null, undefined, ""]) {
+                try { await new StaffRealtimeRepository({ client }).subscribe({ userId }); rejected.push(false); }
                 catch { rejected.push(true); }
             }
             return { calls, received, statuses, rejected, cashier: staffTopicFor("cashier") };
-        }"""
+        }\"\"\"
     )
 
     assert result["calls"] == [
         ["setAuth", "tok-123"],
-        ["channel", "oncafe:role:seller", {"config": {"private": True}}],
-        ["on", "broadcast", "*"],
+        ["channel", "oncafe:notifications:seller-user"],
+        ["on", "postgres_changes", "INSERT", "staff_notifications", "recipient_id=eq.seller-user"],
         ["subscribe"],
         ["remove"],
     ]
-    assert [item["type"] for item in result["received"]] == ["new", "menu_created"]
+    assert result["received"] == [{"id": "n1", "recipient_id": "seller-user", "payload": {"type": "new"}}]
     assert result["statuses"] == ["SUBSCRIBED"]
-    assert result["rejected"] == [True, True, True]  # chỉ nhân viên mới có kênh
+    assert result["rejected"] == [True, True, True]
     assert result["cashier"] == "oncafe:role:cashier"
 
 
@@ -419,8 +422,8 @@ def test_controller_shows_realtime_events_and_groups_bursts(page):
 
             const order = (id) => ({ id, order_code: "ON-" + id, status: "pending", order_source: "online",
                 fulfillment_method: "pickup", customer_name: "Khách", total_amount: 20000 });
-            handlers["*"]({ payload: { type: "new", actor: "customer", order: order(2) } });
-            handlers["*"]({ payload: { type: "new", actor: "me", order: order(3) } }); // tự lập: bỏ qua
+            handlers["INSERT"]({ payload: { type: "new", actor: "customer", order: order(2) } });
+            handlers["INSERT"]({ payload: { type: "new", actor: "me", order: order(3) } }); // tự lập: bỏ qua
             const afterOne = {
                 toasts: [...document.querySelectorAll(".order-toast")].map((t) => t.textContent),
                 badge: document.querySelector(".order-bell-badge").textContent,
@@ -587,7 +590,7 @@ def test_controller_shows_menu_and_team_notifications_and_opens_the_right_page(p
             });
             await controller.start();
             await new Promise((resolve) => setTimeout(resolve, 30));
-            const send = (payload) => handlers["*"]({ payload });
+            const send = (payload) => handlers["INSERT"]({ payload });
             const toastTexts = () => [...document.querySelectorAll(".order-toast")].map((t) => t.textContent);
 
             send({ type: "menu_created", event_id: "m1", actor: "seller-1", actor_name: "Lan", actor_role: "seller",
