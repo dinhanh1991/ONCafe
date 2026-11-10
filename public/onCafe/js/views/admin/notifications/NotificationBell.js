@@ -1,5 +1,6 @@
 // Chuông thông báo trên đầu trang: số chưa xem, danh sách gần đây, trạng thái kết nối và các cài đặt.
 // View chỉ vẽ theo dữ liệu được truyền vào render(); mọi hành động được báo ngược qua callback.
+import { getAppearance } from "./NotificationAppearance.js";
 
 // Tạo phần tử HTML với lớp và nội dung văn bản an toàn.
 function createElement(tag, className, text) {
@@ -11,8 +12,8 @@ function createElement(tag, className, text) {
 
 export class NotificationBell {
     // Khởi tạo đối tượng với các callback xử lý hành động của nhân viên.
-    constructor({ onOpenOrders, onToggleSound, onRequestPermission, onPanelOpened }) {
-        this.onOpenOrders = onOpenOrders;
+    constructor({ onOpenNotification, onToggleSound, onRequestPermission, onPanelOpened }) {
+        this.onOpenNotification = onOpenNotification;
         this.onToggleSound = onToggleSound;
         this.onRequestPermission = onRequestPermission;
         this.onPanelOpened = onPanelOpened;
@@ -43,9 +44,9 @@ export class NotificationBell {
 
         this.panel = createElement("section", "order-bell-panel");
         this.panel.hidden = true;
-        this.panel.setAttribute("aria-label", "Danh sách thông báo đơn hàng");
+        this.panel.setAttribute("aria-label", "Danh sách thông báo");
         const heading = createElement("div", "order-bell-heading");
-        heading.append(createElement("strong", "", "Thông báo đơn hàng"));
+        heading.append(createElement("strong", "", "Thông báo"));
         this.status = createElement("p", "order-bell-status");
         const actions = createElement("div", "order-bell-actions");
         this.soundButton = createElement("button", "order-bell-link");
@@ -65,9 +66,11 @@ export class NotificationBell {
         this.soundButton.addEventListener("click", () => this.onToggleSound?.());
         this.permissionButton.addEventListener("click", () => this.onRequestPermission?.());
         this.list.addEventListener("click", (event) => {
-            if (!event.target.closest("[data-notification-item]")) return;
+            const entry = event.target.closest("[data-notification-index]");
+            if (!entry) return;
+            const item = this.state.history[Number(entry.dataset.notificationIndex)];
             this.close();
-            this.onOpenOrders?.();
+            if (item) this.onOpenNotification?.(item);
         });
         document.addEventListener("click", (event) => {
             if (!this.panel.hidden && !wrapper.contains(event.target)) this.close();
@@ -93,7 +96,7 @@ export class NotificationBell {
         this.badge.textContent = unread > 9 ? "9+" : String(unread);
         this.button.setAttribute(
             "aria-label",
-            unread ? `Thông báo đơn hàng, ${unread} thông báo chưa xem` : "Thông báo đơn hàng"
+            unread ? `Thông báo, ${unread} thông báo chưa xem` : "Thông báo"
         );
 
         this.status.textContent = connected
@@ -112,17 +115,17 @@ export class NotificationBell {
 
         this.list.replaceChildren();
         if (!history.length) this.list.append(createElement("li", "order-bell-empty", "Chưa có thông báo nào."));
-        for (const item of history) {
+        history.forEach((item, index) => {
             const row = createElement("li", "order-bell-item");
-            const entry = createElement("button", `order-bell-entry is-${item.type === "completed" ? "completed" : "new"}`);
+            const entry = createElement("button", `order-bell-entry ${getAppearance(item).className}`);
             entry.type = "button";
-            entry.dataset.notificationItem = "true";
+            entry.dataset.notificationIndex = String(index);
             const time = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })
                 .format(new Date(item.at));
             entry.append(createElement("strong", "", item.title), createElement("span", "", item.detail), createElement("small", "", time));
             row.append(entry);
             this.list.append(row);
-        }
+        });
     }
 
     // Mở hoặc đóng bảng thông báo; mở bảng được tính là đã xem.

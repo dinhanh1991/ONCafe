@@ -13,7 +13,7 @@ def test_notification_model_builds_text_and_rejects_invalid_input(page):
     result = page.evaluate(
         """async () => {
             const { createOrderNotification, createNotificationKey } =
-                await import("/js/models/OrderNotification.js");
+                await import("/js/models/StaffNotification.js");
             const online = createOrderNotification("new", {
                 id: 7, order_code: "ON-7", order_source: "online", fulfillment_method: "delivery",
                 customer_name: "An", total_amount: 85000, status: "pending"
@@ -122,13 +122,13 @@ def test_state_repository_works_when_storage_is_blocked(page):
     assert result == {"snapshot": {"5": "pending"}, "seen": True, "history": []}
 
 
-def test_realtime_repository_opens_private_channel_with_auth(page):
+def test_realtime_repository_listens_on_the_role_channel_with_auth(page):
     open_app(page)
 
     result = page.evaluate(
         """async () => {
-            const { OrderRealtimeRepository } =
-                await import("/js/repositories/OrderRealtimeRepo.js");
+            const { StaffRealtimeRepository, staffTopicFor } =
+                await import("/js/repositories/StaffRealtimeRepo.js");
             const calls = [];
             const handlers = {};
             let statusCallback = null;
@@ -147,43 +147,51 @@ def test_realtime_repository_opens_private_channel_with_auth(page):
             };
             const received = [];
             const statuses = [];
-            const repo = new OrderRealtimeRepository({ client });
-            await repo.subscribe({ onEvent: (p) => received.push(p), onStatusChange: (s) => statuses.push(s) });
-            handlers.order_new({ payload: { type: "new", order: { id: 1 } } });
-            handlers.order_completed({ payload: { type: "completed", order: { id: 2 } } });
+            const repo = new StaffRealtimeRepository({ client });
+            await repo.subscribe({ role: "seller", onEvent: (p) => received.push(p), onStatusChange: (s) => statuses.push(s) });
+            handlers["*"]({ payload: { type: "new", order: { id: 1 } } });
+            handlers["*"]({ payload: { type: "menu_created", product: { id: 2, name: "Cà phê" } } });
             statusCallback("SUBSCRIBED");
             await repo.unsubscribe();
-            return { calls, received, statuses };
+
+            let rejected = [];
+            for (const role of ["customer", undefined, "../admin"]) {
+                try { await new StaffRealtimeRepository({ client }).subscribe({ role }); rejected.push(false); }
+                catch { rejected.push(true); }
+            }
+            return { calls, received, statuses, rejected, cashier: staffTopicFor("cashier") };
         }"""
     )
 
     assert result["calls"] == [
         ["setAuth", "tok-123"],
-        ["channel", "oncafe:staff-orders", {"config": {"private": True}}],
-        ["on", "broadcast", "order_new"],
-        ["on", "broadcast", "order_completed"],
+        ["channel", "oncafe:role:seller", {"config": {"private": True}}],
+        ["on", "broadcast", "*"],
         ["subscribe"],
         ["remove"],
     ]
-    assert [item["type"] for item in result["received"]] == ["new", "completed"]
+    assert [item["type"] for item in result["received"]] == ["new", "menu_created"]
     assert result["statuses"] == ["SUBSCRIBED"]
+    assert result["rejected"] == [True, True, True]  # chỉ nhân viên mới có kênh
+    assert result["cashier"] == "oncafe:role:cashier"
 
 
 # ---------- Service ----------
 
 SERVICE_SETUP = """
-    const { OrderNotificationService } = await import("/js/services/OrderNotificationService.js");
+    const { StaffNotificationService } = await import("/js/services/StaffNotificationService.js");
     const { NotificationStateRepository } = await import("/js/repositories/NotificationStateRepo.js");
     localStorage.clear();
     const make = (overrides = {}) => {
         const delivered = [];
         const connection = [];
         const state = new NotificationStateRepository({ userId: "me" });
-        const service = new OrderNotificationService({
+        const service = new StaffNotificationService({
             realtimeRepository: { subscribe: async () => {}, unsubscribe: async () => {} },
             getOrders: async () => [],
             stateRepository: state,
             currentUserId: "me",
+            role: "seller",
             onNotify: (items) => delivered.push(items.map((n) => n.key)),
             onConnectionChange: (c) => connection.push(c),
             onError: () => {},
@@ -334,14 +342,14 @@ def test_bell_and_toasts_render_safely(page):
             const header = document.querySelector(".site-header");
             const log = [];
             const bell = new NotificationBell({
-                onOpenOrders: () => log.push("open"), onToggleSound: () => log.push("sound"),
+                onOpenNotification: (item) => log.push("open:" + item.title), onToggleSound: () => log.push("sound"),
                 onRequestPermission: () => log.push("permission"), onPanelOpened: () => log.push("opened")
             }).mount(header);
             bell.render({
                 history: [{ type: "new", title: "Đơn mới <b>X</b>", detail: "<i>An</i>", at: Date.now() }],
                 unread: 12, soundEnabled: true, permission: "default", connected: true
             });
-            const toasts = new NotificationToasts({ onOpen: () => log.push("toast-open") }).mount();
+            const toasts = new NotificationToasts({ onOpen: (n) => log.push("toast:" + n.title) }).mount();
             toasts.show({ type: "new", title: "Đơn mới <b>X</b>", detail: "chi tiết" });
 
             const badge = header.querySelector(".order-bell-badge");
@@ -352,7 +360,7 @@ def test_bell_and_toasts_render_safely(page):
             };
             header.querySelector(".order-bell-button").click();
             out.panelOpen = !header.querySelector(".order-bell-panel").hidden;
-            header.querySelector("[data-notification-item]").click();
+            header.querySelector("[data-notification-index]").click();
             document.querySelector(".order-toast-body").click();
             header.querySelector(".order-bell-actions .order-bell-link").click();
             out.log = log;
@@ -366,7 +374,7 @@ def test_bell_and_toasts_render_safely(page):
     assert result["injected"] == 0
     assert result["status"] == "Đang nhận thông báo trực tiếp."
     assert result["panelOpen"] is True
-    assert result["log"] == ["opened", "open", "toast-open", "sound"]
+    assert result["log"] == ["opened", "open:Đơn mới <b>X</b>", "toast:Đơn mới <b>X</b>", "sound"]
     assert result["toastsLeft"] == 0
 
 
@@ -375,8 +383,8 @@ def test_controller_shows_realtime_events_and_groups_bursts(page):
 
     result = page.evaluate(
         """async () => {
-            const { createOrderNotificationController } =
-                await import("/js/controllers/admin/OrderNotificationController.js");
+            const { createStaffNotificationController } =
+                await import("/js/controllers/admin/StaffNotificationController.js");
             localStorage.clear();
             localStorage.setItem("oncafe:notifications:me:sound", JSON.stringify("off"));
             document.body.innerHTML = '<header class="site-header"><button id="logoutButton" type="button">Đăng xuất</button></header>';
@@ -395,13 +403,14 @@ def test_controller_shows_realtime_events_and_groups_bursts(page):
                 },
                 removeChannel: async () => {}
             };
-            let opened = 0;
+            const opened = [];
             let orders = [{ id: 1, status: "pending" }];
-            const controller = createOrderNotificationController({
+            const controller = createStaffNotificationController({
                 supabaseClient: client,
                 getOrders: async () => orders,
                 userId: "me",
-                openOrdersPage: () => { opened += 1; }
+                role: "seller",
+                openSection: (section) => { opened.push(section); }
             });
             await controller.start();
             await new Promise((resolve) => setTimeout(resolve, 30)); // chờ đồng bộ nền đầu tiên
@@ -410,8 +419,8 @@ def test_controller_shows_realtime_events_and_groups_bursts(page):
 
             const order = (id) => ({ id, order_code: "ON-" + id, status: "pending", order_source: "online",
                 fulfillment_method: "pickup", customer_name: "Khách", total_amount: 20000 });
-            handlers.order_new({ payload: { type: "new", actor: "customer", order: order(2) } });
-            handlers.order_new({ payload: { type: "new", actor: "me", order: order(3) } }); // tự lập: bỏ qua
+            handlers["*"]({ payload: { type: "new", actor: "customer", order: order(2) } });
+            handlers["*"]({ payload: { type: "new", actor: "me", order: order(3) } }); // tự lập: bỏ qua
             const afterOne = {
                 toasts: [...document.querySelectorAll(".order-toast")].map((t) => t.textContent),
                 badge: document.querySelector(".order-bell-badge").textContent,
@@ -437,3 +446,218 @@ def test_controller_shows_realtime_events_and_groups_bursts(page):
     # Đợt 4 đơn bù cùng một lượt được gộp thành một thông báo nổi tóm tắt.
     assert any("4 đơn mới" in text for text in result["afterBurst"])
     assert result["history"] == 5
+
+
+# ---------- Thông báo đồ uống và nhân viên mới ----------
+
+def test_model_builds_menu_and_employee_notifications(page):
+    open_app(page)
+
+    result = page.evaluate(
+        """async () => {
+            const { createNotificationFromPayload } = await import("/js/models/StaffNotification.js");
+            const actor = { actor: "u1", actor_name: "Lan", actor_role: "seller" };
+            const created = createNotificationFromPayload({ type: "menu_created", event_id: "e1", product: { id: 1, name: "Cà phê muối" }, ...actor });
+            const updated = createNotificationFromPayload({ type: "menu_updated", event_id: "e2", product: { id: 1, name: "Cà phê muối" },
+                changed: ["price", "image", "bogus"], ...actor });
+            const deleted = createNotificationFromPayload({ type: "menu_deleted", event_id: "e3", product: { id: 1, name: "Cà phê muối" } });
+            const joined = createNotificationFromPayload({ type: "employee_joined", event_id: "e4",
+                employee: { id: "n1", full_name: "  An  ", role: "cashier" }, actor: null, actor_name: "Chủ quán", actor_role: "admin" });
+            const joinedNoName = createNotificationFromPayload({ type: "employee_joined", employee: { id: "n2", full_name: "", role: "seller" } });
+            const brief = (n) => n && { key: n.key, category: n.category, target: n.target, title: n.title, detail: n.detail };
+            return {
+                created: brief(created), updated: brief(updated), deleted: brief(deleted),
+                joined: brief(joined), joinedNoName: brief(joinedNoName),
+                unknown: createNotificationFromPayload({ type: "something_else" }),
+                noProduct: createNotificationFromPayload({ type: "menu_created", event_id: "x" }),
+                noEmployee: createNotificationFromPayload({ type: "employee_joined" }),
+                nothing: createNotificationFromPayload(undefined)
+            };
+        }"""
+    )
+
+    assert result["created"] == {
+        "key": "menu_created:e1", "category": "menu", "target": "drinks",
+        "title": "Đã thêm đồ uống: Cà phê muối", "detail": "Bởi Lan (Nhân viên bán hàng)",
+    }
+    assert result["updated"]["title"] == "Đã sửa đồ uống: Cà phê muối"
+    assert result["updated"]["detail"] == "Bởi Lan (Nhân viên bán hàng) · Đã đổi: giá, ảnh"
+    assert result["deleted"]["title"] == "Đã xóa đồ uống: Cà phê muối"
+    assert result["deleted"]["detail"] == "Bởi hệ thống"
+    assert result["joined"] == {
+        "key": "employee_joined:e4", "category": "team", "target": "employees",
+        "title": "An đã tham gia", "detail": "Vai trò: Thu ngân · Thêm bởi Chủ quán",
+    }
+    assert result["joinedNoName"]["title"] == "Nhân viên mới đã tham gia"
+    assert result["unknown"] is None
+    assert result["noProduct"] is None
+    assert result["noEmployee"] is None
+    assert result["nothing"] is None
+
+
+def test_service_delivers_each_menu_edit_but_not_duplicates_or_own_actions(page):
+    open_app(page)
+
+    result = page.evaluate(
+        "async () => {" + SERVICE_SETUP + """
+            const { service, delivered } = make();
+            const edit = (eventId, actor) => ({ type: "menu_updated", event_id: eventId, actor,
+                product: { id: 5, name: "Trà đào" }, changed: ["price"] });
+
+            service.handleRealtimeEvent(edit("e1", "other"));
+            service.handleRealtimeEvent(edit("e1", "other")); // cùng sự kiện gửi lặp: bỏ qua
+            service.handleRealtimeEvent(edit("e2", "other")); // lần sửa thứ hai của CÙNG đồ uống: vẫn báo
+            service.handleRealtimeEvent(edit("e3", "me"));    // chính mình sửa: bỏ qua
+            service.handleRealtimeEvent({ type: "employee_joined", event_id: "e4", actor: null,
+                employee: { id: "n1", full_name: "An", role: "seller" } });
+            service.handleRealtimeEvent({ type: "future_event", event_id: "e5" }); // loại chưa biết: bỏ qua
+            return delivered;
+        }"""
+    )
+
+    assert result == [["menu_updated:e1"], ["menu_updated:e2"], ["employee_joined:e4"]]
+
+
+def test_service_subscribes_with_its_role_and_reports_channel_failures(page):
+    open_app(page)
+
+    result = page.evaluate(
+        "async () => {" + SERVICE_SETUP + """
+            const errors = [];
+            let subscribedRole = null;
+            const { service, connection } = make({
+                role: "cashier",
+                onError: (error) => errors.push(error.message),
+                realtimeRepository: {
+                    subscribe: async ({ role }) => { subscribedRole = role; },
+                    unsubscribe: async () => {}
+                },
+                fallbackIntervalMs: 600000
+            });
+            await service.start();
+            const denied = { message: "Unauthorized: You do not have permissions to read from this Channel topic" };
+            service.handleStatus("CHANNEL_ERROR", service.generation, denied);
+            service.handleStatus("CHANNEL_ERROR", service.generation, denied); // thư viện thử nối lại: không ghi lặp
+            service.handleStatus("TIMED_OUT", service.generation);
+            service.handleStatus("SUBSCRIBED", service.generation);
+            service.handleStatus("CHANNEL_ERROR", service.generation, denied); // nối được rồi lại lỗi: ghi lại
+            await new Promise((resolve) => setTimeout(resolve, 20));
+            service.stop();
+            return { subscribedRole, errors, connection };
+        }"""
+    )
+
+    assert result["subscribedRole"] == "cashier"
+    assert result["errors"] == [
+        "Kênh thông báo nhân viên chưa kết nối (CHANNEL_ERROR): Unauthorized: You do not have permissions to read from this Channel topic",
+        "Kênh thông báo nhân viên chưa kết nối (TIMED_OUT)",
+        "Kênh thông báo nhân viên chưa kết nối (CHANNEL_ERROR): Unauthorized: You do not have permissions to read from this Channel topic",
+    ]
+    assert result["connection"] == [True, False]
+
+
+def test_controller_shows_menu_and_team_notifications_and_opens_the_right_page(page):
+    open_app(page)
+
+    result = page.evaluate(
+        """async () => {
+            const { createStaffNotificationController } =
+                await import("/js/controllers/admin/StaffNotificationController.js");
+            localStorage.clear();
+            localStorage.setItem("oncafe:notifications:me:sound", JSON.stringify("off"));
+            document.body.innerHTML = '<header class="site-header"><button id="logoutButton" type="button">Đăng xuất</button></header>';
+
+            const handlers = {};
+            const client = {
+                auth: { getSession: async () => ({ data: { session: { access_token: "t" } } }) },
+                realtime: { setAuth: () => {} },
+                channel: () => {
+                    const channel = {
+                        on: (type, filter, callback) => { handlers[filter.event] = callback; return channel; },
+                        subscribe: () => channel
+                    };
+                    return channel;
+                },
+                removeChannel: async () => {}
+            };
+            const opened = [];
+            const controller = createStaffNotificationController({
+                supabaseClient: client, getOrders: async () => [], userId: "me", role: "admin",
+                openSection: (section) => opened.push(section)
+            });
+            await controller.start();
+            await new Promise((resolve) => setTimeout(resolve, 30));
+            const send = (payload) => handlers["*"]({ payload });
+            const toastTexts = () => [...document.querySelectorAll(".order-toast")].map((t) => t.textContent);
+
+            send({ type: "menu_created", event_id: "m1", actor: "seller-1", actor_name: "Lan", actor_role: "seller",
+                product: { id: 1, name: "Trà đào" } });
+            send({ type: "employee_joined", event_id: "t1", actor: null,
+                employee: { id: "n1", full_name: "Minh", role: "cashier" } });
+            const afterTwo = toastTexts();
+            const classes = [...document.querySelectorAll(".order-toast")].map((t) => t.className);
+
+            document.querySelectorAll(".order-toast-body")[0].click(); // đồ uống -> trang đồ uống
+            document.querySelectorAll(".order-toast-body")[0].click(); // nhân viên mới -> trang nhân viên
+            controller.stop();
+            return { afterTwo, classes, opened, badge: document.querySelector(".order-bell-badge").textContent };
+        }"""
+    )
+
+    assert len(result["afterTwo"]) == 2
+    assert "Đã thêm đồ uống: Trà đào" in result["afterTwo"][0]
+    assert "Bởi Lan (Nhân viên bán hàng)" in result["afterTwo"][0]
+    assert "Minh đã tham gia" in result["afterTwo"][1]
+    assert "is-menu" in result["classes"][0]
+    assert "is-team" in result["classes"][1]
+    assert result["opened"] == ["drinks", "employees"]
+    assert result["badge"] == "2"
+
+
+def test_controller_summary_mixes_all_notification_kinds(page):
+    open_app(page)
+
+    result = page.evaluate(
+        """async () => {
+            const { createStaffNotificationController } =
+                await import("/js/controllers/admin/StaffNotificationController.js");
+            localStorage.clear();
+            localStorage.setItem("oncafe:notifications:me:sound", JSON.stringify("off"));
+            document.body.innerHTML = '<header class="site-header"></header>';
+            let orders = [{ id: 1, status: "pending" }];
+            let statusCallback = null;
+            const client = {
+                auth: { getSession: async () => ({ data: { session: null } }) },
+                realtime: { setAuth: () => {} },
+                channel: () => {
+                    const channel = { on: () => channel, subscribe: (cb) => { statusCallback = cb; return channel; } };
+                    return channel;
+                },
+                removeChannel: async () => {}
+            };
+            const opened = [];
+            const controller = createStaffNotificationController({
+                supabaseClient: client, getOrders: async () => orders, userId: "me", role: "seller",
+                openSection: (section) => opened.push(section)
+            });
+            await controller.start();
+            await new Promise((resolve) => setTimeout(resolve, 30));
+            statusCallback("SUBSCRIBED");
+            await new Promise((resolve) => setTimeout(resolve, 30));
+
+            // Đồng bộ bù sau khi kết nối lại: 4 đơn mới cùng lúc -> gộp thành một thông báo.
+            orders = [2, 3, 4, 5].map((id) => ({ id, status: "pending" })).concat(orders);
+            statusCallback("TIMED_OUT");
+            statusCallback("SUBSCRIBED");
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            const toasts = [...document.querySelectorAll(".order-toast")].map((t) => t.textContent);
+            document.querySelector(".order-toast-body").click();
+            controller.stop();
+            return { toasts, opened };
+        }"""
+    )
+
+    assert len(result["toasts"]) == 1
+    assert "Có cập nhật mới" in result["toasts"][0]
+    assert "4 đơn mới" in result["toasts"][0]
+    assert result["opened"] == ["orders"]

@@ -12,6 +12,16 @@
 .orders-message{padding:12px 15px;border-radius:9px;background:#fff;border:1px solid #e5ddd5;color:#76665d}
 .orders-message.is-error{color:#a33a32;background:#fff5f4;border-color:#e7b9b4}
 .my-orders-list{display:grid;gap:18px}
+.my-orders-shell>.customer-pagination{margin:20px 0 0;padding:14px 16px;border:1px solid #e5ddd5;border-radius:12px;background:#fff}
+.customer-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#766b64;font-size:13px}
+.customer-pagination .pagination-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.customer-pagination .pagination-actions button{display:inline-flex;min-width:40px;min-height:40px;align-items:center;justify-content:center;padding:8px 10px;border:1px solid #e6ddd5;border-radius:10px;background:#fffdfa;color:#38251d;font:inherit;font-weight:600;cursor:pointer}
+.customer-pagination .pagination-actions button:hover:not(:disabled){border-color:#a66c3f;background:#faf4ed}
+.customer-pagination .pagination-actions button[aria-current="page"]{border-color:#a66c3f;background:#f5ebe0;font-weight:700}
+.customer-pagination .pagination-actions button:disabled{opacity:.45;cursor:not-allowed}
+.customer-pagination .pagination-ellipsis{color:#766b64}
+.customer-pagination:empty{display:none}
+@media(max-width:560px){.customer-pagination{align-items:flex-start;flex-direction:column}}
 .my-order-card,.orders-empty{padding:22px;border:1px solid #e5ddd5;border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(56,37,29,.05)}
 .my-order-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-bottom:16px;border-bottom:1px solid #eee5dd}
 .online-order-label{display:inline-block;margin-bottom:7px;padding:4px 8px;border-radius:5px;background:#f3e7d8;color:#87552f;font-size:11px;font-weight:800;letter-spacing:.5px}

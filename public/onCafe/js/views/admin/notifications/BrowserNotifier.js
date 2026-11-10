@@ -26,15 +26,15 @@ export class BrowserNotifier {
         return this.permission;
     }
 
-    // Hiển thị một thông báo nếu đã được cấp quyền.
-    show(title, body) {
+    // Hiển thị một thông báo nếu đã được cấp quyền; onClick riêng cho từng thông báo (mặc định dùng onClick chung).
+    show(title, body, onClick = this.onClick) {
         if (this.permission !== "granted") return;
         try {
-            const notification = new Notification(title, { body, tag: "oncafe-orders" });
+            const notification = new Notification(title, { body, tag: "oncafe-staff-notifications" });
             notification.addEventListener("click", () => {
                 window.focus();
                 notification.close();
-                this.onClick?.();
+                onClick?.();
             });
         } catch {
             // Một số trình duyệt di động không cho tạo Notification trực tiếp.

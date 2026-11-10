@@ -135,6 +135,14 @@
     border-left-color: var(--success);
 }
 
+.order-bell-entry.is-menu {
+    border-left-color: var(--brand-link);
+}
+
+.order-bell-entry.is-team {
+    border-left-color: var(--success);
+}
+
 .order-bell-entry:hover {
     background: var(--canvas);
 }
@@ -178,6 +186,18 @@
 
 .order-toast.is-completed {
     border-left-color: var(--success);
+}
+
+.order-toast.is-menu {
+    border-left-color: var(--brand-link);
+}
+
+.order-toast.is-team {
+    border-left-color: var(--success);
+}
+
+.order-toast.is-team > i {
+    color: var(--success);
 }
 
 .order-toast > i {
