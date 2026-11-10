@@ -34,7 +34,7 @@ export class StaffRealtimeRepository {
                     table: "staff_notifications",
                     filter: `recipient_id=eq.${userId}`
                 },
-                (change) => onEvent?.(change?.new)
+                (change) => onEvent?.(change?.new || change?.payload || change)
             );
 
         channel.subscribe((status, error) => onStatusChange?.(status, error));
