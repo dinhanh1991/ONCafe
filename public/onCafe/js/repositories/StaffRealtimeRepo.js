@@ -1,5 +1,12 @@
 // Kết nối Supabase Realtime để nhận thông báo đã được lưu trong Database.
 // Mỗi tài khoản chỉ đăng ký nhận các bản ghi có recipient_id trùng với user đang đăng nhập.
+export const STAFF_ROLES = Object.freeze(["admin", "seller", "cashier"]);
+
+export function staffTopicFor(role) {
+    if (!STAFF_ROLES.includes(role)) throw new Error("Vai trò không có kênh thông báo nhân viên.");
+    return `oncafe:role:${role}`;
+}
+
 export class StaffRealtimeRepository {
     constructor({ client }) {
         if (!client) throw new Error("StaffRealtimeRepository cần client Supabase.");
