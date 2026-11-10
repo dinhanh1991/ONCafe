@@ -1,7 +1,5 @@
-// Nối các thành phần thông báo nhân viên lại với nhau cho khu vực quản trị:
-// kênh WebSocket theo vai trò (repository) → service (lọc trùng, đồng bộ dự phòng đơn hàng) → các view
-// (chuông, thông báo nổi, âm báo). Loại thông báo nào gửi đến vai trò nào do cơ sở dữ liệu quyết định.
-import { NOTIFICATION_CATEGORY, NOTIFICATION_TYPE } from "../../models/StaffNotification.js";
+// Nối Database Realtime với chuông, thông báo nổi và âm báo của khu vực nhân viên.
+import { createNotificationFromPayload, NOTIFICATION_CATEGORY, NOTIFICATION_TYPE } from "../../models/StaffNotification.js";
 import { NotificationStateRepository } from "../../repositories/NotificationStateRepo.js";
 import { StaffRealtimeRepository } from "../../repositories/StaffRealtimeRepo.js";
 import { StaffNotificationService } from "../../services/StaffNotificationService.js";
@@ -13,7 +11,6 @@ import { BrowserNotifier } from "../../views/admin/notifications/BrowserNotifier
 const MAX_DETAILED_TOASTS = 3;
 const MAX_HISTORY = 20;
 
-// Đếm số thông báo theo nhóm để tạo câu tóm tắt khi có nhiều thông báo cùng lúc.
 function summarize(notifications) {
     const counts = { newOrders: 0, completedOrders: 0, menu: 0, team: 0 };
     for (const item of notifications) {
@@ -43,8 +40,6 @@ function summarize(notifications) {
     };
 }
 
-// Tạo bộ điều khiển thông báo nhân viên; trả về các hàm start, stop và markHandled.
-// openSection(tênKhuVực) do nơi gọi cung cấp để mở trang quản trị (đã kiểm tra quyền truy cập).
 export function createStaffNotificationController({
     supabaseClient,
     getOrders,
@@ -62,10 +57,9 @@ export function createStaffNotificationController({
     const toasts = new NotificationToasts({ onOpen: openNotification }).mount();
 
     let history = stateRepository.getHistory();
-    let unread = 0;
+    let unread = history.filter((item) => !item.isRead).length;
     let connected = false;
 
-    // Vẽ lại chuông theo trạng thái hiện tại.
     function refresh() {
         bell.render({
             history,
@@ -74,6 +68,24 @@ export function createStaffNotificationController({
             permission: browserNotifier.permission,
             connected
         });
+    }
+
+    async function markAllRead() {
+        try {
+            const { error } = await supabaseClient
+                .from("staff_notifications")
+                .update({ is_read: true })
+                .eq("recipient_id", userId)
+                .eq("is_read", false);
+            if (error) throw error;
+
+            history = history.map((item) => ({ ...item, isRead: true }));
+            stateRepository.saveHistory(history);
+            unread = 0;
+            refresh();
+        } catch (error) {
+            console.error("Không thể cập nhật trạng thái đã đọc:", error);
+        }
     }
 
     const bell = new NotificationBell({
@@ -88,24 +100,28 @@ export function createStaffNotificationController({
             refresh();
         },
         onPanelOpened: () => {
-            unread = 0;
-            refresh();
+            void markAllRead();
         }
     }).mount(header);
 
-    // Trình bày các thông báo mới: lưu lịch sử, hiện thông báo nổi, phát âm báo và báo ra ngoài trình duyệt nếu cần.
     function present(notifications) {
-        history = [
-            ...notifications.map(({ key, type, appearance, target, title, detail, at }) => (
-                { key, type, appearance, target, title, detail, at }
-            )),
-            ...history
-        ].slice(0, MAX_HISTORY);
+        const saved = notifications.map((item) => ({
+            id: item.id,
+            key: item.key,
+            type: item.type,
+            appearance: item.appearance,
+            target: item.target,
+            title: item.title,
+            detail: item.detail,
+            at: item.at,
+            isRead: Boolean(item.isRead)
+        }));
+
+        history = [...saved, ...history].slice(0, MAX_HISTORY);
         stateRepository.saveHistory(history);
-        unread += notifications.length;
+        unread += saved.filter((item) => !item.isRead).length;
         refresh();
 
-        // Nhiều thông báo cùng lúc thì gộp thành một để không che màn hình.
         if (notifications.length > MAX_DETAILED_TOASTS) {
             toasts.show(summarize(notifications));
         } else {
@@ -133,7 +149,7 @@ export function createStaffNotificationController({
         getOrders,
         stateRepository,
         currentUserId: userId,
-        role,
+        userId,
         onNotify: present,
         onConnectionChange: (isConnected) => {
             connected = isConnected;
@@ -142,8 +158,43 @@ export function createStaffNotificationController({
     });
 
     refresh();
+
     return {
-        start: () => service.start(),
+        start: async () => {
+            try {
+                const { data, error } = await supabaseClient
+                    .from("staff_notifications")
+                    .select("id, payload, is_read, created_at")
+                    .eq("recipient_id", userId)
+                    .order("created_at", { ascending: false })
+                    .limit(MAX_HISTORY);
+
+                if (error) throw error;
+
+                history = data
+                    .map((record) => {
+                        const timestamp = Date.parse(record.created_at);
+                        const item = createNotificationFromPayload(record.payload, {
+                            at: Number.isFinite(timestamp) ? timestamp : Date.now()
+                        });
+                        if (!item) return null;
+                        return {
+                            ...item,
+                            id: record.id,
+                            isRead: Boolean(record.is_read)
+                        };
+                    })
+                    .filter(Boolean);
+
+                stateRepository.saveHistory(history);
+                unread = history.filter((item) => !item.isRead).length;
+                refresh();
+            } catch (error) {
+                console.error("Không thể tải lịch sử thông báo từ Database:", error);
+            }
+
+            await service.start();
+        },
         stop: () => service.stop(),
         markHandled: (type, orderId) => service.markHandled(type, orderId)
     };
