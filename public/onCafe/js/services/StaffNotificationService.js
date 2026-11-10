@@ -14,7 +14,8 @@ export class StaffNotificationService {
         getOrders,
         stateRepository,
         currentUserId,
-        userId,
+        userId = currentUserId,
+        role = null,
         onNotify,
         onConnectionChange = () => {},
         onError = (error) => console.error("Không thể xử lý thông báo nhân viên:", error),
@@ -30,6 +31,7 @@ export class StaffNotificationService {
         this.stateRepository = stateRepository;
         this.currentUserId = currentUserId;
         this.userId = userId;
+        this.role = role;
         this.onNotify = onNotify;
         this.onConnectionChange = onConnectionChange;
         this.onError = onError;
@@ -59,6 +61,7 @@ export class StaffNotificationService {
         try {
             await this.realtimeRepository.subscribe({
                 userId: this.userId,
+                role: this.role,
                 onEvent: (record) => this.handleRealtimeEvent(record, generation),
                 onStatusChange: (status, error) => this.handleStatus(status, generation, error)
             });
@@ -93,7 +96,8 @@ export class StaffNotificationService {
     handleRealtimeEvent(record, generation = this.generation) {
         if (generation !== this.generation || !record?.payload) return;
         const timestamp = Date.parse(record.created_at);
-        const notification = createNotificationFromPayload(record.payload, {
+        const eventPayload = record.payload?.type ? record.payload : record;
+        const notification = createNotificationFromPayload(eventPayload, {
             at: Number.isFinite(timestamp) ? timestamp : Date.now()
         });
         if (!notification) return;
