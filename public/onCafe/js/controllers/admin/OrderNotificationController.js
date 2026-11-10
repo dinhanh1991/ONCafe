@@ -60,11 +60,15 @@ export function createOrderNotificationController({
 
         if (notifications.length > MAX_DETAILED_TOASTS) {
             const categories = new Set(notifications.map((item) => item.category || "orders"));
+            const isOrderNotifications = categories.size === 1 && categories.has("orders");
+
             toasts.show({
                 type: "summary",
                 category: categories.size === 1 ? [...categories][0] : "orders",
                 title: "ONCafe có cập nhật mới",
-                detail: `${notifications.length} thông báo mới. Mở chuông để xem chi tiết.`
+                detail: isOrderNotifications
+                    ? `${notifications.length} cập nhật đơn hàng. Mở chuông để xem chi tiết.`
+                    : `${notifications.length} thông báo mới. Mở chuông để xem chi tiết.`
             });
         } else {
             for (const item of notifications) toasts.show(item);
