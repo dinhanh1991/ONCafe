@@ -3,11 +3,15 @@ import { CustomerOrderRepository } from "./repositories/CustomerOrderRepo.js";
 import { CustomerMyOrdersService } from "./services/CustomerMyOrdersService.js";
 import { CustomerQrPaymentService } from "./services/CustomerQrPaymentService.js";
 import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "./utils/CoffeeLoading.js";
+import { createPaginationMarkup } from "./utils/PaginationUtils.js";
+
+const ORDERS_PAGE_SIZE = 5;
 
 const customerMyOrdersService = new CustomerMyOrdersService(new CustomerOrderRepository());
 const customerQrPaymentService = new CustomerQrPaymentService();
 
 const list = document.querySelector("#ordersList");
+const pagination = document.querySelector("#ordersPagination");
 const message = document.querySelector("#ordersMessage");
 const refreshButton = document.querySelector("#refreshOrders");
 
@@ -32,6 +36,8 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
 let previousPaymentStates = new Map();
 let hasLoadedOrders = false;
 let isLoadingOrders = false;
+let currentOrdersPage = 1;
+let cachedOrders = [];
 const notifiedPaidOrders = new Set();
 
 // Định dạng ngày giờ cho giao diện.
@@ -207,6 +213,7 @@ async function loadOrders() {
 
         previousPaymentStates = new Map(orders.map((order) => [String(order.id), order.payment_status]));
         hasLoadedOrders = true;
+        cachedOrders = orders;
         renderOrders(orders);
         setMessage(orders.length ? `Bạn có ${orders.length} đơn hàng. Trạng thái được tự động cập nhật.` : "Bạn chưa có đơn hàng online nào.");
     } catch (error) {
@@ -222,11 +229,26 @@ async function loadOrders() {
 // Cập nhật danh sách đơn hàng trên giao diện.
 function renderOrders(orders) {
     if (!orders.length) {
+        pagination.replaceChildren();
         list.innerHTML = '<div class="orders-empty"><h2>Chưa có đơn hàng</h2><p>Hãy chọn đồ uống yêu thích và đặt hàng tại ONCafe.</p><a href="./menu.html">Khám phá thực đơn</a></div>';
         return;
     }
 
-    list.innerHTML = orders.map((order) => {
+    const totalPages = Math.max(1, Math.ceil(orders.length / ORDERS_PAGE_SIZE));
+    currentOrdersPage = Math.min(currentOrdersPage, totalPages);
+    const startIndex = (currentOrdersPage - 1) * ORDERS_PAGE_SIZE;
+    const pageOrders = orders.slice(startIndex, startIndex + ORDERS_PAGE_SIZE);
+    pagination.innerHTML = totalPages > 1 ? createPaginationMarkup({
+        currentPage: currentOrdersPage,
+        totalPages,
+        firstItem: startIndex + 1,
+        lastItem: startIndex + pageOrders.length,
+        totalItems: orders.length,
+        itemLabel: "đơn hàng",
+        pageKey: "customer-order"
+    }) : "";
+
+    list.innerHTML = pageOrders.map((order) => {
         const items = (order.items || []).map((item) =>
             `<li><span>${escapeHtml(item.product_name)} × ${escapeHtml(item.quantity)}</span><strong>${currency.format(Number(item.subtotal) || 0)}</strong></li>`
         ).join("");
@@ -271,6 +293,14 @@ function renderOrders(orders) {
             </article>`;
     }).join("");
 }
+
+pagination.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-customer-order-page]");
+    if (!button) return;
+    currentOrdersPage = Number(button.dataset.customerOrderPage) || 1;
+    renderOrders(cachedOrders);
+    list.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
 // Tạo mã QR thanh toán cho đơn hàng.
 async function createQr(orderId, button) {

@@ -3,10 +3,15 @@
  * Chịu trách nhiệm hiển thị danh sách đồ uống và giỏ hàng.
  * Không truy cập repository, service hoặc Supabase.
  */
+import { createPaginationMarkup } from "../../utils/PaginationUtils.js";
+
+const MENU_PAGE_SIZE = 12;
+
 export class CustomerMenuView {
     // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor({
         menuGrid,
+        menuPagination,
         menuStatus,
         cartItems,
         cartTotal,
@@ -17,6 +22,16 @@ export class CustomerMenuView {
         onRemoveFromCart
     }) {
         this.menuGrid = menuGrid;
+        this.menuPagination = menuPagination;
+        this.products = [];
+        this.currentPage = 1;
+        this.menuPagination?.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-menu-page]");
+            if (!button) return;
+            this.currentPage = Number(button.dataset.menuPage) || 1;
+            this.renderMenuPage();
+            this.menuGrid?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
         this.menuStatus = menuStatus;
         this.cartItems = cartItems;
         this.cartTotal = cartTotal;
@@ -44,12 +59,33 @@ export class CustomerMenuView {
     // Xóa các món đang hiển thị trên thực đơn.
     clearMenu() {
         this.menuGrid?.replaceChildren();
+        if (this.menuPagination) this.menuPagination.replaceChildren();
     }
 
     // Hiển thị danh sách món trên thực đơn.
     renderMenu(products) {
         if (!this.menuGrid) return;
-        this.menuGrid.replaceChildren(...products.map((product) => this.createMenuCard(product)));
+        this.products = products;
+        this.currentPage = Math.min(this.currentPage, Math.max(1, Math.ceil(products.length / MENU_PAGE_SIZE)));
+        this.renderMenuPage();
+    }
+
+    // Chỉ hiển thị một trang món và cập nhật điều hướng phân trang.
+    renderMenuPage() {
+        const startIndex = (this.currentPage - 1) * MENU_PAGE_SIZE;
+        const pageProducts = this.products.slice(startIndex, startIndex + MENU_PAGE_SIZE);
+        this.menuGrid.replaceChildren(...pageProducts.map((product) => this.createMenuCard(product)));
+        if (!this.menuPagination) return;
+        const totalPages = Math.max(1, Math.ceil(this.products.length / MENU_PAGE_SIZE));
+        this.menuPagination.innerHTML = totalPages > 1 ? createPaginationMarkup({
+            currentPage: this.currentPage,
+            totalPages,
+            firstItem: startIndex + 1,
+            lastItem: startIndex + pageProducts.length,
+            totalItems: this.products.length,
+            itemLabel: "món",
+            pageKey: "menu"
+        }) : "";
     }
 
     // Tạo thẻ hiển thị một món trên thực đơn.

@@ -12,6 +12,7 @@ const customerMenuService = new CustomerMenuService(new CustomerMenuRepository()
 const customerCheckoutService = new CustomerCheckoutService(new CustomerOrderRepository());
 
 const menuGrid = document.querySelector("#menuGrid");
+const menuPagination = document.querySelector("#menuPagination");
 const menuStatus = document.querySelector("#menuStatus");
 const cartItems = document.querySelector("#cartItems");
 const cartTotal = document.querySelector("#cartTotal");
@@ -35,6 +36,7 @@ function refreshCart() {
 
 const customerMenuView = new CustomerMenuView({
     menuGrid,
+    menuPagination,
     menuStatus,
     cartItems,
     cartTotal,

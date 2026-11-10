@@ -628,6 +628,15 @@
 /* Customer shopping experience refinements */
 /* Tinh chỉnh thẻ sản phẩm, tiêu điểm biểu mẫu và ảnh QR khi checkout. */
 .menu-grid{align-items:stretch}
+.customer-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;color:#766b64;font-size:13px}
+.customer-pagination .pagination-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.customer-pagination .pagination-actions button{display:inline-flex;min-width:40px;min-height:40px;align-items:center;justify-content:center;padding:8px 10px;border:1px solid #e6ddd5;border-radius:10px;background:#fffdfa;color:#38251d;font:inherit;font-weight:600;cursor:pointer}
+.customer-pagination .pagination-actions button:hover:not(:disabled){border-color:#a66c3f;background:#faf4ed}
+.customer-pagination .pagination-actions button[aria-current="page"]{border-color:#a66c3f;background:#f5ebe0;font-weight:700}
+.customer-pagination .pagination-actions button:disabled{opacity:.45;cursor:not-allowed}
+.customer-pagination .pagination-ellipsis{color:#766b64}
+.customer-pagination:empty{display:none}
+@media(max-width:560px){.customer-pagination{align-items:flex-start;flex-direction:column}}
 .menu-card{display:flex;flex-direction:column;min-width:0;transition:transform .18s ease,box-shadow .18s ease}
 .menu-card:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(56,37,29,.12)}
 .menu-card-content{display:flex;flex:1;flex-direction:column}
