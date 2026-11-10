@@ -57,6 +57,7 @@ export function createStaffNotificationController({
     const toasts = new NotificationToasts({ onOpen: openNotification }).mount();
 
     let history = stateRepository.getHistory();
+    let liveHistory = [];
     let unread = history.filter((item) => !item.isRead).length;
     let connected = false;
 
@@ -80,6 +81,7 @@ export function createStaffNotificationController({
             if (error) throw error;
 
             history = history.map((item) => ({ ...item, isRead: true }));
+            liveHistory = liveHistory.map((item) => ({ ...item, isRead: true }));
             stateRepository.saveHistory(history);
             unread = 0;
             refresh();
@@ -117,6 +119,7 @@ export function createStaffNotificationController({
             isRead: Boolean(item.isRead)
         }));
 
+        liveHistory = [...saved, ...liveHistory].slice(0, MAX_HISTORY);
         history = [...saved, ...history].slice(0, MAX_HISTORY);
         stateRepository.saveHistory(history);
         unread += saved.filter((item) => !item.isRead).length;
@@ -191,13 +194,17 @@ export function createStaffNotificationController({
 
                 // Giữ cả sự kiện realtime vừa đến trong lúc truy vấn lịch sử.
                 const databaseIds = new Set(databaseHistory.map((item) => item.id));
+                const databaseKeys = new Set(databaseHistory.map((item) => item.key));
                 history = [
                     ...databaseHistory,
-                    ...history.filter((item) => !item.id || !databaseIds.has(item.id))
+                    ...liveHistory.filter((item) =>
+                        !databaseIds.has(item.id) && !databaseKeys.has(item.key)
+                    )
                 ]
                     .sort((a, b) => b.at - a.at)
                     .slice(0, MAX_HISTORY);
 
+                for (const item of history) stateRepository.addSeen(item.key);
                 stateRepository.saveHistory(history);
                 unread = history.filter((item) => !item.isRead).length;
                 refresh();
