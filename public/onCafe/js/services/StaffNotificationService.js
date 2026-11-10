@@ -1,5 +1,5 @@
-// Điều phối thông báo cho nhân viên: nhận sự kiện tức thời qua WebSocket (đơn hàng, đồ uống, nhân viên mới),
-// đồng bộ dự phòng đơn hàng khi mất kết nối, chống báo trùng và bỏ qua thao tác do chính tài khoản hiện tại thực hiện.
+// Điều phối thông báo nhân viên: nhận sự kiện từ Database Realtime, đồng bộ dự phòng đơn hàng,
+// chống báo trùng và bỏ qua thao tác do chính tài khoản hiện tại thực hiện.
 import {
     NOTIFICATION_CATEGORY,
     NOTIFICATION_TYPE,
@@ -9,13 +9,12 @@ import {
 import { buildSnapshot, detectOrderChanges } from "./OrderChangeDetector.js";
 
 export class StaffNotificationService {
-    // Khởi tạo đối tượng và chuẩn bị trạng thái, phụ thuộc ban đầu.
     constructor({
         realtimeRepository,
         getOrders,
         stateRepository,
         currentUserId,
-        role,
+        userId,
         onNotify,
         onConnectionChange = () => {},
         onError = (error) => console.error("Không thể xử lý thông báo nhân viên:", error),
@@ -24,12 +23,13 @@ export class StaffNotificationService {
     }) {
         if (typeof getOrders !== "function") throw new Error("StaffNotificationService cần hàm getOrders.");
         if (!realtimeRepository || !stateRepository) throw new Error("StaffNotificationService thiếu phụ thuộc.");
+        if (!userId) throw new Error("StaffNotificationService cần mã tài khoản.");
 
         this.realtimeRepository = realtimeRepository;
         this.getOrders = getOrders;
         this.stateRepository = stateRepository;
         this.currentUserId = currentUserId;
-        this.role = role;
+        this.userId = userId;
         this.onNotify = onNotify;
         this.onConnectionChange = onConnectionChange;
         this.onError = onError;
@@ -48,7 +48,6 @@ export class StaffNotificationService {
         };
     }
 
-    // Bắt đầu nhận thông báo: mở kênh WebSocket và đồng bộ trạng thái hiện tại.
     async start() {
         this.stop();
         const generation = this.generation;
@@ -59,8 +58,8 @@ export class StaffNotificationService {
 
         try {
             await this.realtimeRepository.subscribe({
-                role: this.role,
-                onEvent: (payload) => this.handleRealtimeEvent(payload, generation),
+                userId: this.userId,
+                onEvent: (record) => this.handleRealtimeEvent(record, generation),
                 onStatusChange: (status, error) => this.handleStatus(status, generation, error)
             });
         } catch (error) {
@@ -71,7 +70,6 @@ export class StaffNotificationService {
         }
     }
 
-    // Dừng nhận thông báo và dọn tài nguyên.
     stop() {
         this.generation += 1;
         if (this.timer !== null) {
@@ -85,36 +83,38 @@ export class StaffNotificationService {
         this.resyncRequested = false;
     }
 
-    // Ghi nhận thao tác do chính nhân viên này thực hiện để không tự báo cho mình.
     markHandled(type, orderId) {
         if (orderId === undefined || orderId === null || orderId === "") return;
         this.stateRepository.addSeen(createNotificationKey(type, orderId));
         this.updateSnapshotEntry(orderId, type === NOTIFICATION_TYPE.COMPLETED ? "completed" : "pending", type === NOTIFICATION_TYPE.NEW);
     }
 
-    // Xử lý sự kiện nhận tức thời qua WebSocket.
-    handleRealtimeEvent(payload, generation = this.generation) {
-        if (generation !== this.generation) return;
-        const notification = createNotificationFromPayload(payload);
+    // Bản ghi Realtime đã có payload, id và thời gian lưu trong Database.
+    handleRealtimeEvent(record, generation = this.generation) {
+        if (generation !== this.generation || !record?.payload) return;
+        const timestamp = Date.parse(record.created_at);
+        const notification = createNotificationFromPayload(record.payload, {
+            at: Number.isFinite(timestamp) ? timestamp : Date.now()
+        });
         if (!notification) return;
-        // Chỉ đơn hàng có ảnh chụp trạng thái dùng cho đồng bộ dự phòng.
+
+        notification.id = record.id;
+        notification.isRead = Boolean(record.is_read);
+
         if (notification.category === NOTIFICATION_CATEGORY.ORDER) {
             this.updateSnapshotEntry(notification.orderId, notification.status || "", false);
         }
         this.deliver([notification]);
     }
 
-    // Xử lý thay đổi trạng thái kết nối của kênh.
     handleStatus(status, generation = this.generation, error = null) {
         if (generation !== this.generation) return;
         if (status === "SUBSCRIBED") {
             this.lastReportedStatus = null;
             this.setConnected(true);
-            // Bù các sự kiện có thể đã bỏ lỡ trong lúc chưa kết nối.
             void this.sync(generation);
         } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
             this.setConnected(false);
-            // Báo lý do một lần cho mỗi loại lỗi (thư viện tự thử nối lại liên tục, tránh ghi log lặp).
             if (this.lastReportedStatus !== status) {
                 this.lastReportedStatus = status;
                 const reason = error?.message ? `: ${error.message}` : "";
@@ -123,14 +123,12 @@ export class StaffNotificationService {
         }
     }
 
-    // Kiểm tra định kỳ: khi mất kết nối thì đồng bộ ngay, khi đang kết nối chỉ đối soát thưa.
     tick(generation) {
         if (generation !== this.generation) return;
         if (this.connected && Date.now() - this.lastSyncAt < this.reconcileIntervalMs) return;
         void this.sync(generation);
     }
 
-    // Đồng bộ lại danh sách đơn, so với lần trước để tìm đơn mới và đơn vừa hoàn tất.
     async sync(generation = this.generation) {
         if (generation !== this.generation) return;
         if (this.syncing) {
@@ -148,7 +146,6 @@ export class StaffNotificationService {
                 const previous = this.stateRepository.getSnapshot();
                 this.stateRepository.saveSnapshot(buildSnapshot(orders));
                 this.lastSyncAt = Date.now();
-                // Lần đầu chỉ ghi nhận hiện trạng, không báo các đơn đã có sẵn.
                 if (previous) this.deliver(detectOrderChanges(previous, orders));
             } while (this.resyncRequested && generation === this.generation);
         } catch (error) {
@@ -158,7 +155,6 @@ export class StaffNotificationService {
         }
     }
 
-    // Lọc trùng và thao tác của chính mình rồi chuyển các thông báo mới cho giao diện.
     deliver(notifications) {
         const fresh = [];
         for (const notification of notifications) {
@@ -170,7 +166,6 @@ export class StaffNotificationService {
         if (fresh.length) this.onNotify?.(fresh);
     }
 
-    // Cập nhật một dòng trong ảnh chụp để lần đồng bộ sau không coi đây là thay đổi mới.
     updateSnapshotEntry(orderId, status, onlyIfMissing) {
         const snapshot = this.stateRepository.getSnapshot();
         if (!snapshot) return;
@@ -180,7 +175,6 @@ export class StaffNotificationService {
         this.stateRepository.saveSnapshot(snapshot);
     }
 
-    // Cập nhật trạng thái kết nối và báo cho giao diện khi có thay đổi.
     setConnected(connected) {
         if (this.connected === connected) return;
         this.connected = connected;
