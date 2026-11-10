@@ -17,7 +17,7 @@ create index if not exists idx_staff_notifications_unread
     on public.staff_notifications (recipient_id, is_read, created_at desc);
 
 alter table public.staff_notifications enable row level security;
-revoke all on public.staff_notifications from anon, public;
+revoke all on public.staff_notifications from anon, public, authenticated;
 grant select on public.staff_notifications to authenticated;
 grant update (is_read) on public.staff_notifications to authenticated;
 
