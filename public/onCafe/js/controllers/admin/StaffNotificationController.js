@@ -161,6 +161,9 @@ export function createStaffNotificationController({
 
     return {
         start: async () => {
+            // Kết nối Realtime trước, sau đó tải lịch sử để không bỏ lỡ sự kiện phát sinh đúng lúc mở trang.
+            await service.start();
+
             try {
                 const { data, error } = await supabaseClient
                     .from("staff_notifications")
@@ -171,7 +174,7 @@ export function createStaffNotificationController({
 
                 if (error) throw error;
 
-                history = data
+                const databaseHistory = data
                     .map((record) => {
                         const timestamp = Date.parse(record.created_at);
                         const item = createNotificationFromPayload(record.payload, {
@@ -186,14 +189,21 @@ export function createStaffNotificationController({
                     })
                     .filter(Boolean);
 
+                // Giữ cả sự kiện realtime vừa đến trong lúc truy vấn lịch sử.
+                const databaseIds = new Set(databaseHistory.map((item) => item.id));
+                history = [
+                    ...databaseHistory,
+                    ...history.filter((item) => !item.id || !databaseIds.has(item.id))
+                ]
+                    .sort((a, b) => b.at - a.at)
+                    .slice(0, MAX_HISTORY);
+
                 stateRepository.saveHistory(history);
                 unread = history.filter((item) => !item.isRead).length;
                 refresh();
             } catch (error) {
                 console.error("Không thể tải lịch sử thông báo từ Database:", error);
             }
-
-            await service.start();
         },
         stop: () => service.stop(),
         markHandled: (type, orderId) => service.markHandled(type, orderId)
