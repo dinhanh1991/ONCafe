@@ -1,4 +1,6 @@
 // Thông báo nổi ở góc màn hình, tự ẩn sau vài giây. Nội dung luôn đặt bằng textContent để tránh chèn HTML.
+import { getAppearance } from "./NotificationAppearance.js";
+
 const MAX_TOASTS = 3;
 const TOAST_DURATION_MS = 9000;
 
@@ -11,7 +13,7 @@ function createElement(tag, className, text) {
 }
 
 export class NotificationToasts {
-    // Khởi tạo đối tượng; onOpen được gọi khi nhân viên nhấn vào nội dung thông báo.
+    // Khởi tạo đối tượng; onOpen nhận thông báo được nhấn vào để mở trang tương ứng.
     constructor({ onOpen }) {
         this.onOpen = onOpen;
         this.stack = null;
@@ -28,18 +30,14 @@ export class NotificationToasts {
     }
 
     // Hiển thị một thông báo nổi; giữ tối đa vài thông báo cùng lúc.
-    show({ type, category = "orders", title, detail }) {
+    show(notification) {
         if (!this.stack) return;
+        const { title, detail } = notification;
+        const look = getAppearance(notification);
         while (this.stack.children.length >= MAX_TOASTS) this.stack.firstElementChild.remove();
 
-        const completed = type === "completed";
-        const iconClass = category === "products"
-            ? "bi bi-cup-hot-fill"
-            : category === "employees"
-                ? "bi bi-person-plus-fill"
-                : completed ? "bi bi-check-circle-fill" : "bi bi-bag-plus-fill";
-        const toast = createElement("div", `order-toast is-${completed ? "completed" : "new"} is-${category}`);
-        const icon = createElement("i", iconClass);
+        const toast = createElement("div", `order-toast ${look.className}`);
+        const icon = createElement("i", look.icon);
         icon.setAttribute("aria-hidden", "true");
         const body = createElement("button", "order-toast-body");
         body.type = "button";
@@ -58,7 +56,7 @@ export class NotificationToasts {
         body.addEventListener("click", () => {
             window.clearTimeout(timer);
             toast.remove();
-            this.onOpen?.({ category, type, title, detail });
+            this.onOpen?.(notification);
         });
     }
 }
