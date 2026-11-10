@@ -18,7 +18,8 @@ create index if not exists idx_staff_notifications_unread
 
 alter table public.staff_notifications enable row level security;
 revoke all on public.staff_notifications from anon, public;
-grant select, update on public.staff_notifications to authenticated;
+grant select on public.staff_notifications to authenticated;
+grant update (is_read) on public.staff_notifications to authenticated;
 
 drop policy if exists "Staff read own notifications" on public.staff_notifications;
 create policy "Staff read own notifications"
