@@ -1,6 +1,6 @@
 // So sánh danh sách đơn hàng hiện tại với lần trước để tìm đơn mới và đơn vừa hoàn tất.
 // Dùng khi đồng bộ lại (mở trang, kết nối lại, kiểm tra dự phòng); các hàm đều thuần, không đụng đến DOM hay mạng.
-import { NOTIFICATION_TYPE, createOrderNotification } from "../models/OrderNotification.js";
+import { NOTIFICATION_TYPE, createOrderNotification } from "../models/StaffNotification.js";
 
 // Tạo ảnh chụp gọn từ danh sách đơn: mã đơn → trạng thái.
 export function buildSnapshot(orders) {

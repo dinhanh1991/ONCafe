@@ -1,5 +1,6 @@
 // Chuông thông báo trên đầu trang: số chưa xem, danh sách gần đây, trạng thái kết nối và các cài đặt.
 // View chỉ vẽ theo dữ liệu được truyền vào render(); mọi hành động được báo ngược qua callback.
+import { getAppearance } from "./NotificationAppearance.js";
 
 // Tạo phần tử HTML với lớp và nội dung văn bản an toàn.
 function createElement(tag, className, text) {
@@ -11,8 +12,7 @@ function createElement(tag, className, text) {
 
 export class NotificationBell {
     // Khởi tạo đối tượng với các callback xử lý hành động của nhân viên.
-    constructor({ onOpenOrders, onOpenNotification, onToggleSound, onRequestPermission, onPanelOpened }) {
-        this.onOpenOrders = onOpenOrders;
+    constructor({ onOpenNotification, onToggleSound, onRequestPermission, onPanelOpened }) {
         this.onOpenNotification = onOpenNotification;
         this.onToggleSound = onToggleSound;
         this.onRequestPermission = onRequestPermission;
@@ -66,12 +66,11 @@ export class NotificationBell {
         this.soundButton.addEventListener("click", () => this.onToggleSound?.());
         this.permissionButton.addEventListener("click", () => this.onRequestPermission?.());
         this.list.addEventListener("click", (event) => {
-            if (!event.target.closest("[data-notification-item]")) return;
-            const itemKey = event.target.closest("[data-notification-item]")?.dataset.notificationKey;
-            const item = this.state.history.find((entry) => entry.key === itemKey);
+            const entry = event.target.closest("[data-notification-index]");
+            if (!entry) return;
+            const item = this.state.history[Number(entry.dataset.notificationIndex)];
             this.close();
-            if (this.onOpenNotification) this.onOpenNotification(item);
-            else this.onOpenOrders?.();
+            if (item) this.onOpenNotification?.(item);
         });
         document.addEventListener("click", (event) => {
             if (!this.panel.hidden && !wrapper.contains(event.target)) this.close();
@@ -116,18 +115,17 @@ export class NotificationBell {
 
         this.list.replaceChildren();
         if (!history.length) this.list.append(createElement("li", "order-bell-empty", "Chưa có thông báo nào."));
-        for (const item of history) {
+        history.forEach((item, index) => {
             const row = createElement("li", "order-bell-item");
-            const entry = createElement("button", `order-bell-entry is-${item.type === "completed" ? "completed" : "new"}`);
+            const entry = createElement("button", `order-bell-entry ${getAppearance(item).className}`);
             entry.type = "button";
-            entry.dataset.notificationItem = "true";
-            entry.dataset.notificationKey = item.key || "";
+            entry.dataset.notificationIndex = String(index);
             const time = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })
                 .format(new Date(item.at));
             entry.append(createElement("strong", "", item.title), createElement("span", "", item.detail), createElement("small", "", time));
             row.append(entry);
             this.list.append(row);
-        }
+        });
     }
 
     // Mở hoặc đóng bảng thông báo; mở bảng được tính là đã xem.

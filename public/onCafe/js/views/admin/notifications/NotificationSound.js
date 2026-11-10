@@ -22,7 +22,8 @@ export class NotificationSound {
             this.audioContext = this.audioContext || new AudioContextClass();
             if (this.audioContext.state === "suspended") void this.audioContext.resume();
 
-            const notes = kind === "completed" ? [660] : [880, 1175];
+            // new: hai nốt (đơn mới); completed: một nốt cao (đơn hoàn tất); info: một nốt thấp (đồ uống, nhân viên mới).
+            const notes = kind === "completed" ? [660] : kind === "info" ? [523] : [880, 1175];
             const start = this.audioContext.currentTime;
             notes.forEach((frequency, index) => {
                 const oscillator = this.audioContext.createOscillator();

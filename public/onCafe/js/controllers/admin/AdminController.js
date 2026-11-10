@@ -19,8 +19,8 @@ import { renderAccessMessage } from "../../ui/admin/AccessMessage.js";
 import { createAdminWorkspace } from "../../views/admin/AdminWorkspaceView.js";
 import { createAdminOverviewLoaders } from "./AdminOverviewController.js";
 import { createAdminSectionController } from "./AdminSectionController.js";
-import { createOrderNotificationController } from "./OrderNotificationController.js";
-import { getAdminPageUrl } from "../../utils/admin/AdminNavigation.js";
+import { createStaffNotificationController } from "./StaffNotificationController.js";
+import { getAdminPageUrl, isSectionAllowed } from "../../utils/admin/AdminNavigation.js";
 import { supabase } from "../../config/supabase.js";
 import { renderCoffeeLoading, clearCoffeeLoading, waitForCoffeeLoading } from "../../utils/CoffeeLoading.js";
 
@@ -107,22 +107,14 @@ async function startApp() {
         });
     void employeeProfileView.render();
 
-    // Thông báo cho nhân viên khi có đơn mới và khi đơn hàng hoàn tất.
-    const orderNotifications = createOrderNotificationController({
+    // Thông báo cho nhân viên: đơn mới/hoàn tất, đồ uống thêm/sửa/xóa (admin, seller), nhân viên mới tham gia.
+    const orderNotifications = createStaffNotificationController({
         supabaseClient: supabase,
-        role,
         getOrders: () => orderService.getStaffOrders(),
         userId: session.user.id,
-        openOrdersPage: () => {
-            const url = getAdminPageUrl("orders");
-            if (url) window.location.href = url;
-        },
-        openProductsPage: () => {
-            const url = getAdminPageUrl("drinks");
-            if (url) window.location.href = url;
-        },
-        openEmployeesPage: () => {
-            const url = getAdminPageUrl("employees");
+        role,
+        openSection: (section) => {
+            const url = isSectionAllowed(role, section) ? getAdminPageUrl(section) : null;
             if (url) window.location.href = url;
         }
     });
