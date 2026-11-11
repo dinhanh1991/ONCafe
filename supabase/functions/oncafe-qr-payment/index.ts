@@ -71,11 +71,22 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
     if (profileError || !profile) return json({ error: "Forbidden" }, 403);
 
-    const isStaff = ["admin", "seller", "cashier"].includes(profile.role);
-    const isOrderOwner = profile.role === "customer" &&
+    // Customers may create QR tokens only for their own online orders.
+    const isCustomerOrderOwner =
+      profile.role === "customer" &&
       order.order_source === "online" &&
       order.created_by === userData.user.id;
-    if (!isStaff && !isOrderOwner) return json({ error: "Forbidden" }, 403);
+
+    // Admin and seller may create QR tokens only for counter orders they created.
+    const isStaffCounterOrderOwner =
+      ["admin", "seller"].includes(profile.role) &&
+      order.order_source === "counter" &&
+      order.created_by === userData.user.id;
+
+    // Cashiers are not allowed to create QR tokens.
+    if (!isCustomerOrderOwner && !isStaffCounterOrderOwner) {
+      return json({ error: "Forbidden" }, 403);
+    }
 
     if (order.payment_method !== "qr" || order.payment_status !== "unpaid" ||
         order.status !== "pending") {
