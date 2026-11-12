@@ -138,6 +138,26 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
     document.body.append(overlay);
 
     let expiryTimer = null;
+    let qrChannel = null;
+    const qrToken = qrInfo?.url ? new URL(qrInfo.url).searchParams.get("token") : null;
+
+    // Nhận tín hiệu từ tab xác nhận QR để đóng mã ngay sau khi khách gửi yêu cầu.
+    if (paymentMethod === "qr" && qrToken && typeof BroadcastChannel !== "undefined") {
+        qrChannel = new BroadcastChannel("oncafe-qr-payment");
+        qrChannel.addEventListener("message", (event) => {
+            if (event.data?.type !== "confirmed" || event.data.token !== qrToken) return;
+
+            if (expiryTimer) window.clearInterval(expiryTimer);
+            qrPanel.querySelector("img")?.remove();
+            qrPanel.querySelector("a")?.remove();
+            qrPanel.querySelector("[data-qr-expiry]")?.remove();
+            qrPanel.querySelector("p").textContent =
+                "Đã nhận yêu cầu xác nhận thanh toán. Cảm ơn bạn! ONCafe sẽ kiểm tra giao dịch và phản hồi ngay sau khi xác minh.";
+            title.textContent = "Đã nhận yêu cầu xác nhận";
+            message.textContent = `ONCafe đã nhận yêu cầu xác nhận thanh toán cho đơn ${orderCode}. Nhân viên sẽ kiểm tra giao dịch trước khi cập nhật trạng thái Đã thanh toán.`;
+        });
+    }
+
     if (paymentMethod === "qr" && qrInfo?.image) {
         const expiresAt = Number(qrInfo.expiresAt);
         const expiry = qrPanel.querySelector("[data-qr-expiry]");
@@ -163,6 +183,7 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
     const close = () => {
         overlay.remove();
         if (expiryTimer) window.clearInterval(expiryTimer);
+        qrChannel?.close();
         document.removeEventListener("keydown", handleKeydown);
         if (activeQrOrderDialogClose === close) activeQrOrderDialogClose = null;
     };
