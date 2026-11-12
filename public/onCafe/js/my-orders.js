@@ -39,6 +39,8 @@ let isLoadingOrders = false;
 let currentOrdersPage = 1;
 let cachedOrders = [];
 const notifiedPaidOrders = new Set();
+const activeQrPanels = new Map();
+const notifiedQrRequests = new Set();
 
 // Định dạng ngày giờ cho giao diện.
 function formatDate(value) {
@@ -105,6 +107,58 @@ function showPaymentSuccessPopup(order) {
     };
 
     dialog.append(icon, title, detail, total, closeButton);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    closeButton.addEventListener("click", close);
+    overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) close();
+    });
+    document.addEventListener("keydown", onKeydown);
+    closeButton.focus();
+}
+
+// Thông báo cho khách khi nhân viên/thiết bị quét QR đã gửi yêu cầu xác nhận.
+function showQrRequestReceivedPopup(order) {
+    if (document.querySelector(".payment-success-backdrop")) return;
+
+    const overlay = document.createElement("div");
+    overlay.className = "payment-success-backdrop";
+    const dialog = document.createElement("section");
+    dialog.className = "payment-success-dialog";
+    dialog.setAttribute("role", "alertdialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "qrRequestTitle");
+    dialog.setAttribute("aria-describedby", "qrRequestMessage");
+
+    const icon = document.createElement("div");
+    icon.className = "payment-success-icon";
+    icon.textContent = "✓";
+
+    const title = document.createElement("h2");
+    title.id = "qrRequestTitle";
+    title.textContent = "Đã nhận yêu cầu!";
+
+    const detail = document.createElement("p");
+    detail.id = "qrRequestMessage";
+    detail.textContent = `Cảm ơn bạn đã đặt hàng tại ONCafe. Chúng tôi đã nhận được yêu cầu xác nhận thanh toán cho đơn ${order.order_code || ""} và sẽ phản hồi ngay sau khi kiểm tra giao dịch.`;
+
+    const note = document.createElement("p");
+    note.textContent = "Đơn hàng sẽ chuyển sang Đã thanh toán sau khi nhân viên xác minh.";
+
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "payment-success-button";
+    closeButton.textContent = "Đã hiểu";
+
+    const close = () => {
+        overlay.remove();
+        document.removeEventListener("keydown", onKeydown);
+    };
+    const onKeydown = (event) => {
+        if (event.key === "Escape") close();
+    };
+
+    dialog.append(icon, title, detail, note, closeButton);
     overlay.append(dialog);
     document.body.append(overlay);
     closeButton.addEventListener("click", close);
@@ -200,14 +254,23 @@ async function loadOrders() {
         const orders = await customerMyOrdersService.getMyOrders();
         if (showInitialLoading) await waitForCoffeeLoading(message);
 
-        if (hasLoadedOrders) {
-            for (const order of orders) {
-                const previousStatus = previousPaymentStates.get(String(order.id));
-                if (previousStatus === "unpaid" && order.payment_status === "paid" &&
-                    order.payment_method === "qr" && !notifiedPaidOrders.has(String(order.id))) {
-                    notifiedPaidOrders.add(String(order.id));
-                    showPaymentSuccessPopup(order);
-                }
+        for (const order of orders) {
+            const orderId = String(order.id);
+            if (order.payment_method === "qr" &&
+                order.payment_review_status === "pending" &&
+                activeQrPanels.has(orderId) &&
+                !notifiedQrRequests.has(orderId)) {
+                notifiedQrRequests.add(orderId);
+                activeQrPanels.delete(orderId);
+                showQrRequestReceivedPopup(order);
+            }
+
+            const previousStatus = previousPaymentStates.get(orderId);
+            if (hasLoadedOrders && previousStatus === "unpaid" &&
+                order.payment_status === "paid" && order.payment_method === "qr" &&
+                !notifiedPaidOrders.has(orderId)) {
+                notifiedPaidOrders.add(orderId);
+                showPaymentSuccessPopup(order);
             }
         }
 
@@ -253,7 +316,7 @@ function renderOrders(orders) {
             `<li><span>${escapeHtml(item.product_name)} × ${escapeHtml(item.quantity)}</span><strong>${currency.format(Number(item.subtotal) || 0)}</strong></li>`
         ).join("");
         const canCancel = order.status === "pending" && order.payment_status === "unpaid";
-        const canCreateQr = order.status === "pending" && order.payment_method === "qr" && order.payment_status === "unpaid";
+        const canCreateQr = order.status === "pending" && order.payment_method === "qr" && order.payment_status === "unpaid" && order.payment_review_status !== "pending";
         const deliveryFee = Number(order.delivery_fee) || 0;
         const arrivalNotice = order.delivery_arrived_at ? `<p class="delivery-arrival-notice" role="status">ONCafe thông báo: Nhân viên giao hàng đã đến địa chỉ của bạn lúc ${escapeHtml(formatDate(order.delivery_arrived_at))}.</p>` : "";
         const statusClass = order.status === "completed" ? "is-complete" :
@@ -289,7 +352,7 @@ function renderOrders(orders) {
                         ${canCancel ? `<button type="button" class="orders-cancel-button" data-cancel-order="${escapeHtml(order.id)}">Hủy đơn</button>` : ""}
                     </div>
                 </footer>
-                <div class="customer-order-qr" data-qr-panel hidden></div>
+                <div class="customer-order-qr" data-qr-panel ${activeQrPanels.has(String(order.id)) ? "" : "hidden"}>${activeQrPanels.has(String(order.id)) ? `<img src="${escapeHtml(activeQrPanels.get(String(order.id)).image)}" alt="Mã QR xác nhận thanh toán"><p>Dùng camera điện thoại quét mã QR để gửi yêu cầu xác nhận. Mã có hiệu lực đến ${escapeHtml(new Date(activeQrPanels.get(String(order.id)).expiresAt).toLocaleTimeString("vi-VN"))}.</p>` : ""}</div>
             </article>`;
     }).join("");
 }
@@ -316,18 +379,9 @@ async function createQr(orderId, button) {
         const expiresAt = qrInfo.expiresAt;
         const url = new URL(qrInfo.url);
         const imageUrl = qrInfo.image;
-        const card = button.closest(".my-order-card");
-        const panel = card.querySelector("[data-qr-panel]");
-        panel.hidden = false;
-        panel.innerHTML = "";
-        const image = document.createElement("img");
-        image.src = imageUrl;
-        image.alt = "Mã QR xác nhận thanh toán";
-        const note = document.createElement("p");
-        note.textContent = `Dùng camera điện thoại quét mã QR để mở trang gửi yêu cầu xác nhận. Mã có hiệu lực đến ${new Date(expiresAt).toLocaleTimeString("vi-VN")} (tối đa 10 phút).`;
-        panel.append(image, note);
-        button.textContent = "Tạo lại mã QR";
-        button.disabled = false;
+        activeQrPanels.set(String(orderId), { image: imageUrl, expiresAt });
+        renderOrders(cachedOrders);
+
     } catch (error) {
         setMessage(error.message || "Không thể tạo mã QR.", true);
         button.textContent = "Thử tạo lại mã QR";
