@@ -221,6 +221,7 @@ export class OrderView {
                     ? `<button class="button button-small button-primary" type="button" data-payment-action="paid" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>Xác nhận đã nhận tiền</button>`
                     : order.payment_status === "paid"
                         ? `<button class="button button-small" type="button" data-payment-action="unpaid" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>Hoàn tác thanh toán</button>`
+                        : ""
                         : "";
             const extraActions = `${paymentAction}${qrPaymentAction}${cashPaymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}"><i class="bi bi-printer me-1" aria-hidden="true"></i>In hóa đơn</button>`;
             return `<tr>
