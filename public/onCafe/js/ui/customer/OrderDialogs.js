@@ -1,3 +1,5 @@
+import { supabase } from "../../config/supabase.js";
+
 // Hiển thị hộp thoại kết quả đặt hàng và xác nhận thanh toán QR.
 let activeQrOrderDialogClose = null;
 
@@ -138,23 +140,53 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
     document.body.append(overlay);
 
     let expiryTimer = null;
+    let requestCheckTimer = null;
+    let isCheckingQrRequest = false;
     let qrChannel = null;
     const qrToken = qrInfo?.url ? new URL(qrInfo.url).searchParams.get("token") : null;
 
-    // Nhận tín hiệu từ tab xác nhận QR để đóng mã ngay sau khi khách gửi yêu cầu.
+    // Xóa mã QR khi Supabase đã ghi nhận yêu cầu, kể cả khi khách quét bằng điện thoại khác.
+    const markQrRequestReceived = () => {
+        if (!qrPanel || qrPanel.dataset.requestReceived === "true") return;
+        qrPanel.dataset.requestReceived = "true";
+        if (expiryTimer) window.clearInterval(expiryTimer);
+        if (requestCheckTimer) window.clearInterval(requestCheckTimer);
+        qrPanel.querySelector("img")?.remove();
+        qrPanel.querySelector("a")?.remove();
+        qrPanel.querySelector("[data-qr-expiry]")?.remove();
+        qrPanel.querySelector("p").textContent =
+            "Đã nhận yêu cầu xác nhận thanh toán. Cảm ơn bạn! ONCafe sẽ kiểm tra giao dịch và phản hồi ngay sau khi xác minh.";
+        title.textContent = "Đã nhận yêu cầu xác nhận";
+        message.textContent = `ONCafe đã nhận yêu cầu xác nhận thanh toán cho đơn ${orderCode}. Nhân viên sẽ kiểm tra giao dịch trước khi cập nhật trạng thái Đã thanh toán.`;
+    };
+
+    // Kiểm tra trạng thái trên máy chủ để hỗ trợ quét QR bằng thiết bị khác.
+    const checkQrRequestStatus = async () => {
+        if (isCheckingQrRequest || qrPanel?.dataset.requestReceived === "true") return;
+        isCheckingQrRequest = true;
+        try {
+            const { data, error } = await supabase.rpc("oncafe_my_orders");
+            if (error) throw error;
+            const orders = Array.isArray(data) ? data : [];
+            const currentOrder = orders.find((item) =>
+                String(item.order_code) === String(orderCode) ||
+                (order.id != null && String(item.id) === String(order.id))
+            );
+            if (currentOrder?.payment_review_status === "pending") markQrRequestReceived();
+        } catch (error) {
+            console.warn("Không thể kiểm tra trạng thái yêu cầu QR:", error);
+        } finally {
+            isCheckingQrRequest = false;
+        }
+    };
+
+    // Nhận tín hiệu nhanh khi trang QR được mở ở tab cùng trình duyệt.
     if (paymentMethod === "qr" && qrToken && typeof BroadcastChannel !== "undefined") {
         qrChannel = new BroadcastChannel("oncafe-qr-payment");
         qrChannel.addEventListener("message", (event) => {
-            if (event.data?.type !== "confirmed" || event.data.token !== qrToken) return;
-
-            if (expiryTimer) window.clearInterval(expiryTimer);
-            qrPanel.querySelector("img")?.remove();
-            qrPanel.querySelector("a")?.remove();
-            qrPanel.querySelector("[data-qr-expiry]")?.remove();
-            qrPanel.querySelector("p").textContent =
-                "Đã nhận yêu cầu xác nhận thanh toán. Cảm ơn bạn! ONCafe sẽ kiểm tra giao dịch và phản hồi ngay sau khi xác minh.";
-            title.textContent = "Đã nhận yêu cầu xác nhận";
-            message.textContent = `ONCafe đã nhận yêu cầu xác nhận thanh toán cho đơn ${orderCode}. Nhân viên sẽ kiểm tra giao dịch trước khi cập nhật trạng thái Đã thanh toán.`;
+            if (event.data?.type === "confirmed" && event.data.token === qrToken) {
+                markQrRequestReceived();
+            }
         });
     }
 
@@ -177,12 +209,15 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
         };
         updateExpiry();
         expiryTimer = window.setInterval(updateExpiry, 1000);
+        void checkQrRequestStatus();
+        requestCheckTimer = window.setInterval(checkQrRequestStatus, 3000);
     }
 
     // Đóng hộp thoại và dọn các trình xử lý sự kiện liên quan.
     const close = () => {
         overlay.remove();
         if (expiryTimer) window.clearInterval(expiryTimer);
+        if (requestCheckTimer) window.clearInterval(requestCheckTimer);
         qrChannel?.close();
         document.removeEventListener("keydown", handleKeydown);
         if (activeQrOrderDialogClose === close) activeQrOrderDialogClose = null;
