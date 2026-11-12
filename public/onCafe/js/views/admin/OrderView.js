@@ -206,15 +206,24 @@ export class OrderView {
                 ? `<span class="status status-active">${order.payment_method === "qr" ? "Đã thanh toán QR" : "Đã thanh toán"}</span>`
                 : order.payment_status === "refunded"
                     ? `<span class="status status-inactive">Đã hoàn tiền</span>`
-                    : `<span class="status status-pending">${order.payment_method === "qr" ? "Chờ khách xác nhận QR" : "Chưa thanh toán"}</span>`;
+                    : `<span class="status status-pending">${order.payment_method === "qr"
+                        ? (order.payment_review_status === "pending" ? "Khách đã gửi yêu cầu xác nhận QR" : "Chờ khách xác nhận QR")
+                        : "Chưa thanh toán"}</span>`;
+            // Chỉ hiện nút duyệt QR khi khách đã gửi yêu cầu; cashier ở chế độ chỉ đọc.
+            const qrPaymentAction = !this.readOnly &&
+                order.payment_method === "qr" &&
+                order.payment_status === "unpaid" &&
+                order.payment_review_status === "pending"
+                ? `<button class="button button-small button-primary" type="button" data-payment-action="paid" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>Xác nhận đã thanh toán</button>`
+                : "";
             const cashPaymentAction = !this.readOnly && order.payment_method === "cash"
                 ? order.payment_status === "unpaid"
                     ? `<button class="button button-small button-primary" type="button" data-payment-action="paid" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>Xác nhận đã nhận tiền</button>`
                     : order.payment_status === "paid"
                         ? `<button class="button button-small" type="button" data-payment-action="unpaid" data-order-id="${escapeHtml(order.id)}" ${this.busy.has(String(order.id)) ? "disabled" : ""}>Hoàn tác thanh toán</button>`
                         : ""
-                : "";
-            const extraActions = `${paymentAction}${cashPaymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}"><i class="bi bi-printer me-1" aria-hidden="true"></i>In hóa đơn</button>`;
+                        : "";
+            const extraActions = `${paymentAction}${qrPaymentAction}${cashPaymentAction}<button class="button button-small" type="button" data-print-order="${escapeHtml(order.id)}"><i class="bi bi-printer me-1" aria-hidden="true"></i>In hóa đơn</button>`;
             return `<tr>
                 <td><strong>${escapeHtml(order.order_code || "#" + order.id)}</strong><br><span class="order-source-label ${order.order_source === "online" ? "is-online" : "is-counter"}">${sourceLabel}</span><br><small>${escapeHtml(formatDate(order.created_at))}</small></td>
                 <td><strong>${escapeHtml(order.customer_name || "Khách hàng")}</strong><br><small>${escapeHtml(order.customer_phone || "Chưa có SĐT")}</small><br><span class="order-fulfillment-label">${fulfillmentLabel}</span>${note}${arrivalNote}</td>
@@ -312,12 +321,18 @@ export class OrderView {
             const order = this.orders.find((item) => String(item.id) === String(paymentButton.dataset.orderId));
             if (!order || this.busy.has(String(order.id))) return;
             const nextStatus = paymentButton.dataset.paymentAction;
+            const isQrReview = order.payment_method === "qr" &&
+                order.payment_status === "unpaid" &&
+                order.payment_review_status === "pending";
+            if (isQrReview && nextStatus !== "paid") return;
             const confirmed = await this.showConfirmDialog({
-                title: nextStatus === "paid" ? "Xác nhận đã nhận tiền" : "Điều chỉnh trạng thái thanh toán",
-                message: nextStatus === "paid"
-                    ? `Xác nhận đã thực nhận thanh toán cho đơn ${order.order_code || "#" + order.id}? Với QR, chỉ xác nhận sau khi kiểm tra giao dịch.`
-                    : `Chuyển đơn ${order.order_code || "#" + order.id} về trạng thái chưa thanh toán?`,
-                confirmText: nextStatus === "paid" ? "Đã nhận tiền" : "Chưa thanh toán",
+                title: isQrReview ? "Duyệt yêu cầu thanh toán QR" : (nextStatus === "paid" ? "Xác nhận đã nhận tiền" : "Điều chỉnh trạng thái thanh toán"),
+                message: isQrReview
+                    ? `Khách hàng đã gửi yêu cầu xác nhận thanh toán cho đơn ${order.order_code || "#" + order.id}. Vui lòng kiểm tra giao dịch thực tế trên tài khoản ngân hàng trước khi xác nhận đã thanh toán.`
+                    : nextStatus === "paid"
+                        ? `Xác nhận đã thực nhận thanh toán cho đơn ${order.order_code || "#" + order.id}?`
+                        : `Chuyển đơn ${order.order_code || "#" + order.id} về trạng thái chưa thanh toán?`,
+                confirmText: isQrReview ? "Xác nhận đã thanh toán" : (nextStatus === "paid" ? "Đã nhận tiền" : "Chưa thanh toán"),
                 danger: nextStatus === "unpaid"
             });
             if (!confirmed) return;

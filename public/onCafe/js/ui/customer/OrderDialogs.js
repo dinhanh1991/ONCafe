@@ -1,3 +1,5 @@
+import { supabase } from "../../config/supabase.js";
+
 // Hiển thị hộp thoại kết quả đặt hàng và xác nhận thanh toán QR.
 let activeQrOrderDialogClose = null;
 
@@ -92,7 +94,7 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
     const total = currencyFormatter.format(Number(order.total_amount) || 0);
     const deliveryFee = Number(order.delivery_fee) || (fulfillmentMethod === "delivery" ? 15000 : 0);
     const fulfillmentLabel = fulfillmentMethod === "delivery" ? "Giao tận nhà" : "Nhận tại cửa hàng";
-    message.textContent = `Đơn ${orderCode} đã được tạo. Hình thức nhận: ${fulfillmentLabel}. Phí giao hàng: ${currencyFormatter.format(deliveryFee)}. Tổng thanh toán: ${total}. Vui lòng quét mã QR và xác nhận thanh toán trong 10 phút.`;
+    message.textContent = `Đơn ${orderCode} đã được tạo. Hình thức nhận: ${fulfillmentLabel}. Phí giao hàng: ${currencyFormatter.format(deliveryFee)}. Tổng thanh toán: ${total}. Dùng điện thoại quét mã QR để mở trang xác nhận thanh toán trong 10 phút.`;
 
     let qrPanel = null;
     if (paymentMethod === "qr") {
@@ -100,7 +102,7 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
         qrPanel.className = "customer-qr-panel";
         const note = document.createElement("p");
         note.textContent = qrInfo?.image
-            ? "Quét mã QR để mở trang xác nhận thanh toán. Vui lòng xác nhận trong 10 phút."
+            ? "Dùng điện thoại quét mã QR để mở trang xác nhận thanh toán. Vui lòng xác nhận trong 10 phút."
             : `Chưa tạo được mã QR: ${qrInfo?.error || "Vui lòng vào Đơn hàng của tôi hoặc liên hệ cửa hàng để được hỗ trợ."}`;
         qrPanel.append(note);
         if (qrInfo?.image) {
@@ -109,15 +111,10 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
             image.alt = "Mã QR xác nhận thanh toán đơn hàng";
             image.width = 200;
             image.height = 200;
-            const link = document.createElement("a");
-            link.href = qrInfo.url;
-            link.target = "_blank";
-            link.rel = "noopener";
-            link.textContent = "Mở trang xác nhận thanh toán";
             const expiry = document.createElement("small");
             expiry.dataset.qrExpiry = String(qrInfo.expiresAt);
             expiry.textContent = `Mã có hiệu lực đến ${new Date(qrInfo.expiresAt).toLocaleTimeString("vi-VN")} (tối đa 10 phút).`;
-            qrPanel.append(image, link, expiry);
+            qrPanel.append(image, expiry);
         }
     }
 
@@ -138,6 +135,56 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
     document.body.append(overlay);
 
     let expiryTimer = null;
+    let requestCheckTimer = null;
+    let isCheckingQrRequest = false;
+    let qrChannel = null;
+    const qrToken = qrInfo?.url ? new URL(qrInfo.url).searchParams.get("token") : null;
+
+    // Xóa mã QR khi Supabase đã ghi nhận yêu cầu, kể cả khi khách quét bằng điện thoại khác.
+    const markQrRequestReceived = () => {
+        if (!qrPanel || qrPanel.dataset.requestReceived === "true") return;
+        qrPanel.dataset.requestReceived = "true";
+        if (expiryTimer) window.clearInterval(expiryTimer);
+        if (requestCheckTimer) window.clearInterval(requestCheckTimer);
+        qrPanel.querySelector("img")?.remove();
+        qrPanel.querySelector("a")?.remove();
+        qrPanel.querySelector("[data-qr-expiry]")?.remove();
+        qrPanel.querySelector("p").textContent =
+            "Đã nhận yêu cầu xác nhận thanh toán. Cảm ơn bạn! ONCafe sẽ kiểm tra giao dịch và phản hồi ngay sau khi xác minh.";
+        title.textContent = "Đã nhận yêu cầu xác nhận";
+        message.textContent = `ONCafe đã nhận yêu cầu xác nhận thanh toán cho đơn ${orderCode}. Nhân viên sẽ kiểm tra giao dịch trước khi cập nhật trạng thái Đã thanh toán.`;
+    };
+
+    // Kiểm tra trạng thái trên máy chủ để hỗ trợ quét QR bằng thiết bị khác.
+    const checkQrRequestStatus = async () => {
+        if (isCheckingQrRequest || qrPanel?.dataset.requestReceived === "true") return;
+        isCheckingQrRequest = true;
+        try {
+            const { data, error } = await supabase.rpc("oncafe_my_orders");
+            if (error) throw error;
+            const orders = Array.isArray(data) ? data : [];
+            const currentOrder = orders.find((item) =>
+                String(item.order_code) === String(orderCode) ||
+                (order.id != null && String(item.id) === String(order.id))
+            );
+            if (currentOrder?.payment_review_status === "pending") markQrRequestReceived();
+        } catch (error) {
+            console.warn("Không thể kiểm tra trạng thái yêu cầu QR:", error);
+        } finally {
+            isCheckingQrRequest = false;
+        }
+    };
+
+    // Nhận tín hiệu nhanh khi trang QR được mở ở tab cùng trình duyệt.
+    if (paymentMethod === "qr" && qrToken && typeof BroadcastChannel !== "undefined") {
+        qrChannel = new BroadcastChannel("oncafe-qr-payment");
+        qrChannel.addEventListener("message", (event) => {
+            if (event.data?.type === "confirmed" && event.data.token === qrToken) {
+                markQrRequestReceived();
+            }
+        });
+    }
+
     if (paymentMethod === "qr" && qrInfo?.image) {
         const expiresAt = Number(qrInfo.expiresAt);
         const expiry = qrPanel.querySelector("[data-qr-expiry]");
@@ -157,12 +204,16 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
         };
         updateExpiry();
         expiryTimer = window.setInterval(updateExpiry, 1000);
+        void checkQrRequestStatus();
+        requestCheckTimer = window.setInterval(checkQrRequestStatus, 3000);
     }
 
     // Đóng hộp thoại và dọn các trình xử lý sự kiện liên quan.
     const close = () => {
         overlay.remove();
         if (expiryTimer) window.clearInterval(expiryTimer);
+        if (requestCheckTimer) window.clearInterval(requestCheckTimer);
+        qrChannel?.close();
         document.removeEventListener("keydown", handleKeydown);
         if (activeQrOrderDialogClose === close) activeQrOrderDialogClose = null;
     };
