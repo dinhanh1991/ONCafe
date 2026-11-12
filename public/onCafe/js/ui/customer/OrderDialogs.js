@@ -94,7 +94,7 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
     const total = currencyFormatter.format(Number(order.total_amount) || 0);
     const deliveryFee = Number(order.delivery_fee) || (fulfillmentMethod === "delivery" ? 15000 : 0);
     const fulfillmentLabel = fulfillmentMethod === "delivery" ? "Giao tận nhà" : "Nhận tại cửa hàng";
-    message.textContent = `Đơn ${orderCode} đã được tạo. Hình thức nhận: ${fulfillmentLabel}. Phí giao hàng: ${currencyFormatter.format(deliveryFee)}. Tổng thanh toán: ${total}. Vui lòng quét mã QR và xác nhận thanh toán trong 10 phút.`;
+    message.textContent = `Đơn ${orderCode} đã được tạo. Hình thức nhận: ${fulfillmentLabel}. Phí giao hàng: ${currencyFormatter.format(deliveryFee)}. Tổng thanh toán: ${total}. Dùng điện thoại quét mã QR để mở trang xác nhận thanh toán trong 10 phút.`;
 
     let qrPanel = null;
     if (paymentMethod === "qr") {
@@ -102,7 +102,7 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
         qrPanel.className = "customer-qr-panel";
         const note = document.createElement("p");
         note.textContent = qrInfo?.image
-            ? "Quét mã QR để mở trang xác nhận thanh toán. Vui lòng xác nhận trong 10 phút."
+            ? "Dùng điện thoại quét mã QR để mở trang xác nhận thanh toán. Vui lòng xác nhận trong 10 phút."
             : `Chưa tạo được mã QR: ${qrInfo?.error || "Vui lòng vào Đơn hàng của tôi hoặc liên hệ cửa hàng để được hỗ trợ."}`;
         qrPanel.append(note);
         if (qrInfo?.image) {
@@ -111,15 +111,10 @@ export function showOrderSuccessPopup(order, paymentMethod, fulfillmentMethod, q
             image.alt = "Mã QR xác nhận thanh toán đơn hàng";
             image.width = 200;
             image.height = 200;
-            const link = document.createElement("a");
-            link.href = qrInfo.url;
-            link.target = "_blank";
-            link.rel = "noopener";
-            link.textContent = "Mở trang xác nhận thanh toán";
             const expiry = document.createElement("small");
             expiry.dataset.qrExpiry = String(qrInfo.expiresAt);
             expiry.textContent = `Mã có hiệu lực đến ${new Date(qrInfo.expiresAt).toLocaleTimeString("vi-VN")} (tối đa 10 phút).`;
-            qrPanel.append(image, link, expiry);
+            qrPanel.append(image, expiry);
         }
     }
 
