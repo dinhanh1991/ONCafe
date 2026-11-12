@@ -73,6 +73,10 @@
     const token = params.get("token") || "";
     const expiresValue = params.get("expires");
     const expiresAt = expiresValue ? Number(expiresValue) : null;
+    const confirmationChannel = typeof BroadcastChannel !== "undefined"
+        ? new BroadcastChannel("oncafe-qr-payment")
+        : null;
+    window.addEventListener("pagehide", () => confirmationChannel?.close(), { once: true });
 
     function expireQr() {
         button.disabled = true;
@@ -133,6 +137,11 @@
             clearCoffeeLoading(feedback);
             feedback.textContent = "";
             successOrder.textContent = data.order_code ? "Mã đơn hàng: " + data.order_code : "";
+            confirmationChannel?.postMessage({
+                type: "confirmed",
+                token,
+                order_code: data.order_code || null
+            });
             successOverlay.classList.add("show");
             closeSuccess.focus();
         } catch (error) {
