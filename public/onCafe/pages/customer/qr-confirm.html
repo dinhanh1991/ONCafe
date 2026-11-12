@@ -50,8 +50,8 @@
     <div class="brand">ONCafe</div>
     <p class="eyebrow">XÁC NHẬN THANH TOÁN</p>
     <h1>Xác nhận đơn hàng</h1>
-    <p class="intro">Vui lòng xác nhận thanh toán để hoàn tất đơn hàng.</p>
-    <button id="confirmButton" type="button">Xác nhận thanh toán</button>
+    <p class="intro">Gửi yêu cầu xác nhận bạn đã thanh toán. Nhân viên ONCafe sẽ kiểm tra và cập nhật trạng thái đơn hàng sau khi xác minh.</p>
+    <button id="confirmButton" type="button">Gửi yêu cầu xác nhận</button>
     <p id="feedback" role="status" aria-live="polite"></p>
 </main>
 
@@ -59,8 +59,8 @@
 <div id="successOverlay" class="success-overlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
     <section class="success-dialog">
         <div class="success-icon" aria-hidden="true">✓</div>
-        <h2 id="successTitle">Đặt hàng thành công!</h2>
-        <p id="successMessage">Cảm ơn quý khách đã đặt hàng tại ONCafe. Đơn hàng của quý khách đã được xác nhận thanh toán.</p>
+        <h2 id="successTitle">Đã gửi yêu cầu!</h2>
+        <p id="successMessage">Cảm ơn quý khách đã gửi xác nhận thanh toán tại ONCafe. Nhân viên sẽ kiểm tra giao dịch và cập nhật trạng thái Đã thanh toán sau khi xác minh. Trong thời gian này, đơn hàng vẫn ở trạng thái Chờ xác nhận thanh toán.</p>
         <strong id="successOrder" class="success-order-code"></strong>
         <div class="success-actions">
             <button id="viewOrders" type="button">Theo dõi đơn hàng</button>
@@ -126,7 +126,7 @@
         }
         button.disabled = true;
         renderCoffeeLoading(button, "Đang xác nhận...", { compact: true });
-        renderCoffeeLoading(feedback, "ONCafe đang kiểm tra xác nhận thanh toán...", { compact: true });
+        renderCoffeeLoading(feedback, "ONCafe đang gửi yêu cầu xác nhận...", { compact: true });
         feedback.className = "";
         try {
             const { data, error } = await supabase.functions.invoke("oncafe-qr-payment", {
@@ -136,7 +136,7 @@
             if (!data?.confirmed) throw new Error(data?.error || "Mã QR không còn hiệu lực.");
 
             clearCoffeeLoading(button);
-            button.textContent = "Đã xác nhận thanh toán";
+            button.textContent = "Đã gửi yêu cầu xác nhận";
             clearCoffeeLoading(feedback);
             feedback.textContent = "";
             successOrder.textContent = data.order_code ? "Mã đơn hàng: " + data.order_code : "";
