@@ -433,7 +433,6 @@ export class CounterOrderView {
             <div class="qr-demo-code">
                 <img class="qr-demo-image" data-qr-image alt="Mã QR mở trang xác nhận thanh toán trên điện thoại" />
                 <small>QUÉT QR ĐỂ XÁC NHẬN</small>
-                <p><a data-qr-open target="_blank" rel="noopener">Mở trang xác nhận</a></p>
                 <small data-qr-expiry></small>
             </div>`;
         this.container.querySelector(".counter-order").append(panel);
@@ -456,8 +455,6 @@ export class CounterOrderView {
             const qrModule = await import('https://esm.sh/qrcode@1.5.4');
             const QRCode = qrModule.default || qrModule;
             this.container.querySelector('[data-qr-image]').src = await QRCode.toDataURL(confirmUrl.href, { width: 220, margin: 2 });
-            const openLink = this.container.querySelector('[data-qr-open]');
-            openLink.href = confirmUrl.href;
             this.container.querySelector('[data-qr-expiry]').textContent = 'Mã có hiệu lực đến ' + new Date(result.expires_at).toLocaleTimeString('vi-VN');
             if (feedback) feedback.textContent = 'Quét mã bằng điện thoại để mở trang xác nhận thanh toán.';
             const retryButton = this.container.querySelector("[data-qr-retry]");
