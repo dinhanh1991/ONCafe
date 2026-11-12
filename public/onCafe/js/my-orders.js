@@ -323,14 +323,9 @@ async function createQr(orderId, button) {
         const image = document.createElement("img");
         image.src = imageUrl;
         image.alt = "Mã QR xác nhận thanh toán";
-        const link = document.createElement("a");
-        link.href = url.href;
-        link.target = "_blank";
-        link.rel = "noopener";
-        link.textContent = "Mở trang xác nhận thanh toán";
         const note = document.createElement("p");
-        note.textContent = `Mã QR có hiệu lực đến ${new Date(expiresAt).toLocaleTimeString("vi-VN")} (tối đa 10 phút).`;
-        panel.append(image, link, note);
+        note.textContent = `Dùng camera điện thoại quét mã QR để mở trang gửi yêu cầu xác nhận. Mã có hiệu lực đến ${new Date(expiresAt).toLocaleTimeString("vi-VN")} (tối đa 10 phút).`;
+        panel.append(image, note);
         button.textContent = "Tạo lại mã QR";
         button.disabled = false;
     } catch (error) {
