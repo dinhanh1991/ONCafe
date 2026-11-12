@@ -37,14 +37,6 @@
     </style>
 </head>
 <body>
-<header class="site-header">
-    <a class="brand" href="./home.html">ONCafe</a>
-    <nav aria-label="Điều hướng chính">
-        <a href="./home.html">Trang chủ</a>
-        <a href="./menu.html">Thực đơn</a>
-        <a href="./my-orders.html">Đơn hàng của tôi</a>
-    </nav>
-</header>
 <!-- Trang xác nhận mã thanh toán QR gắn với đơn hàng trực tuyến. -->
 <main>
     <div class="brand">ONCafe</div>
@@ -60,11 +52,10 @@
     <section class="success-dialog">
         <div class="success-icon" aria-hidden="true">✓</div>
         <h2 id="successTitle">Đã gửi yêu cầu!</h2>
-        <p id="successMessage">Cảm ơn quý khách đã gửi xác nhận thanh toán tại ONCafe. Nhân viên sẽ kiểm tra giao dịch và cập nhật trạng thái Đã thanh toán sau khi xác minh. Trong thời gian này, đơn hàng vẫn ở trạng thái Chờ xác nhận thanh toán.</p>
+        <p id="successMessage">Cảm ơn bạn đã đặt hàng tại ONCafe! Chúng tôi đã nhận được yêu cầu xác nhận thanh toán và sẽ phản hồi ngay sau khi kiểm tra giao dịch. Đơn hàng chỉ chuyển sang Đã thanh toán sau khi nhân viên xác minh.</p>
         <strong id="successOrder" class="success-order-code"></strong>
         <div class="success-actions">
-            <button id="viewOrders" type="button">Theo dõi đơn hàng</button>
-            <button id="closeSuccess" class="success-secondary" type="button">Đóng</button>
+            <button id="closeSuccess" class="success-secondary" type="button">Đã hiểu</button>
         </div>
     </section>
 </div>
@@ -78,7 +69,6 @@
     const successOverlay = document.querySelector("#successOverlay");
     const successOrder = document.querySelector("#successOrder");
     const closeSuccess = document.querySelector("#closeSuccess");
-    const viewOrders = document.querySelector("#viewOrders");
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token") || "";
     const expiresValue = params.get("expires");
@@ -137,11 +127,14 @@
 
             clearCoffeeLoading(button);
             button.textContent = "Đã gửi yêu cầu xác nhận";
+            button.hidden = true;
+            document.querySelector("h1").textContent = "Đã nhận yêu cầu xác nhận";
+            document.querySelector(".intro").textContent = "Cảm ơn bạn! ONCafe sẽ kiểm tra giao dịch và phản hồi ngay sau khi xác minh.";
             clearCoffeeLoading(feedback);
             feedback.textContent = "";
             successOrder.textContent = data.order_code ? "Mã đơn hàng: " + data.order_code : "";
             successOverlay.classList.add("show");
-            viewOrders.focus();
+            closeSuccess.focus();
         } catch (error) {
             clearCoffeeLoading(button);
             clearCoffeeLoading(feedback);
@@ -156,10 +149,6 @@
         successOverlay.classList.remove("show");
     });
 
-    viewOrders.addEventListener("click", async () => {
-        const { data } = await supabase.auth.getSession();
-        window.location.href = data.session ? "./my-orders.html" : "./login.html?redirect=my-orders";
-    });
 </script>
     <script type="module" src="../../js/views/shared/SiteFooterView.js"></script>
 </body>
