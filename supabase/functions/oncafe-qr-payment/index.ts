@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: order, error: orderError } = await admin
       .from("orders")
-      .select("id, order_code, payment_method, payment_status, status, created_by, order_source")
+      .select("id, order_code, payment_method, payment_status, status, created_by, order_source, qr_expires_at")
       .eq("id", orderId)
       .maybeSingle();
     if (orderError || !order) return json({ error: "Order not found" }, 404);
@@ -96,7 +96,14 @@ Deno.serve(async (req: Request) => {
     const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
     const token = hex(tokenBytes);
     const tokenHash = await hashToken(token);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    // Dùng hạn QR đã được database ấn định khi tạo đơn; tạo lại QR không gia hạn.
+    const expiryTime = order.qr_expires_at
+      ? new Date(order.qr_expires_at).getTime()
+      : Date.now() + 10 * 60 * 1000;
+    if (!Number.isFinite(expiryTime) || expiryTime <= Date.now()) {
+      return json({ error: "QR code expired. Please create a new order." }, 409);
+    }
+    const expiresAt = new Date(expiryTime).toISOString();
 
     const { error: insertError } = await admin.from("order_payment_tokens").upsert({
       order_id: orderId,
