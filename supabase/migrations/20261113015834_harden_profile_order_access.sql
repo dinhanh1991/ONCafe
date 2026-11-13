@@ -67,7 +67,7 @@ comment on function public.oncafe_prevent_last_admin_change() is
   'Prevents demotion or deletion of the final Admin; enforced for direct SQL, Data API and trusted server-side operations.';
 
 -- Remove broad Admin ALL policies. Existing customer-owned SELECT policies
--- remain in place; Admins retain read access through SELECT-only policies.
+-- remain in place; the separate Admin views all profiles policy is preserved.
 drop policy if exists "Admin manages profiles" on public.profiles;
 
 drop policy if exists "Admin manages orders" on public.orders;
@@ -107,3 +107,8 @@ revoke all privileges on table public.profiles, public.orders, public.order_item
 
 grant select on table public.profiles, public.orders, public.order_items
   to authenticated;
+
+-- This existing SECURITY DEFINER RPC writes only the caller's own profile.
+-- Pin its search_path to prevent object-shadowing in a privileged function.
+alter function public.oncafe_update_my_profile(text, text, text)
+  set search_path = '';
