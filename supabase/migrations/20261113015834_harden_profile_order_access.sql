@@ -2,7 +2,8 @@
 -- 1) Protect the last Admin at the database layer (including service-role deletes/updates).
 -- 2) Make profiles, orders and order_items read-only through the Data API.
 --    Approved writes continue through existing SECURITY DEFINER RPCs and trusted Edge Functions.
--- QR/payment objects and functions are intentionally not changed.
+-- QR/payment flows and functions are unchanged. The sole related schema adjustment
+-- below preserves token rows when a staff Auth user is deleted.
 
 create or replace function public.oncafe_prevent_last_admin_change()
 returns trigger
@@ -107,6 +108,17 @@ revoke all privileges on table public.profiles, public.orders, public.order_item
 
 grant select on table public.profiles, public.orders, public.order_items
   to authenticated;
+
+-- Keep payment-token history when a staff Auth user is deleted.
+-- created_by is nullable; retain each token row but clear the deleted user's reference.
+alter table public.order_payment_tokens
+  drop constraint if exists order_payment_tokens_created_by_fkey;
+
+alter table public.order_payment_tokens
+  add constraint order_payment_tokens_created_by_fkey
+  foreign key (created_by)
+  references auth.users(id)
+  on delete set null;
 
 -- This existing SECURITY DEFINER RPC writes only the caller's own profile.
 -- Pin its search_path to prevent object-shadowing in a privileged function.
